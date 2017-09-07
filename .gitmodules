@@ -1,0 +1,6 @@
+[submodule "libs/seq_file"]
+	path = libs/seq_file
+	url = https://github.com/noporpoise/seq_file.git
+[submodule "libs/bioinf-perl"]
+	path = libs/bioinf-perl
+	url = https://github.com/noporpoise/bioinf-perl.git
