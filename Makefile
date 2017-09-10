@@ -1,5 +1,9 @@
+init:
+	pip install pipenv
+	pip install --dev
 
-test: acceptance
+test:
+	pipenv run py.test --pep8 tests
 
 acceptance: libs/seq_file/bin/dnacat
 	$(MAKE) -C tests/from-mccortex/build
