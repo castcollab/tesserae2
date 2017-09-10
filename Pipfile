@@ -5,3 +5,4 @@ verify_ssl = true
 [packages]
 pytest = "*"
 hypothesis = "*"
+pytest-pep8 = "*"
