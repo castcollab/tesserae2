@@ -3,10 +3,10 @@ init:
 	pipenv install --dev
 
 test:
-	pipenv run py.test --pep8 tests
+	pipenv run py.test --pep8 pycortex
 
 acceptance: libs/seq_file/bin/dnacat
-	$(MAKE) -C tests/from-mccortex/build
+	$(MAKE) -C pycortex/test/from-mccortex/build
 
 clean:
 	@echo nothing to clean
