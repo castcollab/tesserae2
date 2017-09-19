@@ -1,5 +1,5 @@
 # pycortex
-Re-implementation of mccortex using succinct data structures
+Python implementation of CortexJDK
 
 ## Development
 

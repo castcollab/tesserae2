@@ -6,7 +6,6 @@ import pytest
 import struct
 
 from hypothesis import assume
-from hypothesis import example
 from hypothesis import given
 from hypothesis import strategies as s
 from hypothesis.strategies import data
@@ -214,12 +213,10 @@ class TestCortexGraphParsing(object):
 
     @given(s.integers(min_value=1, max_value=10))
     def test_raises_when_concluding_magic_word_is_wrong(self, num_colors):
-        fh = (
-            CortexGraphBuilder()
-            .with_num_colors(num_colors)
-            .with_mean_read_lengths([0 for _ in range(num_colors + 1)])
-            .build()
-        )
+        fh = (CortexGraphBuilder()
+              .with_num_colors(num_colors)
+              .with_mean_read_lengths([0 for _ in range(num_colors + 1)])
+              .build())
 
         with pytest.raises(CortexGraphParserException) as excinfo:
             cp = CortexGraphParser(fh)
@@ -244,15 +241,13 @@ class TestCortexGraphParsing(object):
             elements=s.binary(min_size=1, max_size=256), min_size=num_colors, max_size=num_colors)
         )
 
-        fh = (
-            CortexGraphBuilder()
-            .with_kmer_size(kmer_size)
-            .with_kmer_bits(kmer_bits)
-            .with_num_colors(num_colors)
-            .with_mean_read_lengths(mean_read_lengths)
-            .with_total_sequence(total_sequence)
-            .with_sample_names(sample_names)
-            .build()
-        )
+        fh = (CortexGraphBuilder()
+              .with_kmer_size(kmer_size)
+              .with_kmer_bits(kmer_bits)
+              .with_num_colors(num_colors)
+              .with_mean_read_lengths(mean_read_lengths)
+              .with_total_sequence(total_sequence)
+              .with_sample_names(sample_names)
+              .build())
 
         cp = CortexGraphParser(fh)
