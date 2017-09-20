@@ -6,3 +6,5 @@ verify_ssl = true
 pytest = "*"
 hypothesis = "*"
 pytest-pep8 = "*"
+attrs = "*"
+biopython = "*"

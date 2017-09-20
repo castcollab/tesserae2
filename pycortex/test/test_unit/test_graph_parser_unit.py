@@ -4,13 +4,23 @@ import pytest
 from hypothesis import assume
 from hypothesis import given
 from hypothesis import strategies as s
-from hypothesis.strategies import data
+from hypothesis.strategies import data, composite, binary, integers
 
-from pycortex.graph_parser import CortexGraphParser, CortexGraphParserException
-from pycortex.test.builders.cortex_graph_builder import CortexGraphBuilder
+from pycortex.graph_parser import CortexGraph, CortexGraphParserException
+from pycortex.test.builders.cortex_graph_builder import CortexGraphBuilder, ColorInformationBlock
 
 MAX_UINT = 2 ** (struct.calcsize('I') * 8) - 1
 MAX_ULONG = 2 ** (struct.calcsize('L') * 8) - 1
+
+
+@composite
+def color_information_blocks(draw):
+    bools = [draw(binary(min_size=1, max_size=1)) for _ in range(4)]
+    uint32_ts = [draw(integers(min_value=0)) for _ in range(2)]
+    name_size = draw(integers(min_value=0, max_value=3))
+    name = draw(binary(min_size=name_size, max_size=name_size))
+
+    return ColorInformationBlock(*bools, *uint32_ts, name_size, name)
 
 
 class TestCortexGraphParsing(object):
@@ -21,7 +31,7 @@ class TestCortexGraphParsing(object):
         fh = CortexGraphBuilder().with_magic_word(magic_word).build()
 
         with pytest.raises(CortexGraphParserException) as excinfo:
-            cp = CortexGraphParser(fh)
+            cp = CortexGraph.from_stream(fh)
 
         assert 'Saw magic word' in str(excinfo.value)
 
@@ -32,7 +42,7 @@ class TestCortexGraphParsing(object):
         fh = CortexGraphBuilder().with_version(version).build()
 
         with pytest.raises(CortexGraphParserException) as excinfo:
-            cp = CortexGraphParser(fh)
+            cp = CortexGraph.from_stream(fh)
 
         assert 'Saw version' in str(excinfo.value)
 
@@ -40,7 +50,7 @@ class TestCortexGraphParsing(object):
         fh = CortexGraphBuilder().with_kmer_size(0).build()
 
         with pytest.raises(CortexGraphParserException) as excinfo:
-            cp = CortexGraphParser(fh)
+            cp = CortexGraph.from_stream(fh)
 
         assert 'Saw kmer size' in str(excinfo.value)
 
@@ -48,7 +58,7 @@ class TestCortexGraphParsing(object):
         fh = CortexGraphBuilder().with_kmer_size(3).with_kmer_bits(0).build()
 
         with pytest.raises(CortexGraphParserException) as excinfo:
-            cp = CortexGraphParser(fh)
+            cp = CortexGraph.from_stream(fh)
 
         assert 'Saw kmer bits' in str(excinfo.value)
 
@@ -56,7 +66,7 @@ class TestCortexGraphParsing(object):
         fh = CortexGraphBuilder().with_kmer_size(3).with_kmer_bits(1).with_num_colors(0).build()
 
         with pytest.raises(CortexGraphParserException) as excinfo:
-            cp = CortexGraphParser(fh)
+            cp = CortexGraph.from_stream(fh)
 
         assert 'Saw number of colors' in str(excinfo.value)
 
@@ -68,7 +78,7 @@ class TestCortexGraphParsing(object):
               .build())
 
         with pytest.raises(CortexGraphParserException) as excinfo:
-            cp = CortexGraphParser(fh)
+            cp = CortexGraph.from_stream(fh)
 
         assert 'Concluding magic word' in str(excinfo.value)
 
@@ -86,17 +96,22 @@ class TestCortexGraphParsing(object):
             s.lists(elements=s.integers(min_value=0, max_value=MAX_ULONG),
                     min_size=num_colors, max_size=num_colors))
 
-        sample_names = data.draw(s.lists(
-            elements=s.binary(min_size=1, max_size=256), min_size=num_colors, max_size=num_colors)
+        color_names = data.draw(s.lists(
+            elements=s.binary(min_size=1, max_size=3), min_size=num_colors, max_size=num_colors)
         )
 
-        fh = (CortexGraphBuilder()
-              .with_kmer_size(kmer_size)
-              .with_kmer_bits(kmer_bits)
-              .with_num_colors(num_colors)
-              .with_mean_read_lengths(mean_read_lengths)
-              .with_total_sequence(total_sequence)
-              .with_sample_names(sample_names)
-              .build())
+        cgb = (CortexGraphBuilder()
+               .with_kmer_size(kmer_size)
+               .with_kmer_bits(kmer_bits)
+               .with_num_colors(num_colors)
+               .with_mean_read_lengths(mean_read_lengths)
+               .with_total_sequence(total_sequence)
+               .with_color_names(color_names)
+               .with_error_rate(data.draw(s.binary(min_size=16, max_size=16))))
 
-        cp = CortexGraphParser(fh)
+        for color_name in color_names:
+            cgb.with_color_information_block(data.draw(color_information_blocks()))
+
+        fh = cgb.build()
+
+        cp = CortexGraph.from_stream(fh)

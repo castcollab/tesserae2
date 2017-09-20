@@ -1,9 +1,16 @@
-init:
+HYPOTHESIS_PROFILE = dev
+
+init: update
 	pip install pipenv
 	pipenv install --dev
+	$(MAKE) -C libs/mccortex all MAXK=63
+	$(MAKE) -C libs/mccortex all MAXK=31
+
+update:
+	git submodule update --init --recursive
 
 test:
-	pipenv run py.test --pep8 pycortex
+	pipenv run pytest pycortex --pep8 --hypothesis-profile $(HYPOTHESIS_PROFILE)
 
 acceptance: libs/seq_file/bin/dnacat
 	$(MAKE) -C pycortex/test/from-mccortex/build
