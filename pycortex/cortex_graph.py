@@ -15,7 +15,7 @@ class CortexGraphParserException(Exception):
 class CortexGraphHeader(object):
     version = attr.ib()
     kmer_size = attr.ib()
-    kmer_bytes = attr.ib()
+    kmer_container_size = attr.ib()
     num_colors = attr.ib()
     mean_read_lengths = attr.ib()
     mean_total_sequence = attr.ib()
@@ -84,9 +84,12 @@ class CortexGraphHeader(object):
             raise CortexGraphParserException(
                 "Concluding magic word {} != starting magic word {}".format(concluding_magic_word,
                                                                             magic_word))
-        return CortexGraphHeader(version=version, kmer_size=kmer_size, kmer_bytes=kmer_bytes,
-                                 num_colors=num_colors, mean_read_lengths=mean_read_lengths,
-                                 mean_total_sequence=mean_total_sequence, sample_names=sample_names)
+        return CortexGraphHeader(version=version, kmer_size=kmer_size,
+                                 kmer_container_size=kmer_bytes,
+                                 num_colors=num_colors,
+                                 mean_read_lengths=mean_read_lengths,
+                                 mean_total_sequence=mean_total_sequence,
+                                 sample_names=sample_names)
 
 
 @attr.s(slots=True)

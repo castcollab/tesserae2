@@ -6,7 +6,7 @@ from subprocess import check_call
 
 from os.path import join
 
-from pycortex.graph_parser import CortexGraph, CortexGraphHeader
+from pycortex.cortex_graph import CortexGraph, CortexGraphHeader
 
 BIN_DIR = os.environ['BIN_DIR']
 MCCORTEX = join(BIN_DIR, 'mccortex31')
@@ -33,7 +33,7 @@ class TestCortexGraphParsing(object):
 
         expected = CortexGraphHeader(version=6,
                                      kmer_size=kmer_size,
-                                     kmer_bytes=1,
+                                     kmer_container_size=1,
                                      num_colors=1,
                                      mean_read_lengths=(len(dna_sequence),),
                                      mean_total_sequence=(len(dna_sequence),),

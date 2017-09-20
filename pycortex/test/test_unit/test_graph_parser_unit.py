@@ -6,7 +6,7 @@ from hypothesis import given
 from hypothesis import strategies as s
 from hypothesis.strategies import data, composite, binary, integers
 
-from pycortex.graph_parser import CortexGraph, CortexGraphParserException
+from pycortex.cortex_graph import CortexGraph, CortexGraphParserException, CortexGraphHeader
 from pycortex.test.builders.cortex_graph_builder import CortexGraphBuilder, ColorInformationBlock
 
 MAX_UINT = 2 ** (struct.calcsize('I') * 8) - 1
@@ -23,7 +23,7 @@ def color_information_blocks(draw):
     return ColorInformationBlock(*bools, *uint32_ts, name_size, name)
 
 
-class TestCortexGraphParsing(object):
+class TestCortexGraphHeaderParsing(object):
     @given(s.binary())
     def test_raises_on_incorrect_magic_word(self, magic_word):
         assume(magic_word != b'CORTEX')
@@ -31,7 +31,7 @@ class TestCortexGraphParsing(object):
         fh = CortexGraphBuilder().with_magic_word(magic_word).build()
 
         with pytest.raises(CortexGraphParserException) as excinfo:
-            cp = CortexGraph.from_stream(fh)
+            CortexGraphHeader.from_stream(fh)
 
         assert 'Saw magic word' in str(excinfo.value)
 
@@ -42,7 +42,7 @@ class TestCortexGraphParsing(object):
         fh = CortexGraphBuilder().with_version(version).build()
 
         with pytest.raises(CortexGraphParserException) as excinfo:
-            cp = CortexGraph.from_stream(fh)
+            CortexGraphHeader.from_stream(fh)
 
         assert 'Saw version' in str(excinfo.value)
 
@@ -50,7 +50,7 @@ class TestCortexGraphParsing(object):
         fh = CortexGraphBuilder().with_kmer_size(0).build()
 
         with pytest.raises(CortexGraphParserException) as excinfo:
-            cp = CortexGraph.from_stream(fh)
+            CortexGraphHeader.from_stream(fh)
 
         assert 'Saw kmer size' in str(excinfo.value)
 
@@ -58,7 +58,7 @@ class TestCortexGraphParsing(object):
         fh = CortexGraphBuilder().with_kmer_size(3).with_kmer_bits(0).build()
 
         with pytest.raises(CortexGraphParserException) as excinfo:
-            cp = CortexGraph.from_stream(fh)
+            CortexGraphHeader.from_stream(fh)
 
         assert 'Saw kmer bits' in str(excinfo.value)
 
@@ -66,7 +66,7 @@ class TestCortexGraphParsing(object):
         fh = CortexGraphBuilder().with_kmer_size(3).with_kmer_bits(1).with_num_colors(0).build()
 
         with pytest.raises(CortexGraphParserException) as excinfo:
-            cp = CortexGraph.from_stream(fh)
+            CortexGraphHeader.from_stream(fh)
 
         assert 'Saw number of colors' in str(excinfo.value)
 
@@ -78,15 +78,16 @@ class TestCortexGraphParsing(object):
               .build())
 
         with pytest.raises(CortexGraphParserException) as excinfo:
-            cp = CortexGraph.from_stream(fh)
+            CortexGraphHeader.from_stream(fh)
 
         assert 'Concluding magic word' in str(excinfo.value)
 
     @given(data())
     def test_loads_entire_header_successfully(self, data):
+        # given
         num_colors = data.draw(s.integers(min_value=1, max_value=3))
         kmer_size = data.draw(s.integers(min_value=1, max_value=100))
-        kmer_bits = data.draw(s.integers(min_value=1, max_value=5))
+        kmer_container_size = data.draw(s.integers(min_value=1, max_value=5))
 
         mean_read_lengths = data.draw(
             s.lists(elements=s.integers(min_value=0, max_value=MAX_UINT),
@@ -102,7 +103,7 @@ class TestCortexGraphParsing(object):
 
         cgb = (CortexGraphBuilder()
                .with_kmer_size(kmer_size)
-               .with_kmer_bits(kmer_bits)
+               .with_kmer_bits(kmer_container_size)
                .with_num_colors(num_colors)
                .with_mean_read_lengths(mean_read_lengths)
                .with_total_sequence(total_sequence)
@@ -114,4 +115,13 @@ class TestCortexGraphParsing(object):
 
         fh = cgb.build()
 
-        cp = CortexGraph.from_stream(fh)
+        # then
+        cgh = CortexGraphHeader.from_stream(fh)
+
+        assert cgh.version == 6
+        assert cgh.kmer_size == kmer_size
+        assert cgh.kmer_container_size == kmer_container_size
+        assert cgh.num_colors == num_colors
+        assert cgh.mean_read_lengths == tuple(mean_read_lengths)
+        assert cgh.mean_total_sequence == tuple(total_sequence)
+        assert cgh.sample_names == tuple(color_names)
