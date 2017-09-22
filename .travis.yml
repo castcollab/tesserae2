@@ -4,8 +4,11 @@ python:
     - "3.5"
     - "3.6"
 
-# command to install dependencies
-install: "make"
+before_install:
+  - sudo apt-get -qq update
+  - sudo apt-get install -y zlib1g-dev
+
+install: "make init"
 
 # command to run tests
 script:
