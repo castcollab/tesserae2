@@ -6,7 +6,7 @@ from subprocess import check_call
 
 from os.path import join
 
-from pycortex.cortex_graph import CortexGraph, CortexGraphHeader
+from pycortex.cortex_graph import CortexGraphHeader
 
 BIN_DIR = os.environ['BIN_DIR']
 MCCORTEX = join(BIN_DIR, 'mccortex31')

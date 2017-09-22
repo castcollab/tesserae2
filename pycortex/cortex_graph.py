@@ -5,6 +5,10 @@ import attr
 
 CORTEX_MAGIC_WORD = (b'C', b'O', b'R', b'T', b'E', b'X')
 CORTEX_VERSION = 6
+UINT32_T = 4
+UINT64_T = 8
+BITS_IN_BYTE = 8
+NUM_TO_LETTER = ['A', 'C', 'G', 'T']
 
 
 class CortexGraphParserException(Exception):
@@ -90,6 +94,76 @@ class CortexGraphHeader(object):
                                  mean_read_lengths=mean_read_lengths,
                                  mean_total_sequence=mean_total_sequence,
                                  sample_names=sample_names)
+
+
+def kmer_generator_from_stream(stream, cortex_header):
+    record_size = cortex_header.kmer_container_size * UINT64_T + 5 * cortex_header.num_colors
+
+    while True:
+        raw_record = stream.read(record_size)
+        if raw_record == '':
+            return
+        yield CortexKmer(raw_record,
+                         cortex_header.kmer_size,
+                         cortex_header.num_colors,
+                         cortex_header.kmer_container_size)
+
+
+@attr.s(slots=True)
+class CortexKmer(object):
+    _raw_data = attr.ib()
+    kmer_size = attr.ib()
+    num_colors = attr.ib()
+    kmer_container_size_in_uint64ts = attr.ib(1)
+    _kmer = attr.ib(None)
+    _coverage = attr.ib(None)
+    _edges = attr.ib(None)
+
+    @property
+    def kmer(self):
+        if self._kmer is None:
+            letters = []
+            for index, byte in enumerate(self._raw_data[:self.kmer_container_size_in_uint64ts * 8]):
+                if index * 4 > self.kmer_size:
+                    break
+                letters.append(NUM_TO_LETTER[(byte & 0b11000000) >> 6])
+                letters.append(NUM_TO_LETTER[(byte & 0b110000) >> 4])
+                letters.append(NUM_TO_LETTER[(byte & 0b1100) >> 2])
+                letters.append(NUM_TO_LETTER[byte & 0b11])
+            self._kmer = tuple(letters[:self.kmer_size])
+        return self._kmer
+
+    @property
+    def coverage(self):
+        if self._coverage is None:
+            start = self.kmer_container_size_in_uint64ts * UINT64_T
+            coverage_raw = self._raw_data[start:(start + self.num_colors * UINT32_T)]
+            fmt_string = ''.join(['I' for _ in range(self.num_colors)])
+            self._coverage = unpack(fmt_string, coverage_raw)
+        return self._coverage
+
+    def get_coverage_for_color(self, color_num):
+        assert self.num_colors > color_num
+        return self.coverage[color_num]
+
+    @property
+    def edges(self):
+        if self._edges is None:
+            start = (
+                self.kmer_container_size_in_uint64ts * UINT64_T + self.num_colors * UINT32_T
+            )
+            edge_bytes = self._raw_data[start:]
+            edges_by_color = []
+            for edge_color_num in range(self.num_colors):
+                edges = []
+                for bit_idx in range(BITS_IN_BYTE):
+                    edges.append((edge_bytes[edge_color_num] >> bit_idx) & 1 == 1)
+                edges_by_color.append(tuple(edges[::-1]))
+            self._edges = tuple(edges_by_color)
+        return self._edges
+
+    def get_edge_number_for_color(self, edge_num, color_num=0):
+        return self.edges[color_num][edge_num]
 
 
 @attr.s(slots=True)

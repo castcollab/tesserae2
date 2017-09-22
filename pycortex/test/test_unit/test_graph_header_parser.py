@@ -6,8 +6,9 @@ from hypothesis import given
 from hypothesis import strategies as s
 from hypothesis.strategies import data, composite, binary, integers
 
-from pycortex.cortex_graph import CortexGraph, CortexGraphParserException, CortexGraphHeader
-from pycortex.test.builders.cortex_graph_builder import CortexGraphBuilder, ColorInformationBlock
+from pycortex.cortex_graph import CortexGraphParserException, CortexGraphHeader
+from pycortex.test.builders.graph_header_builder import CortexGraphHeaderBuilder, \
+    ColorInformationBlock
 
 MAX_UINT = 2 ** (struct.calcsize('I') * 8) - 1
 MAX_ULONG = 2 ** (struct.calcsize('L') * 8) - 1
@@ -28,7 +29,7 @@ class TestCortexGraphHeaderParsing(object):
     def test_raises_on_incorrect_magic_word(self, magic_word):
         assume(magic_word != b'CORTEX')
 
-        fh = CortexGraphBuilder().with_magic_word(magic_word).build()
+        fh = CortexGraphHeaderBuilder().with_magic_word(magic_word).build()
 
         with pytest.raises(CortexGraphParserException) as excinfo:
             CortexGraphHeader.from_stream(fh)
@@ -39,7 +40,7 @@ class TestCortexGraphHeaderParsing(object):
     def test_raises_on_incorrect_version(self, version):
         assume(version != 6)
 
-        fh = CortexGraphBuilder().with_version(version).build()
+        fh = CortexGraphHeaderBuilder().with_version(version).build()
 
         with pytest.raises(CortexGraphParserException) as excinfo:
             CortexGraphHeader.from_stream(fh)
@@ -47,7 +48,7 @@ class TestCortexGraphHeaderParsing(object):
         assert 'Saw version' in str(excinfo.value)
 
     def test_raises_on_invalid_kmer_size(self):
-        fh = CortexGraphBuilder().with_kmer_size(0).build()
+        fh = CortexGraphHeaderBuilder().with_kmer_size(0).build()
 
         with pytest.raises(CortexGraphParserException) as excinfo:
             CortexGraphHeader.from_stream(fh)
@@ -55,7 +56,7 @@ class TestCortexGraphHeaderParsing(object):
         assert 'Saw kmer size' in str(excinfo.value)
 
     def test_raises_on_invalid_kmer_bits(self):
-        fh = CortexGraphBuilder().with_kmer_size(3).with_kmer_bits(0).build()
+        fh = CortexGraphHeaderBuilder().with_kmer_size(3).with_kmer_bits(0).build()
 
         with pytest.raises(CortexGraphParserException) as excinfo:
             CortexGraphHeader.from_stream(fh)
@@ -63,7 +64,11 @@ class TestCortexGraphHeaderParsing(object):
         assert 'Saw kmer bits' in str(excinfo.value)
 
     def test_raises_on_invalid_num_colors(self):
-        fh = CortexGraphBuilder().with_kmer_size(3).with_kmer_bits(1).with_num_colors(0).build()
+        fh = (CortexGraphHeaderBuilder()
+              .with_kmer_size(3)
+              .with_kmer_bits(1)
+              .with_num_colors(0)
+              .build())
 
         with pytest.raises(CortexGraphParserException) as excinfo:
             CortexGraphHeader.from_stream(fh)
@@ -72,7 +77,7 @@ class TestCortexGraphHeaderParsing(object):
 
     @given(s.integers(min_value=1, max_value=10))
     def test_raises_when_concluding_magic_word_is_wrong(self, num_colors):
-        fh = (CortexGraphBuilder()
+        fh = (CortexGraphHeaderBuilder()
               .with_num_colors(num_colors)
               .with_mean_read_lengths([0 for _ in range(num_colors + 1)])
               .build())
@@ -101,7 +106,7 @@ class TestCortexGraphHeaderParsing(object):
             elements=s.binary(min_size=1, max_size=3), min_size=num_colors, max_size=num_colors)
         )
 
-        cgb = (CortexGraphBuilder()
+        cgb = (CortexGraphHeaderBuilder()
                .with_kmer_size(kmer_size)
                .with_kmer_bits(kmer_container_size)
                .with_num_colors(num_colors)
