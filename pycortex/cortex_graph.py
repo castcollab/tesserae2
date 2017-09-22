@@ -123,15 +123,12 @@ class CortexKmer(object):
     @property
     def kmer(self):
         if self._kmer is None:
-            letters = []
-            for index, byte in enumerate(self._raw_data[:self.kmer_container_size_in_uint64ts * 8]):
-                if index * 4 > self.kmer_size:
-                    break
-                letters.append(NUM_TO_LETTER[(byte & 0b11000000) >> 6])
-                letters.append(NUM_TO_LETTER[(byte & 0b110000) >> 4])
-                letters.append(NUM_TO_LETTER[(byte & 0b1100) >> 2])
-                letters.append(NUM_TO_LETTER[byte & 0b11])
-            self._kmer = tuple(letters[:self.kmer_size])
+            kmer = np.array(
+                list(self._raw_data[:self.kmer_container_size_in_uint64ts * 8]),
+                dtype=np.uint8
+            )
+            kmer = np.unpackbits(kmer).reshape(-1, 2) * np.array([2, 1])
+            self._kmer = tuple(NUM_TO_LETTER[num] for num in kmer.sum(axis=1)[:self.kmer_size])
         return self._kmer
 
     @property
