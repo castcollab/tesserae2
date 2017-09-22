@@ -1,5 +1,6 @@
 import struct
 from struct import unpack
+import numpy as np
 
 import attr
 
@@ -142,24 +143,15 @@ class CortexKmer(object):
             self._coverage = unpack(fmt_string, coverage_raw)
         return self._coverage
 
-    def get_coverage_for_color(self, color_num):
-        assert self.num_colors > color_num
-        return self.coverage[color_num]
-
     @property
     def edges(self):
         if self._edges is None:
             start = (
                 self.kmer_container_size_in_uint64ts * UINT64_T + self.num_colors * UINT32_T
             )
-            edge_bytes = self._raw_data[start:]
-            edges_by_color = []
-            for edge_color_num in range(self.num_colors):
-                edges = []
-                for bit_idx in range(BITS_IN_BYTE):
-                    edges.append((edge_bytes[edge_color_num] >> bit_idx) & 1 == 1)
-                edges_by_color.append(tuple(edges[::-1]))
-            self._edges = tuple(edges_by_color)
+            edge_bytes = list(self._raw_data[start:])
+            edge_sets = np.unpackbits(np.array(edge_bytes, dtype=np.uint8)).reshape(-1, 8)
+            self._edges = tuple(map(tuple, edge_sets))
         return self._edges
 
     def get_edge_number_for_color(self, edge_num, color_num=0):
