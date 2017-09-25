@@ -5,6 +5,7 @@ from bitstring import BitArray
 from struct import pack
 
 KMER_LETTER_TO_NUM = {'A': 0, 'C': 1, 'G': 2, 'T': 3}
+KMER_LETTER_TO_NUM_REVERSED_BITS = {'A': 0, 'C': 2, 'G': 1, 'T': 3}
 KMER_LETTER_NUM_TO_BIT_REPR = ('00', '01', '10', '11')
 KMER_CONTAINER_WORD_SIZE_IN_BITS = 64
 
@@ -35,8 +36,17 @@ class KmerRecord(object):
     def pack_kmer(self):
         kmer_string = ''.join(self.kmer).upper()
         bit_groups = []
-        for letter in kmer_string:
-            bit_groups.append(KMER_LETTER_NUM_TO_BIT_REPR[KMER_LETTER_TO_NUM[letter]])
+        for letter_group_idx in range(ceil(len(kmer_string)/4)):
+            bit_group = []
+            for letter_num in range(4):
+                letter_idx = letter_num + letter_group_idx * 4
+                if letter_idx >= len(kmer_string):
+                    bit_group.insert(0, '00')
+                else:
+                    bit_group.append(KMER_LETTER_NUM_TO_BIT_REPR[
+                        KMER_LETTER_TO_NUM[kmer_string[letter_idx]]
+                    ])
+            bit_groups.extend(bit_group)
         expected_packed_kmer_size_in_bit_groups = self.kmer_container_size_in_uint64ts * 32
         assert len(bit_groups) <= expected_packed_kmer_size_in_bit_groups
         missing_bit_groups = expected_packed_kmer_size_in_bit_groups - len(bit_groups)

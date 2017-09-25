@@ -3,6 +3,7 @@ from struct import unpack
 import numpy as np
 
 import attr
+from math import floor
 
 CORTEX_MAGIC_WORD = (b'C', b'O', b'R', b'T', b'E', b'X')
 CORTEX_VERSION = 6
@@ -100,14 +101,13 @@ class CortexGraphHeader(object):
 def kmer_generator_from_stream(stream, cortex_header):
     record_size = cortex_header.kmer_container_size * UINT64_T + 5 * cortex_header.num_colors
 
-    while True:
-        raw_record = stream.read(record_size)
-        if raw_record == '':
-            return
+    raw_record = stream.read(record_size)
+    while raw_record != b'':
         yield CortexKmer(raw_record,
                          cortex_header.kmer_size,
                          cortex_header.num_colors,
                          cortex_header.kmer_container_size)
+        raw_record = stream.read(record_size)
 
 
 @attr.s(slots=True)
@@ -119,16 +119,25 @@ class CortexKmer(object):
     _kmer = attr.ib(None)
     _coverage = attr.ib(None)
     _edges = attr.ib(None)
+    _kmer_vals_to_delete = attr.ib(init=False)
+
+    def __attrs_post_init__(self):
+        n_vals_left_over = self.kmer_size % 4
+        n_vals_to_remove = 4 - n_vals_left_over
+        if n_vals_to_remove > 0:
+            self._kmer_vals_to_delete = (
+                np.arange(0, n_vals_to_remove) + self.kmer_size - n_vals_left_over
+            )
 
     @property
     def kmer(self):
         if self._kmer is None:
-            kmer = np.array(
-                list(self._raw_data[:self.kmer_container_size_in_uint64ts * 8]),
-                dtype=np.uint8
-            )
-            kmer = np.unpackbits(kmer).reshape(-1, 2) * np.array([2, 1])
-            self._kmer = tuple(NUM_TO_LETTER[num] for num in kmer.sum(axis=1)[:self.kmer_size])
+            kmer_as_uints = np.frombuffer(self._raw_data[:self.kmer_container_size_in_uint64ts * 8],
+                                          dtype=np.uint8)
+            kmer_as_properly_ordered_bits = np.unpackbits(kmer_as_uints)
+            kmer = (kmer_as_properly_ordered_bits.reshape(-1, 2) * np.array([2, 1])).sum(1)
+            kmer = np.delete(kmer, self._kmer_vals_to_delete)
+            self._kmer = tuple(NUM_TO_LETTER[num] for num in kmer[:self.kmer_size])
         return self._kmer
 
     @property
@@ -147,8 +156,13 @@ class CortexKmer(object):
                 self.kmer_container_size_in_uint64ts * UINT64_T + self.num_colors * UINT32_T
             )
             edge_bytes = list(self._raw_data[start:])
-            edge_sets = np.unpackbits(np.array(edge_bytes, dtype=np.uint8)).reshape(-1, 8)
-            self._edges = tuple(map(tuple, edge_sets))
+            edge_sets = np.unpackbits(np.array(edge_bytes, dtype=np.uint8)).reshape(-1, 4)
+            incoming_edge_sets = edge_sets[::2]
+            outgoing_edge_sets = np.fliplr(edge_sets[1::2])
+            edge_sets = np.empty(edge_sets.size, dtype=edge_sets.dtype).reshape(-1, 4)
+            edge_sets[::2] = incoming_edge_sets
+            edge_sets[1::2] = outgoing_edge_sets
+            self._edges = tuple(map(tuple, edge_sets.reshape(-1, 8)))
         return self._edges
 
     def get_edge_number_for_color(self, edge_num, color_num=0):
@@ -156,10 +170,12 @@ class CortexKmer(object):
 
 
 @attr.s(slots=True)
-class CortexGraph(object):
-    header = attr.ib()
+class CortexGraphFromStream(object):
+    fh = attr.ib()
+    header = attr.ib(init=False)
 
-    @classmethod
-    def from_stream(self, fh):
-        header = CortexGraphHeader.from_stream(fh)
-        return CortexGraph(header=header)
+    def __attrs_post_init__(self):
+        self.header = CortexGraphHeader.from_stream(self.fh)
+
+    def kmers(self):
+        return kmer_generator_from_stream(self.fh, self.header)
