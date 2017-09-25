@@ -157,11 +157,7 @@ class CortexKmer(object):
             )
             edge_bytes = list(self._raw_data[start:])
             edge_sets = np.unpackbits(np.array(edge_bytes, dtype=np.uint8)).reshape(-1, 4)
-            incoming_edge_sets = edge_sets[::2]
-            outgoing_edge_sets = np.fliplr(edge_sets[1::2])
-            edge_sets = np.empty(edge_sets.size, dtype=edge_sets.dtype).reshape(-1, 4)
-            edge_sets[::2] = incoming_edge_sets
-            edge_sets[1::2] = outgoing_edge_sets
+            edge_sets[1::2] = np.fliplr(edge_sets[1::2])
             self._edges = tuple(map(tuple, edge_sets.reshape(-1, 8)))
         return self._edges
 
