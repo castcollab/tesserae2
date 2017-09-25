@@ -4,9 +4,15 @@ python:
     - "3.5"
     - "3.6"
 
-before_install:
-  - sudo apt-get -qq update
-  - sudo apt-get install -y libbz2-dev liblzma-dev
+os:
+  - linux
+
+# For linux systems
+addons:
+  apt:
+    packages:
+    - liblzma-dev
+    - libbz2-dev
 
 install: "make init"
 
