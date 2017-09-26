@@ -18,4 +18,4 @@ install: "make init"
 
 # command to run tests
 script:
-    - make test HYPOTHESIS_PROFILE=ci
+    - BIN_DIR=./bin make test HYPOTHESIS_PROFILE=ci
