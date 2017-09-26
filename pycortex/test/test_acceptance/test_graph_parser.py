@@ -26,7 +26,7 @@ class TestCortexGraphParsing(object):
         dna_sequence = 'ACGTT'
         kmer_size = 3
         input_fasta = tmpdir.join('input.fasta')
-        output_graph = tmpdir.join('output.ctx')
+        output_graph = str(tmpdir.join('output.ctx'))
         input_fasta.write(SeqRecord(Seq(dna_sequence)).format('fasta'))
 
         expected_header = CortexGraphHeader(version=6,
