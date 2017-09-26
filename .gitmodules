@@ -6,4 +6,4 @@
 	url = https://github.com/noporpoise/bioinf-perl.git
 [submodule "libs/mccortex"]
 	path = libs/mccortex
-	url = https://github.com/mcveanlab/mccortex.git
+	url = https://github.com/mcveanlab/mccortex
