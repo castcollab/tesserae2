@@ -10,7 +10,7 @@ init: update
 
 update:
 	git submodule update --init --recursive
-	cd libs/mccortex/libs/htslib && git checkout 6c06833 # check out 1.4.1 release
+	cd libs/mccortex/libs/htslib && git checkout 49fdfbd # check out 1.5.0 release
 
 test:
 	pipenv run pytest pycortex --pep8 --hypothesis-profile $(HYPOTHESIS_PROFILE)
