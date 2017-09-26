@@ -11,7 +11,9 @@ KMER_CONTAINER_WORD_SIZE_IN_BITS = 64
 
 
 def pack_edge_set(edge_set):
-    edge = BitArray('0b' + ''.join([str(int(flag)) for flag in edge_set]))
+    edge_set = [str(flag) for flag in edge_set]
+    edge_set = edge_set[:4] + list(reversed(edge_set[4:]))
+    edge = BitArray('0b' + ''.join(edge_set))
     return edge.tobytes()
 
 

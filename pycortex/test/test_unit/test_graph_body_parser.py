@@ -15,7 +15,7 @@ def kmers(draw, kmer_size, num_colors):
     coverage = tuple(
         draw(s.lists(s.integers(min_value=0), min_size=num_colors, max_size=num_colors)))
     edges = draw(s.lists(
-        s.lists(s.booleans(), min_size=8, max_size=8),
+        s.lists(s.integers(min_value=0, max_value=1), min_size=8, max_size=8),
         min_size=num_colors,
         max_size=num_colors))
     edges = tuple([tuple(edge_set) for edge_set in edges])
