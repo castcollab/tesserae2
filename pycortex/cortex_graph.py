@@ -1,4 +1,5 @@
 import struct
+from io import SEEK_END
 from struct import unpack
 import numpy as np
 
@@ -7,6 +8,7 @@ from math import floor
 
 CORTEX_MAGIC_WORD = (b'C', b'O', b'R', b'T', b'E', b'X')
 CORTEX_VERSION = 6
+UINT8_T = 1
 UINT32_T = 4
 UINT64_T = 8
 BITS_IN_BYTE = 8
@@ -26,6 +28,7 @@ class CortexGraphHeader(object):
     mean_read_lengths = attr.ib()
     mean_total_sequence = attr.ib()
     sample_names = attr.ib()
+    record_size = attr.ib()
 
     @classmethod
     def from_stream(cls, fh):
@@ -49,8 +52,8 @@ class CortexGraphHeader(object):
                 "Saw kmer size {} but was expecting value > 0".format(kmer_size)
             )
 
-        kmer_bytes = header[2]
-        if kmer_bytes <= 0:
+        kmer_container_size = header[2]
+        if kmer_container_size <= 0:
             raise CortexGraphParserException(
                 "Saw kmer bits {} but was expecting value > 0".format(kmer_size)
             )
@@ -90,12 +93,15 @@ class CortexGraphHeader(object):
             raise CortexGraphParserException(
                 "Concluding magic word {} != starting magic word {}".format(concluding_magic_word,
                                                                             magic_word))
+
+        record_size = UINT64_T * kmer_container_size + (UINT32_T + UINT8_T) * num_colors
         return CortexGraphHeader(version=version, kmer_size=kmer_size,
-                                 kmer_container_size=kmer_bytes,
+                                 kmer_container_size=kmer_container_size,
                                  num_colors=num_colors,
                                  mean_read_lengths=mean_read_lengths,
                                  mean_total_sequence=mean_total_sequence,
-                                 sample_names=sample_names)
+                                 sample_names=sample_names,
+                                 record_size=record_size)
 
 
 def kmer_generator_from_stream(stream, cortex_header):
@@ -137,7 +143,7 @@ class CortexKmer(object):
             kmer_as_properly_ordered_bits = np.unpackbits(kmer_as_uints)
             kmer = (kmer_as_properly_ordered_bits.reshape(-1, 2) * np.array([2, 1])).sum(1)
             kmer = np.delete(kmer, self._kmer_vals_to_delete)
-            self._kmer = tuple(NUM_TO_LETTER[num] for num in kmer[:self.kmer_size])
+            self._kmer = ''.join(NUM_TO_LETTER[num] for num in kmer[:self.kmer_size])
         return self._kmer
 
     @property
@@ -166,7 +172,7 @@ class CortexKmer(object):
 
 
 @attr.s(slots=True)
-class CortexGraphFromStream(object):
+class CortexGraphStreamingParser(object):
     fh = attr.ib()
     header = attr.ib(init=False)
 
@@ -175,3 +181,41 @@ class CortexGraphFromStream(object):
 
     def kmers(self):
         return kmer_generator_from_stream(self.fh, self.header)
+
+
+@attr.s(slots=True)
+class CortexGraphRandomAccessParser(object):
+    fh = attr.ib()
+    header = attr.ib(init=False)
+    body_start_stream_position = attr.ib(init=False)
+    n_records = attr.ib(init=False)
+
+    def __attrs_post_init__(self):
+        assert self.fh.seekable()
+        self.fh.seek(0)
+        self.header = CortexGraphHeader.from_stream(self.fh)
+        self.body_start_stream_position = self.fh.tell()
+
+        self.fh.seek(0, SEEK_END)
+        body_size = self.fh.tell() - self.body_start_stream_position
+        if body_size % self.header.record_size != 0:
+            raise Exception(
+                "Body size ({}) % Record size ({}) != 0".format(body_size, self.header.record_size))
+        self.n_records = body_size // self.header.record_size
+
+    def get_kmer(self, kmer_string):
+        body_start = self.body_start_stream_position
+        record_size = self.header.record_size
+        for record_idx in range(self.n_records):
+            self.fh.seek(body_start + record_size * record_idx)
+            raw_record = self.fh.read(record_size)
+            print(raw_record)
+            kmer = CortexKmer(raw_record,
+                              self.header.kmer_size,
+                              self.header.num_colors,
+                              self.header.kmer_container_size)
+            if kmer.kmer == kmer_string:
+                return kmer
+            else:
+                print("Search ({}) != candidate ({})".format(kmer_string, kmer.kmer))
+        raise Exception("Could not find kmer '{}'".format(kmer_string))

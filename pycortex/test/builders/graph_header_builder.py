@@ -43,7 +43,7 @@ class CortexGraphHeaderBuilder(object):
     magic_word = attr.ib(b'CORTEX')
     version = attr.ib(6)
     kmer_size = attr.ib(1)
-    kmer_bits = attr.ib(1)
+    kmer_container_size = attr.ib(1)
     num_colors = attr.ib(1)
     error_rate = attr.ib(bytes(16))
     _mean_read_lengths = attr.ib(None)
@@ -90,8 +90,8 @@ class CortexGraphHeaderBuilder(object):
         self.kmer_size = kmer_size
         return self
 
-    def with_kmer_bits(self, kmer_bits):
-        self.kmer_bits = kmer_bits
+    def with_kmer_container_size(self, kmer_container_size):
+        self.kmer_container_size = kmer_container_size
         return self
 
     def with_num_colors(self, num_colors):
@@ -121,7 +121,7 @@ class CortexGraphHeaderBuilder(object):
     def build(self):
         header_string = (
             self.magic_word +
-            pack('IIII', self.version, self.kmer_size, self.kmer_bits, self.num_colors) +
+            pack('IIII', self.version, self.kmer_size, self.kmer_container_size, self.num_colors) +
             pack('{}I'.format(len(self.mean_read_lengths)), *self.mean_read_lengths) +
             pack('{}L'.format(len(self.total_sequence)), *self.total_sequence)
         )
