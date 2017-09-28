@@ -1,8 +1,5 @@
-from io import BytesIO
-
 from hypothesis import given
 from hypothesis import strategies as s
-from math import ceil
 
 from pycortex.cortex_graph import CortexGraphRandomAccessParser
 from pycortex.test.builders.graph_body_builder import kmers
@@ -19,7 +16,7 @@ class TestGetKmer(object):
         builder = CortexGraphBuilder()
         builder.with_kmer_size(kmer_size)
         builder.with_num_colors(num_colors)
-        builder.sort_kmers = True
+        builder.with_sorted_kmers()
 
         expected_kmers = []
         seen_kmers = set()
@@ -36,7 +33,6 @@ class TestGetKmer(object):
         # when
         for expected_kmer in expected_kmers:
             kmer = cg.get_kmer(expected_kmer.kmer)
-            assert kmer
 
             # then
             assert expected_kmer.kmer == kmer.kmer

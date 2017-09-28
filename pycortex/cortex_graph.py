@@ -1,4 +1,6 @@
 import struct
+from bisect import bisect_left
+from collections import Sequence
 from io import SEEK_END
 from struct import unpack
 import numpy as np
@@ -171,6 +173,23 @@ class CortexKmer(object):
         return self.edges[color_num][edge_num]
 
 
+class CortexKmerComparator(object):
+    def __init__(self, *, kmer=None, kmer_object=None):
+        self.kmer = kmer
+        self.kmer_object = kmer_object
+        if self.kmer is None:
+            self.kmer = self.kmer_object.kmer
+
+    def __eq__(self, other):
+        return self.kmer == other.kmer
+
+    def __lt__(self, other):
+        return self.kmer < other.kmer
+
+    def __repr__(self):
+        return self.kmer
+
+
 @attr.s(slots=True)
 class CortexGraphStreamingParser(object):
     fh = attr.ib()
@@ -183,36 +202,81 @@ class CortexGraphStreamingParser(object):
         return kmer_generator_from_stream(self.fh, self.header)
 
 
+@attr.s()
+class CortexGraphKmerRecordSequence(Sequence):
+    fh = attr.ib()
+    cortex_header = attr.ib()
+    body_start = attr.ib()
+    n_records = attr.ib()
+    record_size = attr.ib(init=False)
+    num_colors = attr.ib(init=False)
+    kmer_size = attr.ib(init=False)
+    kmer_container_size = attr.ib(init=False)
+
+    def __attrs_post_init__(self):
+        self.record_size = self.cortex_header.record_size
+        self.kmer_size = self.cortex_header.kmer_size
+        self.num_colors = self.cortex_header.num_colors
+        self.kmer_container_size = self.cortex_header.kmer_container_size
+
+    def __getitem__(self, item):
+        if not isinstance(item, int):
+            raise TypeError("Index must be of type int")
+        if item >= self.n_records or item < 0:
+            raise IndexError("Index ({}) is out of range".format(item))
+        self.fh.seek(self.body_start + self.record_size * item)
+        kmer_bytes = self.fh.read(self.record_size)
+        return CortexKmerComparator(
+            kmer_object=CortexKmer(
+                kmer_bytes,
+                kmer_size=self.kmer_size,
+                num_colors=self.num_colors,
+                kmer_container_size_in_uint64ts=self.kmer_container_size,
+            )
+        )
+
+    def __len__(self):
+        return self.n_records
+
+
 @attr.s(slots=True)
 class CortexGraphRandomAccessParser(object):
     fh = attr.ib()
     header = attr.ib(init=False)
-    body_start_stream_position = attr.ib(init=False)
-    n_records = attr.ib(init=False)
+    graph_sequence = attr.ib(init=False)
 
     def __attrs_post_init__(self):
         assert self.fh.seekable()
         self.fh.seek(0)
         self.header = CortexGraphHeader.from_stream(self.fh)
-        self.body_start_stream_position = self.fh.tell()
+        body_start_stream_position = self.fh.tell()
 
         self.fh.seek(0, SEEK_END)
-        body_size = self.fh.tell() - self.body_start_stream_position
+        body_size = self.fh.tell() - body_start_stream_position
         if body_size % self.header.record_size != 0:
             raise Exception(
                 "Body size ({}) % Record size ({}) != 0".format(body_size, self.header.record_size))
-        self.n_records = body_size // self.header.record_size
+        n_records = body_size // self.header.record_size
+        self.graph_sequence = CortexGraphKmerRecordSequence(fh=self.fh,
+                                                            body_start=body_start_stream_position,
+                                                            cortex_header=self.header,
+                                                            n_records=n_records)
 
     def get_kmer(self, kmer_string):
-        body_start = self.body_start_stream_position
-        record_size = self.header.record_size
-        for record_idx in range(self.n_records):
-            self.fh.seek(body_start + record_size * record_idx)
-            raw_record = self.fh.read(record_size)
-            kmer = CortexKmer(raw_record,
-                              self.header.kmer_size,
-                              self.header.num_colors,
-                              self.header.kmer_container_size)
-            if kmer.kmer == kmer_string:
-                return kmer
-        raise Exception("Could not find kmer '{}'".format(kmer_string))
+        kmer = CortexKmerComparator(kmer=kmer_string)
+        kmer_comparator = index(self.graph_sequence, kmer, retrieve=True)
+        return kmer_comparator.kmer_object
+
+
+# copied from https://docs.python.org/3.6/library/bisect.html
+def index(a, x, retrieve=False):
+    'Locate the leftmost value exactly equal to x'
+    i = bisect_left(a, x)
+    if i != len(a):
+        val = a[i]
+        if val == x:
+            if retrieve:
+                return val
+            else:
+                return i
+    raise ValueError("Could not find '{}'".format(x))

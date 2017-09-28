@@ -11,8 +11,9 @@ class CortexGraphBuilder(object):
     header = attr.ib(Factory(CortexGraphHeaderBuilder))
     body = attr.ib(Factory(CortexGraphBodyBuilder))
 
-    def sort_kmers(self, bool):
-        self.body.sort_kmers = bool
+    def with_sorted_kmers(self):
+        self.body.sort_kmers = True
+        return self
 
     def with_kmer_size(self, size):
         self.body.kmer_size = size
