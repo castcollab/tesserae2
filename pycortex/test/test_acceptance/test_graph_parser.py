@@ -91,13 +91,9 @@ class TestCortexGraph(object):
 
     def test_parses_a_graph(self, tmpdir):
         # given
-        sample_name = b'sample_0'
-        dna_sequence = 'ACGTT'
-        kmer_size = 3
-
         factory = (MccortexFactory()
-                   .with_dna_sequence(sample_name, dna_sequence)
-                   .with_kmer_size(kmer_size))
+                   .with_dna_sequence(b'sample_0', 'ACGTT')
+                   .with_kmer_size(3))
 
         expected_kmers = [
             KmerRecord('AAC', (1,), (as_edge_set('......G.'),)),
@@ -122,13 +118,10 @@ class TestCortexGraph(object):
 
     def test_retrieves_kmer_by_random_access(self, tmpdir):
         # given
-        sample_name = b'sample_0'
-        dna_sequence = 'ACGTTT'
-        kmer_size = 3
-
         factory = (MccortexFactory()
-                   .with_dna_sequence(sample_name, dna_sequence)
-                   .with_kmer_size(kmer_size))
+                   .with_dna_sequence(b'sample_0', 'ACGTTT')
+                   .with_kmer_size(3))
+
         expected = KmerRecord('AAC', (1,), (as_edge_set('A.....G.'),))
         output_graph = factory.build(tmpdir)
         check_call([MCCORTEX, 'view', '-k', output_graph])
