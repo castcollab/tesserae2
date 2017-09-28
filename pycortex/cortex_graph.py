@@ -209,13 +209,10 @@ class CortexGraphRandomAccessParser(object):
         for record_idx in range(self.n_records):
             self.fh.seek(body_start + record_size * record_idx)
             raw_record = self.fh.read(record_size)
-            print(raw_record)
             kmer = CortexKmer(raw_record,
                               self.header.kmer_size,
                               self.header.num_colors,
                               self.header.kmer_container_size)
             if kmer.kmer == kmer_string:
                 return kmer
-            else:
-                print("Search ({}) != candidate ({})".format(kmer_string, kmer.kmer))
         raise Exception("Could not find kmer '{}'".format(kmer_string))
