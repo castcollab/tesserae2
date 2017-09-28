@@ -22,7 +22,7 @@ pipenv shell
 
 #### Finish Cortex Graph
 - [X] Implement straight up iteration over .ctx file
-- [ ] Implement log(n) random access to sorted .ctx file
+- [X] Implement log(n) random access to sorted .ctx file
 - [ ] Implement CortexJDK Print method
 
 #### Provide Cortex Graph adapter for use with networkx
