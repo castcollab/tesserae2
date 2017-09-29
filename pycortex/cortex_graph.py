@@ -118,6 +118,26 @@ def kmer_generator_from_stream(stream, cortex_header):
         raw_record = stream.read(record_size)
 
 
+def edge_set_as_string(edge_set):
+    letters = []
+    for idx, edge in enumerate(edge_set):
+        letter = NUM_TO_LETTER[idx % 4]
+        if idx < 4:
+            letter = letter.lower()
+        if edge:
+            letters.append(letter)
+        else:
+            letters.append('.')
+
+    return ''.join(letters)
+
+
+def cortex_kmer_as_cortex_jdk_print_string(kmer):
+    edge_set_strings = [edge_set_as_string(edge_set) for edge_set in kmer.edges]
+    return '{} {} {}'.format(kmer.kmer, ' '.join(map(str, kmer.coverage)),
+                             ' '.join(edge_set_strings))
+
+
 @attr.s(slots=True)
 class CortexKmer(object):
     _raw_data = attr.ib()
@@ -140,12 +160,17 @@ class CortexKmer(object):
     @property
     def kmer(self):
         if self._kmer is None:
-            kmer_as_uints = np.frombuffer(self._raw_data[:self.kmer_container_size_in_uint64ts * 8],
-                                          dtype=np.uint8)
-            kmer_as_properly_ordered_bits = np.unpackbits(kmer_as_uints)
-            kmer = (kmer_as_properly_ordered_bits.reshape(-1, 2) * np.array([2, 1])).sum(1)
-            kmer = np.delete(kmer, self._kmer_vals_to_delete)
-            self._kmer = ''.join(NUM_TO_LETTER[num] for num in kmer[:self.kmer_size])
+            kmer_as_uint64ts = np.frombuffer(
+                self._raw_data[:self.kmer_container_size_in_uint64ts * 8],
+                dtype='<u8')
+            kmer_as_uint64ts_be = kmer_as_uint64ts.byteswap().newbyteorder()  # change to big endian
+            kmer_as_properly_ordered_bits_right_aligned = np.unpackbits(
+                np.frombuffer(kmer_as_uint64ts_be.tobytes(), dtype=np.uint8)
+            )
+            kmer = (
+                kmer_as_properly_ordered_bits_right_aligned.reshape(-1, 2) * np.array([2, 1])
+            ).sum(1)
+            self._kmer = ''.join(NUM_TO_LETTER[num] for num in kmer[(len(kmer) - self.kmer_size):])
         return self._kmer
 
     @property

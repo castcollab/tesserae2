@@ -1,62 +1,9 @@
-import os
-from itertools import repeat
-
-import attr
-from Bio.Seq import Seq
-from Bio.SeqRecord import SeqRecord
-from subprocess import check_call, check_output
-
-from os.path import join
-
-from attr import Factory
+from subprocess import check_call
 
 from pycortex.cortex_graph import CortexGraphHeader, CortexGraphStreamingParser, \
     CortexGraphRandomAccessParser
-from pycortex.test.builders.graph_body_builder import KmerRecord
-
-BIN_DIR = os.environ['BIN_DIR']
-MCCORTEX = join(BIN_DIR, 'mccortex31')
-
-
-def as_edge_set(edge_set_string):
-    assert len(edge_set_string) == 8
-    return tuple([edge != '.' for edge in edge_set_string])
-
-
-@attr.s
-class MccortexFactory(object):
-    kmer_size = attr.ib(3)
-    sequences = attr.ib(Factory(list))
-
-    def with_kmer_size(self, kmer_size):
-        self.kmer_size = kmer_size
-        return self
-
-    def with_dna_sequence(self, name, sequence):
-        self.sequences.append((name, sequence))
-        return self
-
-    def build(self, tmpdir):
-        command = [MCCORTEX, 'build', '--sort', '--kmer', str(self.kmer_size)]
-        input_fasta = str(tmpdir.join('input.fasta'))
-        with open(input_fasta, 'w') as fh:
-            for name, dna_sequence in self.sequences:
-                fh.write(SeqRecord(Seq(dna_sequence)).format('fasta'))
-                command.extend(['--sample', name, '-1', input_fasta])
-
-        output_graph = str(tmpdir.join('output.ctx'))
-        command.append(output_graph)
-
-        check_call(command)
-
-        return output_graph
-
-
-def print_kmer(kmer):
-    print(kmer)
-    print(kmer.kmer)
-    print(kmer.coverage)
-    print(kmer.edges)
+from pycortex.test.builders.graph_body_builder import KmerRecord, as_edge_set, print_kmer
+from pycortex.test.builders.mccortex_builder import MCCORTEX, MccortexFactory
 
 
 class TestCortexGraph(object):
@@ -136,3 +83,29 @@ class TestCortexGraph(object):
         assert actual.kmer == expected.kmer
         assert actual.coverage == expected.coverage
         assert actual.edges == expected.edges
+
+    def test_parses_a_graph_with_kmer_size_9(self, tmpdir):
+        # given
+        factory = (MccortexFactory()
+                   .with_dna_sequence(b'sample_0', 'ACGTTCCCC')
+                   .with_kmer_size(9))
+
+        expected_kmers = [
+            KmerRecord('ACGTTCCCC', (1,), (as_edge_set('........'),)),
+        ]
+
+        # when
+        output_graph = factory.build(tmpdir)
+
+        check_call([MCCORTEX, 'view', '-k', output_graph])
+
+        cg = CortexGraphStreamingParser(open(output_graph, 'rb'))
+
+        # then
+        actual_kmers = list(cg.kmers())
+        for kmer in actual_kmers:
+            print_kmer(kmer)
+        for expected_kmer, kmer in zip(expected_kmers, actual_kmers):
+            assert kmer.kmer == expected_kmer.kmer
+            assert kmer.coverage == expected_kmer.coverage
+            assert kmer.edges == expected_kmer.edges

@@ -1,3 +1,5 @@
+import struct
+
 import attr
 from attr import Factory
 from math import ceil
@@ -7,10 +9,13 @@ from struct import pack
 from hypothesis import strategies as s
 from io import BytesIO
 
+from pycortex.test.test_unit.test_cortex_graph.test_header_parser import UINT64_T
+
 KMER_LETTER_TO_NUM = {'A': 0, 'C': 1, 'G': 2, 'T': 3}
 KMER_LETTER_TO_NUM_REVERSED_BITS = {'A': 0, 'C': 2, 'G': 1, 'T': 3}
 KMER_LETTER_NUM_TO_BIT_REPR = ('00', '01', '10', '11')
 KMER_CONTAINER_WORD_SIZE_IN_BITS = 64
+LETTERS_PER_UINT64_T = UINT64_T * 4
 
 
 def pack_edge_set(edge_set):
@@ -25,7 +30,10 @@ class KmerRecord(object):
     kmer = attr.ib()
     coverage = attr.ib()
     edges = attr.ib()
-    kmer_container_size_in_uint64ts = attr.ib(1)
+
+    @property
+    def kmer_container_size_in_uint64ts(self):
+        return ceil(len(self.kmer) / LETTERS_PER_UINT64_T)
 
     def __attrs_post_init__(self):
         assert len(self.edges) == len(self.coverage)
@@ -40,25 +48,19 @@ class KmerRecord(object):
 
     def pack_kmer(self):
         kmer_string = ''.join(self.kmer).upper()
-        bit_groups = []
-        for letter_group_idx in range(ceil(len(kmer_string) / 4)):
-            bit_group = []
-            for letter_num in range(4):
-                letter_idx = letter_num + letter_group_idx * 4
-                if letter_idx >= len(kmer_string):
-                    bit_group.insert(0, '00')
-                else:
-                    bit_group.append(KMER_LETTER_NUM_TO_BIT_REPR[
-                                         KMER_LETTER_TO_NUM[kmer_string[letter_idx]]
-                                     ])
-            bit_groups.extend(bit_group)
-        expected_packed_kmer_size_in_bit_groups = self.kmer_container_size_in_uint64ts * 32
-        assert len(bit_groups) <= expected_packed_kmer_size_in_bit_groups
-        missing_bit_groups = expected_packed_kmer_size_in_bit_groups - len(bit_groups)
-        for _ in range(missing_bit_groups):
-            bit_groups.append('00')
-        bits = BitArray('0b' + ''.join(bit_groups))
-        return bits.tobytes()
+        kmer_longs = []
+        kmer = 0
+        for letter_idx, letter in enumerate(reversed(kmer_string)):
+            if letter_idx % LETTERS_PER_UINT64_T == 0 and letter_idx > 0:
+                kmer_longs.append(kmer)
+                kmer = 0
+            kmer |= KMER_LETTER_TO_NUM[letter] << (letter_idx % LETTERS_PER_UINT64_T) * 2
+        kmer_longs.append(kmer)
+        kmer_longs = list(reversed(kmer_longs))
+        kmer_bytes = b''
+        for long in kmer_longs:
+            kmer_bytes += struct.pack('<Q', long)
+        return kmer_bytes
 
 
 @attr.s(slots=True)
@@ -92,7 +94,7 @@ class CortexGraphBodyBuilder(object):
             edges_per_color = [edges_per_color]
         assert self.kmer_container_size >= len(kmer.kmer) / 32
         self.kmer_records.append(
-            KmerRecord(kmer.kmer, coverage_per_color, edges_per_color, self.kmer_container_size))
+            KmerRecord(kmer.kmer, coverage_per_color, edges_per_color))
         return self
 
     def build(self):
@@ -115,3 +117,15 @@ def kmers(draw, kmer_size, num_colors):
         max_size=num_colors))
     edges = tuple([tuple(edge_set) for edge_set in edges])
     return KmerRecord(kmer, coverage, edges)
+
+
+def as_edge_set(edge_set_string):
+    assert len(edge_set_string) == 8
+    return tuple([edge != '.' for edge in edge_set_string])
+
+
+def print_kmer(kmer):
+    print(kmer)
+    print(kmer.kmer)
+    print(kmer.coverage)
+    print(kmer.edges)
