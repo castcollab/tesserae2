@@ -37,7 +37,7 @@ class TestPrintCommand(object):
         assert [expected_kmer] == PycortexPrintOutputParser(
             pycortex_output.getvalue()).get_kmer_strings()
 
-    def test_prints_three_kmers(self, tmpdir):
+    def test_with_record_prints_three_kmers(self, tmpdir):
         # given
         record = 'ACCAA'
         factory = (MccortexFactory()
@@ -50,6 +50,30 @@ class TestPrintCommand(object):
             'ACC: ACC 1 ....A...',
             'CCA: CCA 1 a...A...',
             'CAA: CAA 1 .c......',
+        ]
+
+        # when
+        pycortex_output = io.StringIO()
+        with contextlib.redirect_stdout(pycortex_output):
+            main(['print', '--graph', output_graph, '--record', record])
+
+        # then
+        assert expected_kmers == PycortexPrintOutputParser(
+            pycortex_output.getvalue()).get_kmer_strings()
+
+    def test_with_record_prints_three_kmers_including_one_revcomp(self, tmpdir):
+        # given
+        record = 'ACCTT'
+        factory = (MccortexFactory()
+                   .with_dna_sequence(b'sample_0', record)
+                   .with_kmer_size(3))
+        output_graph = factory.build(tmpdir)
+        check_call([MCCORTEX, 'view', '-k', output_graph])
+
+        expected_kmers = [
+            'ACC: ACC 1 .......T',
+            'AGG: CCT 1 A......t',
+            'AAG: CTT 1 .C......',
         ]
 
         # when

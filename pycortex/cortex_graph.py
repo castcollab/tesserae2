@@ -118,10 +118,16 @@ def kmer_generator_from_stream(stream, cortex_header):
         raw_record = stream.read(record_size)
 
 
-def edge_set_as_string(edge_set):
+def edge_set_as_string(edge_set, is_revcomp=False):
     letters = []
+
+    if is_revcomp:
+        num_to_letter = list(reversed(NUM_TO_LETTER))
+    else:
+        num_to_letter = NUM_TO_LETTER
+
     for idx, edge in enumerate(edge_set):
-        letter = NUM_TO_LETTER[idx % 4]
+        letter = num_to_letter[idx % 4]
         if idx < 4:
             letter = letter.lower()
         if edge:
@@ -129,11 +135,22 @@ def edge_set_as_string(edge_set):
         else:
             letters.append('.')
 
+    if is_revcomp:
+        incoming, outgoing = letters[:4], letters[4:]
+        incoming, outgoing = list(reversed(incoming)), list(reversed(outgoing))
+        letters = outgoing + incoming
+
     return ''.join(letters)
 
 
 def cortex_kmer_as_cortex_jdk_print_string(kmer, alt_kmer_string=None):
-    edge_set_strings = [edge_set_as_string(edge_set) for edge_set in kmer.edges]
+    if alt_kmer_string is not None and kmer.kmer != alt_kmer_string:
+        is_revcomp = True
+    else:
+        is_revcomp = False
+
+    edge_set_strings = [edge_set_as_string(edge_set, is_revcomp=is_revcomp) for edge_set in
+                        kmer.edges]
     to_print = [str(kmer.kmer)]
     if alt_kmer_string is not None:
         to_print.append(': ' + alt_kmer_string)
