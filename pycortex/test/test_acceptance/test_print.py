@@ -84,3 +84,27 @@ class TestPrintCommand(object):
         # then
         assert expected_kmers == PycortexPrintOutputParser(
             pycortex_output.getvalue()).get_kmer_strings()
+
+    def test_prints_three_kmers_including_one_revcomp(self, tmpdir):
+        # given
+        record = 'ACCTT'
+        factory = (MccortexFactory()
+                   .with_dna_sequence(b'sample_0', record)
+                   .with_kmer_size(3))
+        output_graph = factory.build(tmpdir)
+        check_call([MCCORTEX, 'view', '-k', output_graph])
+
+        expected_kmers = [
+            'AAG 1 ......G.',
+            'ACC 1 .......T',
+            'AGG 1 a......T',
+        ]
+
+        # when
+        pycortex_output = io.StringIO()
+        with contextlib.redirect_stdout(pycortex_output):
+            main(['print', '--graph', output_graph])
+
+        # then
+        assert expected_kmers == PycortexPrintOutputParser(
+            pycortex_output.getvalue()).get_kmer_strings()
