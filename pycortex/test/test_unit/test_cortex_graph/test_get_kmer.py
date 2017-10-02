@@ -1,7 +1,8 @@
+import pytest
 from hypothesis import given
 from hypothesis import strategies as s
 
-from pycortex.cortex_graph import CortexGraphRandomAccessParser
+from pycortex.cortex_graph import CortexGraphRandomAccessParser, CortexGraphRandomAccessError
 from pycortex.test.builders.graph_body_builder import kmers, KmerRecord, as_edge_set
 from pycortex.test.builders.graph_builder import CortexGraphBuilder
 
@@ -38,6 +39,18 @@ class TestGetKmer(object):
             assert expected_kmer.kmer == kmer.kmer
             assert expected_kmer.coverage == kmer.coverage
             assert expected_kmer.edges == kmer.edges
+
+    def test_raises_on_missing_kmer(self):
+        # given
+        builder = CortexGraphBuilder()
+        builder.with_kmer_size(3)
+        builder.with_sorted_kmers()
+
+        cg = CortexGraphRandomAccessParser(builder.build())
+
+        # when
+        with pytest.raises(CortexGraphRandomAccessError):
+            cg.get_kmer('AAA')
 
 
 class TestGetKmerForString(object):

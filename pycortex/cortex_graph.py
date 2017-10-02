@@ -144,6 +144,11 @@ def edge_set_as_string(edge_set, is_revcomp=False):
 
 
 def cortex_kmer_as_cortex_jdk_print_string(kmer, alt_kmer_string=None):
+    if kmer is None:
+        revcomp_kmer = revcomp(alt_kmer_string)
+        if revcomp_kmer > alt_kmer_string:
+            revcomp_kmer = alt_kmer_string
+        return '{}: {} missing'.format(revcomp_kmer, alt_kmer_string)
     if alt_kmer_string is not None and kmer.kmer != alt_kmer_string:
         is_revcomp = True
     else:
@@ -289,6 +294,10 @@ def revcomp(kmer_string):
     return str(Seq(kmer_string, IUPAC.unambiguous_dna).reverse_complement())
 
 
+class CortexGraphRandomAccessError(Exception):
+    pass
+
+
 @attr.s(slots=True)
 class CortexGraphRandomAccessParser(object):
     fh = attr.ib()
@@ -314,7 +323,11 @@ class CortexGraphRandomAccessParser(object):
 
     def get_kmer(self, kmer_string):
         kmer = CortexKmerComparator(kmer=kmer_string)
-        kmer_comparator = index(self.graph_sequence, kmer, retrieve=True)
+        try:
+            kmer_comparator = index(self.graph_sequence, kmer, retrieve=True)
+        except ValueError as e:
+            raise CortexGraphRandomAccessError('Could not retrieve kmer: ' + kmer_string) from e
+
         return kmer_comparator.kmer_object
 
     def get_kmer_for_string(self, kmer_string):

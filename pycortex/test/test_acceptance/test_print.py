@@ -17,7 +17,7 @@ class PycortexPrintOutputParser(object):
         return self.output.rstrip().split('\n')
 
 
-class TestPrintCommand(object):
+class TestPrintCommandWithRecord(object):
     def test_prints_single_kmer(self, tmpdir):
         # given
         factory = (MccortexFactory()
@@ -37,7 +37,7 @@ class TestPrintCommand(object):
         assert [expected_kmer] == PycortexPrintOutputParser(
             pycortex_output.getvalue()).get_kmer_strings()
 
-    def test_with_record_prints_three_kmers(self, tmpdir):
+    def test_prints_three_kmers(self, tmpdir):
         # given
         record = 'ACCAA'
         factory = (MccortexFactory()
@@ -61,7 +61,7 @@ class TestPrintCommand(object):
         assert expected_kmers == PycortexPrintOutputParser(
             pycortex_output.getvalue()).get_kmer_strings()
 
-    def test_with_record_prints_three_kmers_including_one_revcomp(self, tmpdir):
+    def test_prints_three_kmers_including_one_revcomp(self, tmpdir):
         # given
         record = 'ACCTT'
         factory = (MccortexFactory()
@@ -85,6 +85,32 @@ class TestPrintCommand(object):
         assert expected_kmers == PycortexPrintOutputParser(
             pycortex_output.getvalue()).get_kmer_strings()
 
+    def test_prints_one_missing_and_one_revcomp_kmer(self, tmpdir):
+        # given
+        record = 'ACCTT'
+        search_record = 'ACTT'
+        factory = (MccortexFactory()
+                   .with_dna_sequence(b'sample_0', record)
+                   .with_kmer_size(3))
+        output_graph = factory.build(tmpdir)
+        check_call([MCCORTEX, 'view', '-k', output_graph])
+
+        expected_kmers = [
+            'ACT: ACT missing',
+            'AAG: CTT 1 .C......',
+        ]
+
+        # when
+        pycortex_output = io.StringIO()
+        with contextlib.redirect_stdout(pycortex_output):
+            main(['print', '--graph', output_graph, '--record', search_record])
+
+        # then
+        assert expected_kmers == PycortexPrintOutputParser(
+            pycortex_output.getvalue()).get_kmer_strings()
+
+
+class TestPrintCommand(object):
     def test_prints_three_kmers_including_one_revcomp(self, tmpdir):
         # given
         record = 'ACCTT'
