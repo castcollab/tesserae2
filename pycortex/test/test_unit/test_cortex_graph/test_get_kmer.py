@@ -2,7 +2,7 @@ from hypothesis import given
 from hypothesis import strategies as s
 
 from pycortex.cortex_graph import CortexGraphRandomAccessParser
-from pycortex.test.builders.graph_body_builder import kmers
+from pycortex.test.builders.graph_body_builder import kmers, KmerRecord, as_edge_set
 from pycortex.test.builders.graph_builder import CortexGraphBuilder
 
 
@@ -11,7 +11,7 @@ class TestGetKmer(object):
            s.integers(min_value=1, max_value=3),
            s.integers(min_value=1, max_value=3),
            s.integers(min_value=0, max_value=5))
-    def test_get_record(self, data, kmer_size, num_colors, n_kmers):
+    def test_get_records(self, data, kmer_size, num_colors, n_kmers):
         # given
         builder = CortexGraphBuilder()
         builder.with_kmer_size(kmer_size)
@@ -38,3 +38,21 @@ class TestGetKmer(object):
             assert expected_kmer.kmer == kmer.kmer
             assert expected_kmer.coverage == kmer.coverage
             assert expected_kmer.edges == kmer.edges
+
+
+class TestGetKmerForString(object):
+    def test_gets_AAA_for_TTT_query(self):
+        # given
+        builder = CortexGraphBuilder()
+        builder.with_kmer_size(3)
+        builder.with_num_colors(1)
+        builder.with_sorted_kmers()
+
+        expected_kmer = KmerRecord('AAA', [1], [as_edge_set('........')])
+        builder.with_kmer_record(expected_kmer)
+
+        cg = CortexGraphRandomAccessParser(builder.build())
+
+        # when
+        assert expected_kmer.kmer == cg.get_kmer_for_string('AAA').kmer
+        assert expected_kmer.kmer == cg.get_kmer_for_string('TTT').kmer

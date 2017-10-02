@@ -1,12 +1,12 @@
+import attr
 import struct
 from bisect import bisect_left
 from collections import Sequence
 from io import SEEK_END
 from struct import unpack
 import numpy as np
-
-import attr
-from math import floor
+from Bio.Seq import Seq
+from Bio.Alphabet import IUPAC
 
 CORTEX_MAGIC_WORD = (b'C', b'O', b'R', b'T', b'E', b'X')
 CORTEX_VERSION = 6
@@ -132,10 +132,14 @@ def edge_set_as_string(edge_set):
     return ''.join(letters)
 
 
-def cortex_kmer_as_cortex_jdk_print_string(kmer):
+def cortex_kmer_as_cortex_jdk_print_string(kmer, alt_kmer_string=None):
     edge_set_strings = [edge_set_as_string(edge_set) for edge_set in kmer.edges]
-    return '{} {} {}'.format(kmer.kmer, ' '.join(map(str, kmer.coverage)),
-                             ' '.join(edge_set_strings))
+    to_print = [str(kmer.kmer)]
+    if alt_kmer_string is not None:
+        to_print.append(': ' + alt_kmer_string)
+    to_print.append(' ' + ' '.join(map(str, kmer.coverage)))
+    to_print.append(' ' + ' '.join(edge_set_strings))
+    return ''.join(to_print)
 
 
 @attr.s(slots=True)
@@ -264,6 +268,10 @@ class CortexGraphKmerRecordSequence(Sequence):
         return self.n_records
 
 
+def revcomp(kmer_string):
+    return str(Seq(kmer_string, IUPAC.unambiguous_dna).reverse_complement())
+
+
 @attr.s(slots=True)
 class CortexGraphRandomAccessParser(object):
     fh = attr.ib()
@@ -291,6 +299,14 @@ class CortexGraphRandomAccessParser(object):
         kmer = CortexKmerComparator(kmer=kmer_string)
         kmer_comparator = index(self.graph_sequence, kmer, retrieve=True)
         return kmer_comparator.kmer_object
+
+    def get_kmer_for_string(self, kmer_string):
+        """Will compute the revcomp of kmer string before getting a kmer"""
+        kmer_string_revcomp = revcomp(kmer_string)
+        if kmer_string < kmer_string_revcomp:
+            return self.get_kmer(kmer_string)
+        else:
+            return self.get_kmer(kmer_string_revcomp)
 
 
 # copied from https://docs.python.org/3.6/library/bisect.html

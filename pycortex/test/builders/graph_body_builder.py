@@ -121,7 +121,13 @@ def kmers(draw, kmer_size, num_colors):
 
 def as_edge_set(edge_set_string):
     assert len(edge_set_string) == 8
-    return tuple([edge != '.' for edge in edge_set_string])
+    edge_set = []
+    for edge in edge_set_string:
+        if edge == '.':
+            edge_set.append(0)
+        else:
+            edge_set.append(1)
+    return tuple(edge_set)
 
 
 def print_kmer(kmer):
