@@ -1,7 +1,7 @@
 [![Build Status](https://travis-ci.com/winni2k/pycortex.svg?token=K7dhHdBzXsubBntxA949&branch=master)](https://travis-ci.com/winni2k/pycortex)
 
 # pycortex
-Python implementation of CortexJDK
+Python implementation of [CortexJDK](https://github.com/mcveanlab/CortexJDK)
 
 ## Development
 
