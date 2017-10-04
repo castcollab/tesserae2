@@ -1,10 +1,10 @@
 import pytest
 from hypothesis import given
 from hypothesis import strategies as s
+from pycortex.test.builders.graph import CortexGraphBuilder
 
 import pycortex.graph.parser as parser
-from pycortex.test.builders.graph_body_builder import kmers, KmerRecord, as_edge_set
-from pycortex.test.builders.graph_builder import CortexGraphBuilder
+from pycortex.test.builders.graph.body import kmers, KmerRecord, as_edge_set
 
 
 class TestGetKmer(object):

@@ -1,9 +1,9 @@
 from subprocess import check_call
 
+from pycortex.graph.parser.header import Header
 from pycortex.graph.parser.random_access import RandomAccess
 from pycortex.graph.parser.streaming import Streaming
-from pycortex.graph.parser.header import Header
-from pycortex.test.builders.graph_body_builder import KmerRecord, as_edge_set, print_kmer
+from pycortex.test.builders.graph.body import KmerRecord, as_edge_set, print_kmer
 from pycortex.test.builders.mccortex_builder import MCCORTEX, MccortexFactory
 
 
