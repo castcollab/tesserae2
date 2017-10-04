@@ -220,9 +220,6 @@ class CortexKmer(object):
             self._edges = tuple(map(tuple, edge_sets.reshape(-1, 8)))
         return self._edges
 
-    def get_edge_number_for_color(self, edge_num, color_num=0):
-        return self.edges[color_num][edge_num]
-
 
 class CortexKmerComparator(object):
     def __init__(self, *, kmer=None, kmer_object=None):
