@@ -24,4 +24,4 @@ script:
     - BIN_DIR=./bin make test HYPOTHESIS_PROFILE=ci
 
 after_success:
-  - coveralls -v
+  - coveralls
