@@ -17,7 +17,7 @@ test:
 	--hypothesis-profile $(HYPOTHESIS_PROFILE)
 
 lint:
-	pipenv run pylint pycortex \
+	- pipenv run pylint pycortex \
 	--ignore test \
 	--disable missing-docstring,unsubscriptable-object,no-member
 
