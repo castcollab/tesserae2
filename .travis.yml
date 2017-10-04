@@ -5,6 +5,7 @@ python:
 
 cache:
   directories:
+  - .cache
   - libs
 
 os:
