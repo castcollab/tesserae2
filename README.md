@@ -5,20 +5,13 @@ Python implementation of [CortexJDK](https://github.com/mcveanlab/CortexJDK)
 
 ## Development
 
-Install pipenv:
+Set up the project
+
 ```bash
-pip install pipenv
+make init
 ```
 
-Install dependencies
-```bash
-pipenv install
-```
-
-Activate environment
-```bash
-pipenv shell
-```
+See `pycortex/__main__.py` for example uses of pycortex.
 
 ## Todo
 
