@@ -1,6 +1,6 @@
 import contextlib
 import io
-from subprocess import check_call, check_output
+from subprocess import check_call
 
 import attr
 from pycortex.__main__ import main

@@ -82,7 +82,7 @@ class CortexGraphHeader(object):
             sample_names.append(b''.join(sample_name))
         sample_names = tuple(sample_names)
 
-        error_rate = unpack('16c', fh.read(16))
+        _ = unpack('16c', fh.read(16))  # error_rate
 
         for _ in range(num_colors):
             color_info_block_string = fh.read(4 + 3 * struct.calcsize('I'))

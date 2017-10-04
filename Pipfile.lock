@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "4b8c50baee6fb67448462099aba4b1bb5e339c09a7190ba7809b5c91b206d9ba"
+            "sha256": "eb291b1aee5c4c7a75b66c28dfd66f6f8e05259ddccd6ee45f021a046aa38f0f"
         },
         "requires": {},
         "sources": [
@@ -26,9 +26,6 @@
         }
     },
     "develop": {
-        "apipkg": {
-            "version": "==1.4"
-        },
         "attrs": {
             "version": "==17.2.0"
         },
@@ -41,8 +38,8 @@
         "coverage": {
             "version": "==4.4.1"
         },
-        "execnet": {
-            "version": "==1.4.1"
+        "flake8": {
+            "version": "==3.4.1"
         },
         "hypothesis": {
             "version": "==3.31.2"
@@ -50,23 +47,26 @@
         "idna": {
             "version": "==2.6"
         },
-        "pep8": {
-            "version": "==1.7.0"
+        "mccabe": {
+            "version": "==0.6.1"
         },
         "py": {
             "version": "==1.4.34"
         },
+        "pycodestyle": {
+            "version": "==2.3.1"
+        },
+        "pyflakes": {
+            "version": "==1.5.0"
+        },
         "pytest": {
             "version": "==3.2.2"
-        },
-        "pytest-cache": {
-            "version": "==1.0"
         },
         "pytest-cov": {
             "version": "==2.5.1"
         },
-        "pytest-pep8": {
-            "version": "==1.0.6"
+        "pytest-flake8": {
+            "version": "==0.8.1"
         },
         "python-coveralls": {
             "version": "==2.9.1"

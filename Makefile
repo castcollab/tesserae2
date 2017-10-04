@@ -11,7 +11,7 @@ update:
 
 test:
 	pipenv run pytest pycortex \
-	--pep8 \
+	--flake8 \
 	--cov=pycortex \
 	--cov-report term-missing \
 	--hypothesis-profile $(HYPOTHESIS_PROFILE)

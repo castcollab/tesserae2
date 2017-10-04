@@ -9,8 +9,8 @@ bitstring = "*"
 numpy = "*"
 
 [dev-packages]
-pytest = "*"
 hypothesis = "*"
-pytest-pep8 = "*"
-python-coveralls = "*"
+pytest = "*"
 pytest-cov = "*"
+pytest-flake8 = "*"
+python-coveralls = "*"
