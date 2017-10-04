@@ -33,7 +33,7 @@ class TestGetKmer(object):
 
         # when
         for expected_kmer in expected_kmers:
-            kmer = cg.get_kmer(expected_kmer.kmer)
+            kmer = cg[expected_kmer.kmer]
 
             # then
             assert expected_kmer.kmer == kmer.kmer
@@ -49,12 +49,12 @@ class TestGetKmer(object):
         cg = parser.RandomAccess(builder.build())
 
         # when
-        with pytest.raises(parser.RandomAccessError):
-            cg.get_kmer('AAA')
+        with pytest.raises(KeyError):
+            cg['AAA']
 
 
 class TestGetKmerForString(object):
-    def test_gets_AAA_for_TTT_query(self):
+    def test_gets_aaa_for_ttt_query(self):
         # given
         builder = CortexGraphBuilder()
         builder.with_kmer_size(3)

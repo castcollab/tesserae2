@@ -1,0 +1,2 @@
+class TestGraphWalker(object):
+    pass

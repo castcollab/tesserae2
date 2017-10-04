@@ -17,7 +17,7 @@ class PycortexPrintOutputParser(object):
         return self.output.rstrip().split('\n')
 
 
-class TestPrintCommandWithRecord(object):
+class TestCommandPrintWithRecord(object):
     def test_prints_single_kmer(self, tmpdir):
         # given
         factory = (MccortexFactory()
@@ -110,7 +110,7 @@ class TestPrintCommandWithRecord(object):
             pycortex_output.getvalue()).get_kmer_strings()
 
 
-class TestPrintCommand(object):
+class TestCommandPrint(object):
     def test_prints_three_kmers_including_one_revcomp(self, tmpdir):
         # given
         record = 'ACCTT'
