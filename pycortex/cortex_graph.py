@@ -294,8 +294,8 @@ def revcomp(kmer_string):
     return str(Seq(kmer_string, IUPAC.unambiguous_dna).reverse_complement())
 
 
-class CortexGraphRandomAccessError(Exception):
-    pass
+class CortexGraphRandomAccessError(KeyError):
+    """Raise this if a random access cortex graph parser could not find a kmer"""
 
 
 @attr.s(slots=True)
@@ -313,7 +313,7 @@ class CortexGraphRandomAccessParser(object):
         self.fh.seek(0, SEEK_END)
         body_size = self.fh.tell() - body_start_stream_position
         if body_size % self.header.record_size != 0:
-            raise Exception(
+            raise RuntimeError(
                 "Body size ({}) % Record size ({}) != 0".format(body_size, self.header.record_size))
         n_records = body_size // self.header.record_size
         self.graph_sequence = CortexGraphKmerRecordSequence(fh=self.fh,
