@@ -2,7 +2,7 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as s
 
-from pycortex.cortex_graph import CortexGraphRandomAccessParser, CortexGraphRandomAccessError
+import pycortex.graph.parser as parser
 from pycortex.test.builders.graph_body_builder import kmers, KmerRecord, as_edge_set
 from pycortex.test.builders.graph_builder import CortexGraphBuilder
 
@@ -29,7 +29,7 @@ class TestGetKmer(object):
             builder.with_kmer_record(kmer)
             expected_kmers.append(kmer)
 
-        cg = CortexGraphRandomAccessParser(builder.build())
+        cg = parser.RandomAccess(builder.build())
 
         # when
         for expected_kmer in expected_kmers:
@@ -46,10 +46,10 @@ class TestGetKmer(object):
         builder.with_kmer_size(3)
         builder.with_sorted_kmers()
 
-        cg = CortexGraphRandomAccessParser(builder.build())
+        cg = parser.RandomAccess(builder.build())
 
         # when
-        with pytest.raises(CortexGraphRandomAccessError):
+        with pytest.raises(parser.RandomAccessError):
             cg.get_kmer('AAA')
 
 
@@ -64,7 +64,7 @@ class TestGetKmerForString(object):
         expected_kmer = KmerRecord('AAA', [1], [as_edge_set('........')])
         builder.with_kmer_record(expected_kmer)
 
-        cg = CortexGraphRandomAccessParser(builder.build())
+        cg = parser.RandomAccess(builder.build())
 
         # when
         assert expected_kmer.kmer == cg.get_kmer_for_string('AAA').kmer

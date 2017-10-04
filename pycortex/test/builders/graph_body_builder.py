@@ -1,15 +1,14 @@
 import struct
+from io import BytesIO
+from math import ceil
+from struct import pack
 
 import attr
 from attr import Factory
-from math import ceil
 from bitstring import BitArray
-from struct import pack
-
 from hypothesis import strategies as s
-from io import BytesIO
 
-from pycortex.test.test_unit.test_cortex_graph.test_header_parser import UINT64_T
+from pycortex.test.test_unit.test_graph.test_parser.test_header_parser import UINT64_T
 
 KMER_LETTER_TO_NUM = {'A': 0, 'C': 1, 'G': 2, 'T': 3}
 KMER_LETTER_TO_NUM_REVERSED_BITS = {'A': 0, 'C': 2, 'G': 1, 'T': 3}

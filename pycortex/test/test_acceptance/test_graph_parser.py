@@ -1,7 +1,8 @@
 from subprocess import check_call
 
-from pycortex.cortex_graph import CortexGraphHeader, CortexGraphStreamingParser, \
-    CortexGraphRandomAccessParser
+from pycortex.graph.parser.random_access import RandomAccess
+from pycortex.graph.parser.streaming import Streaming
+from pycortex.graph.parser.header import Header
 from pycortex.test.builders.graph_body_builder import KmerRecord, as_edge_set, print_kmer
 from pycortex.test.builders.mccortex_builder import MCCORTEX, MccortexFactory
 
@@ -17,21 +18,21 @@ class TestCortexGraph(object):
                    .with_dna_sequence(sample_name, dna_sequence)
                    .with_kmer_size(kmer_size))
 
-        expected_header = CortexGraphHeader(version=6,
-                                            kmer_size=kmer_size,
-                                            record_size=13,
-                                            kmer_container_size=1,
-                                            num_colors=1,
-                                            mean_read_lengths=(len(dna_sequence),),
-                                            mean_total_sequence=(len(dna_sequence),),
-                                            sample_names=(sample_name,))
+        expected_header = Header(version=6,
+                                 kmer_size=kmer_size,
+                                 record_size=13,
+                                 kmer_container_size=1,
+                                 num_colors=1,
+                                 mean_read_lengths=(len(dna_sequence),),
+                                 mean_total_sequence=(len(dna_sequence),),
+                                 sample_names=(sample_name,))
 
         # when
         output_graph = factory.build(tmpdir)
 
         check_call([MCCORTEX, 'view', '-k', output_graph])
 
-        cg = CortexGraphStreamingParser(open(output_graph, 'rb'))
+        cg = Streaming(open(output_graph, 'rb'))
 
         # then
         assert cg.header == expected_header
@@ -52,7 +53,7 @@ class TestCortexGraph(object):
 
         check_call([MCCORTEX, 'view', '-k', output_graph])
 
-        cg = CortexGraphStreamingParser(open(output_graph, 'rb'))
+        cg = Streaming(open(output_graph, 'rb'))
 
         # then
         actual_kmers = list(cg.kmers())
@@ -72,7 +73,7 @@ class TestCortexGraph(object):
         expected = KmerRecord('AAC', (1,), (as_edge_set('A.....G.'),))
         output_graph = factory.build(tmpdir)
         check_call([MCCORTEX, 'view', '-k', output_graph])
-        cg = CortexGraphRandomAccessParser(open(output_graph, 'rb'))
+        cg = RandomAccess(open(output_graph, 'rb'))
 
         # when
         actual = cg.get_kmer('AAC')
@@ -99,7 +100,7 @@ class TestCortexGraph(object):
 
         check_call([MCCORTEX, 'view', '-k', output_graph])
 
-        cg = CortexGraphStreamingParser(open(output_graph, 'rb'))
+        cg = Streaming(open(output_graph, 'rb'))
 
         # then
         actual_kmers = list(cg.kmers())
