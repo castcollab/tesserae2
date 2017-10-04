@@ -1,8 +1,8 @@
 from subprocess import check_call
 
-from pycortex.graph.parser.header import Header
+from pycortex.graph.parser.header import Header, header_from_stream
 from pycortex.graph.parser.random_access import RandomAccess
-from pycortex.graph.parser.streaming import Streaming
+from pycortex.graph.parser.streaming import kmer_generator_from_stream
 from pycortex.test.builders.graph.body import KmerRecord, as_edge_set, print_kmer
 from pycortex.test.builders.mccortex_builder import MCCORTEX, MccortexFactory
 
@@ -32,10 +32,10 @@ class TestCortexGraph(object):
 
         check_call([MCCORTEX, 'view', '-k', output_graph])
 
-        cg = Streaming(open(output_graph, 'rb'))
+        header = header_from_stream(open(output_graph, 'rb'))
 
         # then
-        assert cg.header == expected_header
+        assert header == expected_header
 
     def test_parses_a_graph(self, tmpdir):
         # given
@@ -52,11 +52,10 @@ class TestCortexGraph(object):
         output_graph = factory.build(tmpdir)
 
         check_call([MCCORTEX, 'view', '-k', output_graph])
-
-        cg = Streaming(open(output_graph, 'rb'))
+        kmer_generator = kmer_generator_from_stream(open(output_graph, 'rb'))
 
         # then
-        actual_kmers = list(cg.kmers())
+        actual_kmers = list(kmer_generator)
         for kmer in actual_kmers:
             print_kmer(kmer)
         for expected_kmer, kmer in zip(expected_kmers, actual_kmers):
@@ -100,10 +99,10 @@ class TestCortexGraph(object):
 
         check_call([MCCORTEX, 'view', '-k', output_graph])
 
-        cg = Streaming(open(output_graph, 'rb'))
+        kmer_generator = kmer_generator_from_stream(open(output_graph, 'rb'))
 
         # then
-        actual_kmers = list(cg.kmers())
+        actual_kmers = list(kmer_generator)
         for kmer in actual_kmers:
             print_kmer(kmer)
         for expected_kmer, kmer in zip(expected_kmers, actual_kmers):

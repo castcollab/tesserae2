@@ -16,6 +16,11 @@ test:
 	--cov-report term-missing \
 	--hypothesis-profile $(HYPOTHESIS_PROFILE)
 
+lint:
+	pipenv run pylint pycortex \
+	--ignore test \
+	--disable missing-docstring,unsubscriptable-object,no-member
+
 acceptance: libs/seq_file/bin/dnacat
 	$(MAKE) -C pycortex/test/from-mccortex/build
 
