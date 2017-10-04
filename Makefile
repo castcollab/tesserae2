@@ -10,7 +10,11 @@ update:
 	git submodule update --init --recursive
 
 test:
-	pipenv run pytest pycortex --pep8 --hypothesis-profile $(HYPOTHESIS_PROFILE)
+	pipenv run pytest pycortex \
+	--pep8 \
+	--cov=pycortex \
+	--cov-report term-missing \
+	--hypothesis-profile $(HYPOTHESIS_PROFILE)
 
 acceptance: libs/seq_file/bin/dnacat
 	$(MAKE) -C pycortex/test/from-mccortex/build

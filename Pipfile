@@ -10,3 +10,8 @@ attrs = "*"
 biopython = "*"
 bitstring = "*"
 numpy = "*"
+python-coveralls = "*"
+pytest-cov = "*"
+
+[dev-packages]
+pytest-cov = "*"
