@@ -6,4 +6,5 @@ setup(
     packages=find_packages('pycortex'),
     license='Creative Commons Attribution-Noncommercial-Share Alike license',
     long_description=open('README.md').read(),
+    python_requires=">=3.5",
 )
