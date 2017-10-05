@@ -7,6 +7,7 @@ attrs = "*"
 biopython = "*"
 bitstring = "*"
 numpy = "*"
+networkx = "*"
 
 [dev-packages]
 hypothesis = "*"

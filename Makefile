@@ -9,6 +9,10 @@ init: update
 update:
 	git submodule update --init --recursive
 
+unit:
+	pipenv run pytest pycortex/test/test_unit \
+	--hypothesis-profile $(HYPOTHESIS_PROFILE)
+
 test:
 	pipenv run pytest pycortex \
 	--flake8 \

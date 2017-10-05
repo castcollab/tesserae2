@@ -1,7 +1,7 @@
 import pytest
 from hypothesis import given
 from hypothesis import strategies as s
-from pycortex.test.builders.graph import CortexGraphBuilder
+from pycortex.test.builders.graph import Graph
 
 import pycortex.graph.parser as parser
 from pycortex.test.builders.graph.body import kmers, KmerRecord, as_edge_set
@@ -14,10 +14,9 @@ class TestGetKmer(object):
            s.integers(min_value=0, max_value=5))
     def test_get_records(self, data, kmer_size, num_colors, n_kmers):
         # given
-        builder = CortexGraphBuilder()
+        builder = Graph()
         builder.with_kmer_size(kmer_size)
         builder.with_num_colors(num_colors)
-        builder.with_sorted_kmers()
 
         expected_kmers = []
         seen_kmers = set()
@@ -42,9 +41,8 @@ class TestGetKmer(object):
 
     def test_raises_on_missing_kmer(self):
         # given
-        builder = CortexGraphBuilder()
+        builder = Graph()
         builder.with_kmer_size(3)
-        builder.with_sorted_kmers()
 
         cg = parser.RandomAccess(builder.build())
 
@@ -56,10 +54,9 @@ class TestGetKmer(object):
 class TestGetKmerForString(object):
     def test_gets_aaa_for_ttt_query(self):
         # given
-        builder = CortexGraphBuilder()
+        builder = Graph()
         builder.with_kmer_size(3)
         builder.with_num_colors(1)
-        builder.with_sorted_kmers()
 
         expected_kmer = KmerRecord('AAA', [1], [as_edge_set('........')])
         builder.with_kmer_record(expected_kmer)
