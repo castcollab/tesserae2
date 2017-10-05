@@ -17,7 +17,7 @@ class PycortexPrintOutputParser(object):
         return self.output.rstrip().split('\n')
 
 
-class TestCommandPrintWithRecord(object):
+class TestCommandShowTermWithRecord(object):
     def test_prints_single_kmer(self, tmpdir):
         # given
         factory = (MccortexFactory()
@@ -32,7 +32,7 @@ class TestCommandPrintWithRecord(object):
 
         pycortex_output = io.StringIO()
         with contextlib.redirect_stdout(pycortex_output):
-            main(['print', '--graph', output_graph, '--record', 'CAA'])
+            main(['show', output_graph, '--record', 'CAA'])
 
         assert [expected_kmer] == PycortexPrintOutputParser(
             pycortex_output.getvalue()).get_kmer_strings()
@@ -55,7 +55,7 @@ class TestCommandPrintWithRecord(object):
         # when
         pycortex_output = io.StringIO()
         with contextlib.redirect_stdout(pycortex_output):
-            main(['print', '--graph', output_graph, '--record', record])
+            main(['show', output_graph, '--record', record])
 
         # then
         assert expected_kmers == PycortexPrintOutputParser(
@@ -79,7 +79,7 @@ class TestCommandPrintWithRecord(object):
         # when
         pycortex_output = io.StringIO()
         with contextlib.redirect_stdout(pycortex_output):
-            main(['print', '--graph', output_graph, '--record', record])
+            main(['show', output_graph, '--record', record])
 
         # then
         assert expected_kmers == PycortexPrintOutputParser(
@@ -103,7 +103,7 @@ class TestCommandPrintWithRecord(object):
         # when
         pycortex_output = io.StringIO()
         with contextlib.redirect_stdout(pycortex_output):
-            main(['print', '--graph', output_graph, '--record', search_record])
+            main(['show', output_graph, '--record', search_record])
 
         # then
         assert expected_kmers == PycortexPrintOutputParser(
@@ -129,7 +129,7 @@ class TestCommandPrint(object):
         # when
         pycortex_output = io.StringIO()
         with contextlib.redirect_stdout(pycortex_output):
-            main(['print', '--graph', output_graph])
+            main(['show', output_graph])
 
         # then
         assert expected_kmers == PycortexPrintOutputParser(

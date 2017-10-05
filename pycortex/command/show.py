@@ -3,6 +3,10 @@ from pycortex.graph.parser.constants import NUM_TO_LETTER
 from pycortex.utils import revcomp
 
 
+def show(args):
+    print_contig(args)
+
+
 def print_contig(args):
     with open(args.graph, 'rb') as graph_handle:
         contig_retriever = ContigRetriever(graph_handle=graph_handle)
