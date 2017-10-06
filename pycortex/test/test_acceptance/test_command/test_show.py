@@ -19,7 +19,7 @@ class TestCommandShowTermWithRecord(object):
         # given
         kmer_size = 3
         output_graph = (builder.Mccortex()
-                        .with_dna_sequence(b'sample_0', 'ACCAA')
+                        .with_dna_sequence('ACCAA')
                         .with_kmer_size(kmer_size)
                         .build(tmpdir))
 
@@ -39,7 +39,7 @@ class TestCommandShowTermWithRecord(object):
         record = 'ACCAA'
         kmer_size = 3
         output_graph = (builder.Mccortex()
-                        .with_dna_sequence(b'sample_0', record)
+                        .with_dna_sequence(record)
                         .with_kmer_size(kmer_size).build(tmpdir))
 
         expected_kmers = [
@@ -62,7 +62,7 @@ class TestCommandShowTermWithRecord(object):
         record = 'ACCTT'
         kmer_size = 3
         output_graph = (builder.Mccortex()
-                        .with_dna_sequence(b'sample_0', record)
+                        .with_dna_sequence(record)
                         .with_kmer_size(kmer_size)
                         .build(tmpdir))
 
@@ -87,7 +87,7 @@ class TestCommandShowTermWithRecord(object):
         search_record = 'ACTT'
         kmer_size = 3
         output_graph = (builder.Mccortex()
-                        .with_dna_sequence(b'sample_0', record)
+                        .with_dna_sequence(record)
                         .with_kmer_size(kmer_size)
                         .build(tmpdir))
 
@@ -112,7 +112,7 @@ class TestCommandPrint(object):
         record = 'ACCTT'
         kmer_size = 3
         output_graph = (builder.Mccortex()
-                        .with_dna_sequence(b'sample_0', record)
+                        .with_dna_sequence(record)
                         .with_kmer_size(kmer_size)
                         .build(tmpdir))
 
