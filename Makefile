@@ -7,7 +7,7 @@ pipenv: update
 	$(PIP) install pipenv
 	pipenv install --dev
 
-compile:
+compile: update
 	$(MAKE) -C libs/mccortex all MAXK=63
 	$(MAKE) -C libs/mccortex all MAXK=31
 
