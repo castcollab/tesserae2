@@ -23,13 +23,31 @@ class TestCommandShowTermWithRecord(object):
                         .with_kmer_size(kmer_size)
                         .build(tmpdir))
 
-        expected_kmer = 'CAA 1 .c......'
+        expected_kmer = 'CAA: CAA 1 .c......'
 
         # when
 
         pycortex_output = io.StringIO()
         with contextlib.redirect_stdout(pycortex_output):
             main(['view', output_graph, '--record', 'CAA'])
+
+        assert [expected_kmer] == PycortexPrintOutputParser(
+            pycortex_output.getvalue()).get_kmer_strings()
+
+    def test_prints_one_missing_missing_kmer(self, tmpdir):
+        # given
+        kmer_size = 3
+        output_graph = (builder.Mccortex()
+                        .with_dna_sequence('AAAA')
+                        .with_kmer_size(kmer_size)
+                        .build(tmpdir))
+
+        expected_kmer = 'CCC: GGG missing'
+
+        # when
+        pycortex_output = io.StringIO()
+        with contextlib.redirect_stdout(pycortex_output):
+            main(['view', output_graph, '--record', 'GGG'])
 
         assert [expected_kmer] == PycortexPrintOutputParser(
             pycortex_output.getvalue()).get_kmer_strings()
