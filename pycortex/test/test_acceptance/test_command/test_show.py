@@ -4,7 +4,6 @@ import io
 import attr
 from pycortex.__main__ import main
 import pycortex.test.builder as builder
-from pycortex.test import runner
 
 
 @attr.s(slots=True)
@@ -23,7 +22,6 @@ class TestCommandShowTermWithRecord(object):
                         .with_dna_sequence(b'sample_0', 'ACCAA')
                         .with_kmer_size(kmer_size)
                         .build(tmpdir))
-        runner.Mccortex(kmer_size).view(output_graph)
 
         expected_kmer = 'CAA 1 .c......'
 
@@ -43,7 +41,6 @@ class TestCommandShowTermWithRecord(object):
         output_graph = (builder.Mccortex()
                         .with_dna_sequence(b'sample_0', record)
                         .with_kmer_size(kmer_size).build(tmpdir))
-        runner.Mccortex(kmer_size).view(output_graph)
 
         expected_kmers = [
             'ACC: ACC 1 ....A...',
@@ -68,7 +65,6 @@ class TestCommandShowTermWithRecord(object):
                         .with_dna_sequence(b'sample_0', record)
                         .with_kmer_size(kmer_size)
                         .build(tmpdir))
-        runner.Mccortex(kmer_size).view(output_graph)
 
         expected_kmers = [
             'ACC: ACC 1 .......T',
@@ -94,7 +90,6 @@ class TestCommandShowTermWithRecord(object):
                         .with_dna_sequence(b'sample_0', record)
                         .with_kmer_size(kmer_size)
                         .build(tmpdir))
-        runner.Mccortex(kmer_size).view(output_graph)
 
         expected_kmers = [
             'ACT: ACT missing',
@@ -120,7 +115,6 @@ class TestCommandPrint(object):
                         .with_dna_sequence(b'sample_0', record)
                         .with_kmer_size(kmer_size)
                         .build(tmpdir))
-        runner.Mccortex(kmer_size).view(output_graph)
 
         expected_kmers = [
             'AAG 1 ......G.',
