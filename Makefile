@@ -1,8 +1,13 @@
 HYPOTHESIS_PROFILE = dev
+PIP = pip
 
-init: update
-	pip install pipenv
+init: update pipenv compile
+
+pipenv: update
+	$(PIP) install pipenv
 	pipenv install --dev
+
+compile:
 	$(MAKE) -C libs/mccortex all MAXK=63
 	$(MAKE) -C libs/mccortex all MAXK=31
 
@@ -28,10 +33,7 @@ lint:
 acceptance: libs/seq_file/bin/dnacat
 	$(MAKE) -C pycortex/test/from-mccortex/build
 
-clean:
-	@echo nothing to clean
-
 libs/seq_file/bin/dnacat:
 	$(MAKE) -C $$(dirname $$(dirname $@))
 
-.PHONY: test acceptance clean
+.PHONY: test acceptance unit clean update pipenv compile

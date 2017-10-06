@@ -1,12 +1,10 @@
 import contextlib
 import io
-from subprocess import check_call
 
 import attr
 from pycortex.__main__ import main
-from pycortex.test.builders.mccortex_builder import MccortexFactory, MCCORTEX
-
-PYCORTEX_COMMAND = ['python', '-m', 'pycortex']
+import pycortex.test.builder as builder
+from pycortex.test import runner
 
 
 @attr.s(slots=True)
@@ -20,11 +18,12 @@ class PycortexPrintOutputParser(object):
 class TestCommandShowTermWithRecord(object):
     def test_prints_single_kmer(self, tmpdir):
         # given
-        factory = (MccortexFactory()
-                   .with_dna_sequence(b'sample_0', 'ACCAA')
-                   .with_kmer_size(3))
-        output_graph = factory.build(tmpdir)
-        check_call([MCCORTEX, 'view', '-k', output_graph])
+        kmer_size = 3
+        output_graph = (builder.Mccortex()
+                        .with_dna_sequence(b'sample_0', 'ACCAA')
+                        .with_kmer_size(kmer_size)
+                        .build(tmpdir))
+        runner.Mccortex(kmer_size).view(output_graph)
 
         expected_kmer = 'CAA 1 .c......'
 
@@ -40,11 +39,11 @@ class TestCommandShowTermWithRecord(object):
     def test_prints_three_kmers(self, tmpdir):
         # given
         record = 'ACCAA'
-        factory = (MccortexFactory()
-                   .with_dna_sequence(b'sample_0', record)
-                   .with_kmer_size(3))
-        output_graph = factory.build(tmpdir)
-        check_call([MCCORTEX, 'view', '-k', output_graph])
+        kmer_size = 3
+        output_graph = (builder.Mccortex()
+                        .with_dna_sequence(b'sample_0', record)
+                        .with_kmer_size(kmer_size).build(tmpdir))
+        runner.Mccortex(kmer_size).view(output_graph)
 
         expected_kmers = [
             'ACC: ACC 1 ....A...',
@@ -64,11 +63,12 @@ class TestCommandShowTermWithRecord(object):
     def test_prints_three_kmers_including_one_revcomp(self, tmpdir):
         # given
         record = 'ACCTT'
-        factory = (MccortexFactory()
-                   .with_dna_sequence(b'sample_0', record)
-                   .with_kmer_size(3))
-        output_graph = factory.build(tmpdir)
-        check_call([MCCORTEX, 'view', '-k', output_graph])
+        kmer_size = 3
+        output_graph = (builder.Mccortex()
+                        .with_dna_sequence(b'sample_0', record)
+                        .with_kmer_size(kmer_size)
+                        .build(tmpdir))
+        runner.Mccortex(kmer_size).view(output_graph)
 
         expected_kmers = [
             'ACC: ACC 1 .......T',
@@ -89,11 +89,12 @@ class TestCommandShowTermWithRecord(object):
         # given
         record = 'ACCTT'
         search_record = 'ACTT'
-        factory = (MccortexFactory()
-                   .with_dna_sequence(b'sample_0', record)
-                   .with_kmer_size(3))
-        output_graph = factory.build(tmpdir)
-        check_call([MCCORTEX, 'view', '-k', output_graph])
+        kmer_size = 3
+        output_graph = (builder.Mccortex()
+                        .with_dna_sequence(b'sample_0', record)
+                        .with_kmer_size(kmer_size)
+                        .build(tmpdir))
+        runner.Mccortex(kmer_size).view(output_graph)
 
         expected_kmers = [
             'ACT: ACT missing',
@@ -114,11 +115,12 @@ class TestCommandPrint(object):
     def test_prints_three_kmers_including_one_revcomp(self, tmpdir):
         # given
         record = 'ACCTT'
-        factory = (MccortexFactory()
-                   .with_dna_sequence(b'sample_0', record)
-                   .with_kmer_size(3))
-        output_graph = factory.build(tmpdir)
-        check_call([MCCORTEX, 'view', '-k', output_graph])
+        kmer_size = 3
+        output_graph = (builder.Mccortex()
+                        .with_dna_sequence(b'sample_0', record)
+                        .with_kmer_size(kmer_size)
+                        .build(tmpdir))
+        runner.Mccortex(kmer_size).view(output_graph)
 
         expected_kmers = [
             'AAG 1 ......G.',
