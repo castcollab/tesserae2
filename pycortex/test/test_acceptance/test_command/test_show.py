@@ -31,7 +31,7 @@ class TestCommandShowTermWithRecord(object):
 
         pycortex_output = io.StringIO()
         with contextlib.redirect_stdout(pycortex_output):
-            main(['show', output_graph, '--record', 'CAA'])
+            main(['view', output_graph, '--record', 'CAA'])
 
         assert [expected_kmer] == PycortexPrintOutputParser(
             pycortex_output.getvalue()).get_kmer_strings()
@@ -54,7 +54,7 @@ class TestCommandShowTermWithRecord(object):
         # when
         pycortex_output = io.StringIO()
         with contextlib.redirect_stdout(pycortex_output):
-            main(['show', output_graph, '--record', record])
+            main(['view', output_graph, '--record', record])
 
         # then
         assert expected_kmers == PycortexPrintOutputParser(
@@ -79,7 +79,7 @@ class TestCommandShowTermWithRecord(object):
         # when
         pycortex_output = io.StringIO()
         with contextlib.redirect_stdout(pycortex_output):
-            main(['show', output_graph, '--record', record])
+            main(['view', output_graph, '--record', record])
 
         # then
         assert expected_kmers == PycortexPrintOutputParser(
@@ -104,7 +104,7 @@ class TestCommandShowTermWithRecord(object):
         # when
         pycortex_output = io.StringIO()
         with contextlib.redirect_stdout(pycortex_output):
-            main(['show', output_graph, '--record', search_record])
+            main(['view', output_graph, '--record', search_record])
 
         # then
         assert expected_kmers == PycortexPrintOutputParser(
@@ -131,7 +131,7 @@ class TestCommandPrint(object):
         # when
         pycortex_output = io.StringIO()
         with contextlib.redirect_stdout(pycortex_output):
-            main(['show', output_graph])
+            main(['view', output_graph])
 
         # then
         assert expected_kmers == PycortexPrintOutputParser(
