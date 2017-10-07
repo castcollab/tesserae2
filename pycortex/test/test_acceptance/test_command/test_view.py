@@ -4,6 +4,7 @@ import io
 import attr
 from pycortex.__main__ import main
 import pycortex.test.builder as builder
+import pycortex.test.runner as runner
 
 
 @attr.s(slots=True)
@@ -14,7 +15,33 @@ class PycortexPrintOutputParser(object):
         return self.output.rstrip().split('\n')
 
 
-class TestCommandShowTermWithRecord(object):
+class Test(object):
+    def test_prints_three_kmers_including_one_revcomp(self, tmpdir):
+        # given
+        record = 'ACCTT'
+        kmer_size = 3
+        output_graph = (builder.Mccortex()
+                        .with_dna_sequence(record)
+                        .with_kmer_size(kmer_size)
+                        .build(tmpdir))
+
+        expected_kmers = [
+            'AAG 1 ......G.',
+            'ACC 1 .......T',
+            'AGG 1 a......T',
+        ]
+
+        # when
+        pycortex_output = io.StringIO()
+        with contextlib.redirect_stdout(pycortex_output):
+            main(['view', output_graph])
+
+        # then
+        assert expected_kmers == PycortexPrintOutputParser(
+            pycortex_output.getvalue()).get_kmer_strings()
+
+
+class TestTermWithRecord(object):
     def test_prints_single_kmer(self, tmpdir):
         # given
         kmer_size = 3
@@ -26,11 +53,11 @@ class TestCommandShowTermWithRecord(object):
         expected_kmer = 'CAA: CAA 1 .c......'
 
         # when
-
         pycortex_output = io.StringIO()
         with contextlib.redirect_stdout(pycortex_output):
             main(['view', output_graph, '--record', 'CAA'])
 
+        # then
         assert [expected_kmer] == PycortexPrintOutputParser(
             pycortex_output.getvalue()).get_kmer_strings()
 
@@ -49,6 +76,7 @@ class TestCommandShowTermWithRecord(object):
         with contextlib.redirect_stdout(pycortex_output):
             main(['view', output_graph, '--record', 'GGG'])
 
+        # then
         assert [expected_kmer] == PycortexPrintOutputParser(
             pycortex_output.getvalue()).get_kmer_strings()
 
@@ -124,8 +152,8 @@ class TestCommandShowTermWithRecord(object):
             pycortex_output.getvalue()).get_kmer_strings()
 
 
-class TestCommandPrint(object):
-    def test_prints_three_kmers_including_one_revcomp(self, tmpdir):
+class TestOutputTypePngRequiresOutput(object):
+    def test_runs(self, tmpdir):
         # given
         record = 'ACCTT'
         kmer_size = 3
@@ -134,17 +162,10 @@ class TestCommandPrint(object):
                         .with_kmer_size(kmer_size)
                         .build(tmpdir))
 
-        expected_kmers = [
-            'AAG 1 ......G.',
-            'ACC 1 .......T',
-            'AGG 1 a......T',
-        ]
-
         # when
-        pycortex_output = io.StringIO()
-        with contextlib.redirect_stdout(pycortex_output):
-            main(['view', output_graph])
+        stdout, stderr, exit_status = runner.Pycortex(False).view(
+            ['--output-type', 'png', output_graph])
 
         # then
-        assert expected_kmers == PycortexPrintOutputParser(
-            pycortex_output.getvalue()).get_kmer_strings()
+        assert exit_status != 0
+        assert "Need to specify --output if --output-type is not 'term'" in stderr
