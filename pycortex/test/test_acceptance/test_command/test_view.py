@@ -1,5 +1,6 @@
 import contextlib
 import io
+import json
 
 import attr
 from pycortex.__main__ import main
@@ -152,8 +153,8 @@ class TestTermWithRecord(object):
             pycortex_output.getvalue()).get_kmer_strings()
 
 
-class TestOutputTypePngRequiresOutput(object):
-    def test_runs(self, tmpdir):
+class TestOutputTypeJSON(object):
+    def test_outputs_json(self, tmpdir):
         # given
         record = 'ACCTT'
         kmer_size = 3
@@ -163,9 +164,12 @@ class TestOutputTypePngRequiresOutput(object):
                         .build(tmpdir))
 
         # when
-        stdout, stderr, exit_status = runner.Pycortex(False).view(
-            ['--output-type', 'png', output_graph])
+        completed_process = (runner
+                             .Pycortex(True)
+                             .view(['--record', record, '--output-type', 'json', output_graph]))
+        stdout = completed_process.stdout
 
         # then
-        assert exit_status != 0
-        assert "Need to specify --output if --output-type is not 'term'" in stderr
+        assert completed_process.returncode == 0, completed_process
+        graph = json.loads(stdout)
+        assert graph['directed']
