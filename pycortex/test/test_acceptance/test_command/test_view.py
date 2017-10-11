@@ -167,7 +167,7 @@ class TestOutputTypeJSON(object):
         completed_process = (runner
                              .Pycortex(True)
                              .view(['--record', record, '--output-type', 'json', output_graph]))
-        stdout = completed_process.stdout
+        stdout = completed_process.stdout.decode()
 
         # then
         assert completed_process.returncode == 0, completed_process
