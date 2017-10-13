@@ -3,6 +3,8 @@ import io
 import json
 
 import attr
+import pytest
+
 from pycortex.__main__ import main
 import pycortex.test.builder as builder
 import pycortex.test.runner as runner
@@ -173,3 +175,29 @@ class TestOutputTypeJSON(object):
         assert completed_process.returncode == 0, completed_process
         graph = json.loads(stdout)
         assert graph['directed']
+
+    @pytest.mark.xfail
+    def test_collapse_kmer_unitigs_option(self, tmpdir):
+        # given
+        record1 = 'AAACCCGGGTTT'
+        record2 = 'ACCG'
+        kmer_size = 3
+        output_graph = (builder.Mccortex()
+                        .with_dna_sequence(record1)
+                        .with_dna_sequence(record2)
+                        .with_kmer_size(kmer_size)
+                        .build(tmpdir))
+
+        # when
+        completed_process = (runner
+                             .Pycortex(True)
+                             .view(['--record', record1,
+                                    '--collapse-kmer-unitigs',
+                                    '--output-type', 'json',
+                                    output_graph]))
+        stdout = completed_process.stdout.decode()
+
+        # then
+        assert completed_process.returncode == 0, completed_process
+        graph = json.loads(stdout)
+        assert {n['id'] for n in graph['nodes']} == {'AAACC', 'CCC', 'CCGGGTTT'}
