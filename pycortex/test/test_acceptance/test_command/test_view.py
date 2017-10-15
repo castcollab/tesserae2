@@ -1,9 +1,8 @@
+import attr
 import contextlib
 import io
 import json
-
-import attr
-import pytest
+import sys
 
 from pycortex.__main__ import main
 import pycortex.test.builder as builder
@@ -176,10 +175,9 @@ class TestOutputTypeJSON(object):
         graph = json.loads(stdout)
         assert graph['directed']
 
-    @pytest.mark.xfail
     def test_collapse_kmer_unitigs_option(self, tmpdir):
         # given
-        record1 = 'AAACCCGGGTTT'
+        record1 = 'AAACCCGAA'
         record2 = 'ACCG'
         kmer_size = 3
         output_graph = (builder.Mccortex()
@@ -187,6 +185,7 @@ class TestOutputTypeJSON(object):
                         .with_dna_sequence(record2)
                         .with_kmer_size(kmer_size)
                         .build(tmpdir))
+        runner.Mccortex(kmer_size).view(output_graph)
 
         # when
         completed_process = (runner
@@ -198,6 +197,9 @@ class TestOutputTypeJSON(object):
         stdout = completed_process.stdout.decode()
 
         # then
-        assert completed_process.returncode == 0, completed_process
+        if completed_process.returncode != 0:
+            print(stdout)
+            print(completed_process.stderr.decode(), file=sys.stderr)
+            assert completed_process.returncode == 0
         graph = json.loads(stdout)
-        assert {n['id'] for n in graph['nodes']} == {'AAACC', 'CCC', 'CCGGGTTT'}
+        assert {n['repr'] for n in graph['nodes']} == {'AAACC', 'C', 'GAA'}
