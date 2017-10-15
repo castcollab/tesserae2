@@ -1,3 +1,5 @@
+import json
+
 import attr
 
 import pycortex.graph as graph
@@ -194,7 +196,7 @@ class TestToJson(object):
         kmer_json = serializer.Serializer(kmer_graph).to_json()
 
         # then
-        assert kmer_json.startswith('{"directed')
+        json.loads(kmer_json)  # does not raise
 
 
 class TestToJsonSerializable(object):
