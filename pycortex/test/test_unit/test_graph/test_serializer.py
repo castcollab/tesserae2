@@ -78,7 +78,8 @@ class TestCollapseKmerUnitigsCreatesSingleUnitig(object):
         expect = CollapsedKmerUnitgGraphExpectation(collapse_kmer_unitigs(kmer_graph))
 
         # then
-        assert expect.has_kmers('AAACC')
+        expect.has_n_kmers(1)
+        expect.has_kmer('AAACC')
 
 
 @attr.s
@@ -91,6 +92,10 @@ class KmerNodeExpectation(object):
 
     def is_missing(self):
         assert self.kmer_node['is_missing']
+        return self
+
+    def is_not_missing(self):
+        assert not self.kmer_node['is_missing']
         return self
 
 
@@ -113,6 +118,18 @@ class CollapsedKmerUnitgGraphExpectation(object):
     def has_kmer(self, kmer_repr):
         assert kmer_repr in self.nodes_by_repr
         return KmerNodeExpectation(self.graph.node[self.nodes_by_repr[kmer_repr]])
+
+    def has_n_edges(self, n):
+        assert len(self.graph.edges) == n
+        return self
+
+    def has_n_missing_edges(self, n):
+        missing_edge_counter = 0
+        for _, _, data in self.graph.edges.data():
+            if data['is_missing']:
+                missing_edge_counter += 1
+        assert missing_edge_counter == n
+        return self
 
 
 class TestCollapseKmerUnitigs(object):
@@ -155,7 +172,9 @@ class TestCollapseKmerUnitigs(object):
         expect = CollapsedKmerUnitgGraphExpectation(collapse_kmer_unitigs(kmer_graph))
 
         # then
-        expect.has_kmers('AACC', 'C', 'GA')
+        expect.has_n_kmers(3)
+        for kmer in ['AACC', 'C', 'GA']:
+            expect.has_kmer(kmer)
 
 
 class TestMakeGraphJsonRepresentable(object):
@@ -176,9 +195,12 @@ class TestMakeGraphJsonRepresentable(object):
 
         # then
         expect.has_n_kmers(3)
-        expect.has_kmer('TTT').has_coverages(1, 1)
-        expect.has_kmer('GTT').has_coverages(1, 0)
+        expect.has_kmer('TTT').has_coverages(1, 1).is_not_missing()
+        expect.has_kmer('GTT').has_coverages(1, 0).is_not_missing()
         expect.has_kmer('ATT').is_missing()
+
+        expect.has_n_edges(2)
+        expect.has_n_missing_edges(1)
 
 
 class TestToJson(object):
@@ -200,7 +222,7 @@ class TestToJson(object):
 
 
 class TestToJsonSerializable(object):
-    def test_two_linked_kmers_have_node_id_0(self):
+    def test_two_linked_kmers_collapse_to_one_kmer(self):
         # given
         graph_builder = (builder.Graph()
                          .with_kmer_size(3))
@@ -215,4 +237,27 @@ class TestToJsonSerializable(object):
         )
 
         # then
-        expect.has_n_kmers(1).has_kmer('GTTT')
+        expect.has_n_kmers(1).has_kmer('GTTT').is_not_missing()
+
+    def test_two_kmers_one_kmer_apart_do_not_collapse(self):
+        # given
+        graph_builder = (builder.Graph()
+                         .with_kmer_size(3))
+        graph_builder.with_kmer('AAA', 1, '........')
+        graph_builder.with_kmer('ACC', 1, '........')
+        retriever = graph.ContigRetriever(graph_builder.build())
+        kmer_graph = retriever.get_kmer_graph('GGTTT')
+
+        # when
+        expect = CollapsedKmerUnitgGraphExpectation(
+            serializer.Serializer(kmer_graph, collapse_kmer_unitigs=True).to_json_serializable()
+        )
+
+        # then
+        expect.has_n_kmers(3)
+        expect.has_kmer('TTT').is_not_missing()
+        expect.has_kmer('GTT').is_missing()
+        expect.has_kmer('GGT').is_not_missing()
+
+        expect.has_n_edges(2)
+        expect.has_n_missing_edges(2)

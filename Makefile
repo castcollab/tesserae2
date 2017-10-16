@@ -1,6 +1,13 @@
 HYPOTHESIS_PROFILE = dev
 PIP = pip
 
+TEST_COMMAND = pipenv run pytest \
+	--flake8 \
+	--cov=pycortex \
+	--cov-report term-missing \
+	--hypothesis-profile $(HYPOTHESIS_PROFILE)
+
+
 init: update pipenv compile
 
 pipenv: update
@@ -15,22 +22,21 @@ update:
 	git submodule update --init --recursive
 
 unit:
-	pipenv run pytest pycortex/test/test_unit \
-	--hypothesis-profile $(HYPOTHESIS_PROFILE)
+	$(TEST_COMMAND) pycortex/test/test_unit
+
+acceptance:
+	$(TEST_COMMAND) pycortex/test/test_acceptance
 
 test:
-	pipenv run pytest pycortex \
-	--flake8 \
-	--cov=pycortex \
-	--cov-report term-missing \
-	--hypothesis-profile $(HYPOTHESIS_PROFILE)
+	$(TEST_COMMAND) pycortex
+
 
 lint:
 	- pipenv run pylint pycortex \
 	--ignore test \
 	--disable missing-docstring,unsubscriptable-object,no-member
 
-acceptance: libs/seq_file/bin/dnacat
+acceptance_: libs/seq_file/bin/dnacat
 	$(MAKE) -C pycortex/test/from-mccortex/build
 
 libs/seq_file/bin/dnacat:

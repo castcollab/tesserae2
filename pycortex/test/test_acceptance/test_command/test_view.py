@@ -4,6 +4,8 @@ import io
 import json
 import sys
 
+import collections
+
 from pycortex.__main__ import main
 import pycortex.test.builder as builder
 import pycortex.test.runner as runner
@@ -202,4 +204,45 @@ class TestOutputTypeJSON(object):
             print(completed_process.stderr.decode(), file=sys.stderr)
             assert completed_process.returncode == 0
         graph = json.loads(stdout)
-        assert {n['repr'] for n in graph['nodes']} == {'AAACC', 'C', 'GAA'}
+        nodes = graph['nodes']
+        assert {n['repr']: n['is_missing'] for n in nodes} == {'AAACC': False, 'C': False,
+                                                               'GAA': False}
+        edges = graph['edges']
+        assert [e['is_missing'] for e in edges] == [False, False, False]
+
+    def test_collapse_kmer_unitigs_option_with_missing_kmers(self, tmpdir):
+        # given
+        record1 = 'AAACCCGAA'
+        record2 = 'ACCG'
+        query_record = record1 + 'G'
+        kmer_size = 3
+        output_graph = (builder.Mccortex()
+                        .with_dna_sequence(record1)
+                        .with_dna_sequence(record2)
+                        .with_kmer_size(kmer_size)
+                        .build(tmpdir))
+        runner.Mccortex(kmer_size).view(output_graph)
+
+        # when
+        completed_process = (runner
+                             .Pycortex(True)
+                             .view(['--record', query_record,
+                                    '--collapse-kmer-unitigs',
+                                    '--output-type', 'json',
+                                    output_graph]))
+        stdout = completed_process.stdout.decode()
+
+        # then
+        if completed_process.returncode != 0:
+            print(stdout)
+            print(completed_process.stderr.decode(), file=sys.stderr)
+            assert completed_process.returncode == 0
+        graph = json.loads(stdout)
+        nodes = graph['nodes']
+        assert {n['repr']: n['is_missing'] for n in nodes} == {'AAACC': False, 'C': False,
+                                                               'GAA': False, 'AAG': True}
+        edges = graph['edges']
+        is_missing_count = collections.Counter()
+        for e in edges:
+            is_missing_count[e.get('is_missing')] += 1
+        assert is_missing_count == {True: 1, False: 3}
