@@ -229,4 +229,3 @@ class TestToJsonSerializable(object):
         expect.has_n_kmers(2)
         expect.has_kmer('GTTT').is_not_missing()
         expect.has_kmer('TTAA').is_missing()
-
