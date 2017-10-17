@@ -1,11 +1,10 @@
 import json
 
-import attr
-
 import pycortex.graph as graph
-import pycortex.test.builder as builder
 import pycortex.graph.serializer as serializer
+import pycortex.test.builder as builder
 from pycortex.graph.serializer import collapse_kmer_unitigs
+from pycortex.test.expectation.kmer import CollapsedKmerUnitgGraphExpectation
 
 
 class TestCollapseKmerUnitigsCreatesSingleUnitig(object):
@@ -80,56 +79,6 @@ class TestCollapseKmerUnitigsCreatesSingleUnitig(object):
         # then
         expect.has_n_kmers(1)
         expect.has_kmer('AAACC')
-
-
-@attr.s
-class KmerNodeExpectation(object):
-    kmer_node = attr.ib()
-
-    def has_coverages(self, *coverages):
-        assert self.kmer_node['coverage'] == list(coverages)
-        return self
-
-    def is_missing(self):
-        assert self.kmer_node['is_missing']
-        return self
-
-    def is_not_missing(self):
-        assert not self.kmer_node['is_missing']
-        return self
-
-
-@attr.s(slots=True)
-class CollapsedKmerUnitgGraphExpectation(object):
-    graph = attr.ib()
-    nodes_by_repr = attr.ib(init=False)
-
-    def __attrs_post_init__(self):
-        self.nodes_by_repr = {data['repr']: node for node, data in self.graph.nodes.data()}
-
-    def has_n_kmers(self, n):
-        assert len(self.graph) == n
-        return self
-
-    def has_kmers(self, *kmer_reprs):
-        assert set(self.nodes_by_repr.keys()) == set(kmer_reprs)
-        return self
-
-    def has_kmer(self, kmer_repr):
-        assert kmer_repr in self.nodes_by_repr
-        return KmerNodeExpectation(self.graph.node[self.nodes_by_repr[kmer_repr]])
-
-    def has_n_edges(self, n):
-        assert len(self.graph.edges) == n
-        return self
-
-    def has_n_missing_edges(self, n):
-        missing_edge_counter = 0
-        for _, _, data in self.graph.edges.data():
-            if data['is_missing']:
-                missing_edge_counter += 1
-        assert missing_edge_counter == n
-        return self
 
 
 class TestCollapseKmerUnitigs(object):
@@ -261,3 +210,23 @@ class TestToJsonSerializable(object):
 
         expect.has_n_edges(2)
         expect.has_n_missing_edges(2)
+
+    def test_unlinked_kmers_followed_by_two_linked_kmers_collapse_to_two_unitigs(self):
+        # given
+        graph_builder = (builder.Graph()
+                         .with_kmer_size(3))
+        graph_builder.with_kmer('AAA', 1, '.....C..')
+        graph_builder.with_kmer('AAC', 1, 'a.......')
+        retriever = graph.ContigRetriever(graph_builder.build())
+        kmer_graph = retriever.get_kmer_graph('GTTTAA')
+
+        # when
+        expect = CollapsedKmerUnitgGraphExpectation(
+            serializer.Serializer(kmer_graph, collapse_kmer_unitigs=True).to_json_serializable()
+        )
+
+        # then
+        expect.has_n_kmers(2)
+        expect.has_kmer('GTTT').is_not_missing()
+        expect.has_kmer('TTAA').is_missing()
+
