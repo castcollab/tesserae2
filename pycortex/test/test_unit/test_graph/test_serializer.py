@@ -18,11 +18,12 @@ class TestCollapseKmerUnitigsCreatesSingleUnitig(object):
         expect = CollapsedKmerUnitgGraphExpectation(collapse_kmer_unitigs(kmer_graph))
 
         # then
-        assert expect.has_kmers('GTT')
+        expect.has_n_kmers(1)
+        expect.has_kmer('GTT').is_missing()
 
     def test_with_one_kmer(self):
         # given
-        graph_builder = builder.Graph().with_kmer_size(3).with_kmer('GTT')
+        graph_builder = builder.Graph().with_kmer_size(3).with_kmer('AAC')
         retriever = graph.ContigRetriever(graph_builder.build())
         kmer_graph = retriever.get_kmer_graph('GTT')
 
@@ -30,11 +31,12 @@ class TestCollapseKmerUnitigsCreatesSingleUnitig(object):
         expect = CollapsedKmerUnitgGraphExpectation(collapse_kmer_unitigs(kmer_graph))
 
         # then
-        expect.has_kmers('GTT')
+        expect.has_n_kmers(1)
+        expect.has_kmer('GTT').is_not_missing()
 
     def test_with_two_unlinked_kmers(self):
         # given
-        graph_builder = builder.Graph().with_kmer_size(3).with_kmer('GTT').with_kmer('TTG')
+        graph_builder = builder.Graph().with_kmer_size(3).with_kmer('CAA').with_kmer('AAC')
         retriever = graph.ContigRetriever(graph_builder.build())
         kmer_graph = retriever.get_kmer_graph('GTTG')
 
