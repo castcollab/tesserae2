@@ -17,7 +17,7 @@ setup(
     name='pycortex',
     version='0.0.2',
     packages=packages,
-    license='Creative Commons Attribution-Noncommercial-Share Alike license',
+    license='Apache-2.0',
     long_description=open('README.md').read(),
     install_requires=pipfile_lock_requirements,
     python_requires=">=3.5",
