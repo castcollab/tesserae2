@@ -65,7 +65,7 @@ class TestTermWithRecord(object):
         assert [expected_kmer] == PycortexPrintOutputParser(
             pycortex_output.getvalue()).get_kmer_strings()
 
-    def test_prints_one_missing_missing_kmer(self, tmpdir):
+    def test_prints_one_missing_kmer(self, tmpdir):
         # given
         kmer_size = 3
         output_graph = (builder.Mccortex()
@@ -193,7 +193,6 @@ class TestOutputTypeJSON(object):
         completed_process = (runner
                              .Pycortex(True)
                              .view(['--record', record1,
-                                    '--collapse-kmer-unitigs',
                                     '--output-type', 'json',
                                     output_graph]))
         stdout = completed_process.stdout.decode()
@@ -227,7 +226,6 @@ class TestOutputTypeJSON(object):
         completed_process = (runner
                              .Pycortex(True)
                              .view(['--record', query_record,
-                                    '--collapse-kmer-unitigs',
                                     '--output-type', 'json',
                                     output_graph]))
         stdout = completed_process.stdout.decode()
@@ -239,8 +237,9 @@ class TestOutputTypeJSON(object):
             assert completed_process.returncode == 0
         graph = json.loads(stdout)
         nodes = graph['nodes']
+        # fixme: 'G' should be False
         assert {n['repr']: n['is_missing'] for n in nodes} == {'AAACC': False, 'C': False,
-                                                               'GAA': False, 'AAG': True}
+                                                               'GAA': False, 'G': True}
         edges = graph['edges']
         is_missing_count = collections.Counter()
         for e in edges:

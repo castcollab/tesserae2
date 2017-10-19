@@ -15,7 +15,7 @@ pipfile_lock_requirements = get_requirements_from_pipfile_lock()
 
 setup(
     name='pycortex',
-    version='0.0.2',
+    version='0.0.3',
     packages=packages,
     license='Apache-2.0',
     long_description=open('README.md').read(),
