@@ -1,6 +1,15 @@
 import os
 from setuptools import setup, find_packages
 import json
+from io import open
+
+with open('pycortex/__init__.py', 'r') as f:
+    for line in f:
+        if line.startswith('__version__'):
+            version = line.strip().split('=')[1].strip(' \'"')
+            break
+        else:
+            version = '0.0.1'
 
 
 def get_requirements_from_pipfile_lock(pipfile_lock=None):
@@ -15,10 +24,28 @@ pipfile_lock_requirements = get_requirements_from_pipfile_lock()
 
 setup(
     name='pycortex',
-    version='0.0.3',
-    packages=packages,
+    version=version,
+    description='The python sister project to CortexJDK',
+    author='Warren W. Kretzschmar and Kiran Garimella',
+    author_email='winni@warrenwk.com and kiran.garimella@gmail.com',
+    maintainer='Warren W. Kretzschmar and Kiran Garimella',
+    maintainer_email='winni@warrenwk.com and kiran.garimella@gmail.com',
+    url='https://github.com/winni2k/pycortex',
     license='Apache-2.0',
     long_description=open('README.md').read(),
     install_requires=pipfile_lock_requirements,
+    tests_require=['coverage', 'pytest'],
     python_requires=">=3.5",
+    classifiers=[
+        'Development Status :: 4 - Beta',
+        'Intended Audience :: Developers',
+        'License :: OSI Approved :: Apache Software License',
+        'Natural Language :: English',
+        'Operating System :: OS Independent',
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: Implementation :: CPython',
+        'Programming Language :: Python :: Implementation :: PyPy',
+    ],
+    packages=packages,
 )
