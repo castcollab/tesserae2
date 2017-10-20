@@ -8,7 +8,6 @@ biopython = "*"
 bitstring = "*"
 numpy = "*"
 networkx = "*"
-pygraphviz = "*"
 
 [dev-packages]
 hypothesis = "*"

@@ -1,8 +1,22 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "8d4ecdd7b2e99652c3dfbc29a847c0f401ca6e5b68b40d5f2149d7a246da027f"
+            "sha256": "0be9f9de110427fae02197ff47eeeb2a5eb52bc1e060d44a784f514b7cd59913"
         },
+        "host-environment-markers": {
+            "implementation_name": "cpython",
+            "implementation_version": "3.6.2",
+            "os_name": "posix",
+            "platform_machine": "x86_64",
+            "platform_python_implementation": "CPython",
+            "platform_release": "16.7.0",
+            "platform_system": "Darwin",
+            "platform_version": "Darwin Kernel Version 16.7.0: Thu Jun 15 17:36:27 PDT 2017; root:xnu-3789.70.16~2/RELEASE_X86_64",
+            "python_full_version": "3.6.2",
+            "python_version": "3.6",
+            "sys_platform": "darwin"
+        },
+        "pipfile-spec": 2,
         "requires": {},
         "sources": [
             {
@@ -29,9 +43,6 @@
         },
         "numpy": {
             "version": "==1.13.3"
-        },
-        "pygraphviz": {
-            "version": "==1.3.1"
         }
     },
     "develop": {
@@ -54,7 +65,7 @@
             "version": "==3.0.4"
         },
         "coverage": {
-            "version": "==4.4.1"
+            "version": "==4.0.3"
         },
         "docutils": {
             "version": "==0.14"
@@ -63,7 +74,7 @@
             "version": "==3.4.1"
         },
         "hypothesis": {
-            "version": "==3.32.1"
+            "version": "==3.33.0"
         },
         "idna": {
             "version": "==2.6"
@@ -124,9 +135,6 @@
         },
         "requests": {
             "version": "==2.18.4"
-        },
-        "setuptools": {
-            "version": "==36.6.0"
         },
         "six": {
             "version": "==1.11.0"

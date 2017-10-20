@@ -1,7 +1,8 @@
 HYPOTHESIS_PROFILE = dev
-PIP = pip
+PIP = pip3
+BIN_DIR = "./bin"
 
-TEST_COMMAND = pipenv run pytest \
+TEST_COMMAND = BIN_DIR=$(BIN_DIR) pipenv run pytest \
 	--flake8 \
 	--cov=pycortex \
 	--cov-report term-missing \
