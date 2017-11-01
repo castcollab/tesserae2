@@ -31,6 +31,7 @@ setup(
     maintainer='Warren W. Kretzschmar and Kiran Garimella',
     maintainer_email='winni@warrenwk.com and kiran.garimella@gmail.com',
     url='https://github.com/winni2k/pycortex',
+    download_url='https://github.com/winni2k/pycortex/archive/{}.tar.gz'.format(version),
     license='Apache-2.0',
     long_description=open('README.md').read(),
     install_requires=pipfile_lock_requirements,
