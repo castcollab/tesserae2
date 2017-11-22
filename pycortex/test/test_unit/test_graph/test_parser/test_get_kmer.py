@@ -1,9 +1,11 @@
+import numpy as np
 import pytest
 from hypothesis import given
 from hypothesis import strategies as s
 import pycortex.test.builder as builder
 import pycortex.graph.parser as parser
-from pycortex.test.builder.graph.body import kmers, KmerRecord, as_edge_set
+from pycortex.test.builder.graph.body import KmerRecord, as_edge_set
+from pycortex.test.builder.graph.kmer import kmers
 
 
 class TestDunderGetitemDunder(object):
@@ -35,7 +37,7 @@ class TestDunderGetitemDunder(object):
 
             # then
             assert expected_kmer.kmer == kmer.kmer
-            assert expected_kmer.coverage == kmer.coverage
+            assert np.all(expected_kmer.coverage == kmer.coverage)
             assert expected_kmer.edges == kmer.edges
 
     def test_raises_on_missing_kmer(self):
@@ -90,7 +92,7 @@ class TestDunderIterDunder(object):
         for kmer, expected_kmer in zip(ra_parser, expected_kmers):
             # then
             assert expected_kmer.kmer == kmer.kmer
-            assert expected_kmer.coverage == kmer.coverage
+            assert np.all(expected_kmer.coverage == kmer.coverage)
             assert expected_kmer.edges == kmer.edges
 
     def test_gets_aaa(self):
@@ -99,7 +101,7 @@ class TestDunderIterDunder(object):
                          .with_kmer_size(3)
                          .with_num_colors(1))
 
-        expected_kmer = KmerRecord('AAA', (1,), (as_edge_set('........'),))
+        expected_kmer = KmerRecord('AAA', (1,), [as_edge_set('........')])
         graph_builder.with_kmer_record(expected_kmer)
 
         cg = parser.RandomAccess(graph_builder.build())
@@ -107,7 +109,7 @@ class TestDunderIterDunder(object):
         # when
         for kmer in cg:
             assert expected_kmer.kmer == kmer.kmer
-            assert expected_kmer.coverage == kmer.coverage
+            assert np.all(expected_kmer.coverage == kmer.coverage)
             assert expected_kmer.edges == kmer.edges
 
     def test_works_with_no_kmers(self):
