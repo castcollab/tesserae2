@@ -315,8 +315,9 @@ class TestOutputTypeJSON(object):
         expect.has_node_repr('C').has_coverages([1, 1])
         expect.has_node_repr('GAA').has_coverages([2, 1], [1, 1], [1, 1])
 
-        for edge in [(0, 1, 0), (0, 1, 1), (1, 2, 0), (1, 2, 1), (0, 2, 0)]:
-            expect.has_edge(*edge)
+        for edge in [('AAACC', 'C', 0), ('AAACC', 'C', 1), ('C', 'GAA', 0), ('C', 'GAA', 1),
+                     ('AAACC', 'GAA', 0)]:
+            expect.has_repr_edge(*edge)
         expect.has_n_edges(5)
 
     def test_collapse_kmer_unitigs_option_with_missing_kmers(self, tmpdir):
