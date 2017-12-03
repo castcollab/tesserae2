@@ -6,6 +6,7 @@ TEST_COMMAND = BIN_DIR=$(BIN_DIR) pipenv run pytest \
 	--flake8 \
 	--cov=pycortex \
 	--cov-report term-missing \
+	--cov-report html \
 	--hypothesis-profile $(HYPOTHESIS_PROFILE)
 
 

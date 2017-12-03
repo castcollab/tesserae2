@@ -5,7 +5,6 @@ import attr
 import pycortex.graph as graph
 import pycortex.graph.serializer as serializer
 import pycortex.test.builder as builder
-from pycortex.graph.serializer import collapse_kmer_unitigs
 from pycortex.test.expectation.kmer import CollapsedKmerUnitgGraphExpectation
 
 
@@ -47,9 +46,10 @@ class CollapseKmerUnitigsTestDriver(object):
 
     def run(self):
         kmer_graph = self.serializer_driver.run()
-        return CollapsedKmerUnitgGraphExpectation(
-            collapse_kmer_unitigs(kmer_graph, colors=self.serializer_driver.retriever.colors)
-        )
+        collapser = (serializer
+                     .UnitigCollapser(kmer_graph, colors=self.serializer_driver.retriever.colors)
+                     .collapse_kmer_unitigs())
+        return CollapsedKmerUnitgGraphExpectation(collapser.unitig_graph)
 
 
 @attr.s(slots=True)
