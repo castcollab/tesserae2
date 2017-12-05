@@ -6,7 +6,7 @@
 
 Python implementation of [CortexJDK](https://github.com/mcveanlab/CortexJDK)
 
-cortexpy supports python versions 3.5 and 3.6.
+Cortexpy supports python versions 3.5 and 3.6.
 
 ## Development
 

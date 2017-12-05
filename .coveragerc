@@ -1,7 +1,5 @@
 [run]
-source =
-    cortexpy
-    tests
+source = cortexpy
 branch = True
 omit =
     cortexpy/__main__.py
