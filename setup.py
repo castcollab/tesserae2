@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 import json
 from io import open
 
-with open('pycortex/__init__.py', 'r') as f:
+with open('cortexpy/__init__.py', 'r') as f:
     for line in f:
         if line.startswith('__version__'):
             version = line.strip().split('=')[1].strip(' \'"')
@@ -23,15 +23,15 @@ packages = find_packages('.', exclude=['*.test', '*.test.*'])
 pipfile_lock_requirements = get_requirements_from_pipfile_lock()
 
 setup(
-    name='pycortex',
+    name='cortexpy',
     version=version,
     description='The python sister project to CortexJDK',
     author='Warren W. Kretzschmar and Kiran Garimella',
     author_email='winni@warrenwk.com and kiran.garimella@gmail.com',
     maintainer='Warren W. Kretzschmar and Kiran Garimella',
     maintainer_email='winni@warrenwk.com and kiran.garimella@gmail.com',
-    url='https://github.com/winni2k/pycortex',
-    download_url='https://github.com/winni2k/pycortex/archive/{}.tar.gz'.format(version),
+    url='https://github.com/winni2k/cortexpy',
+    download_url='https://github.com/winni2k/cortexpy/archive/{}.tar.gz'.format(version),
     license='Apache-2.0',
     long_description=open('README.md').read(),
     install_requires=pipfile_lock_requirements,

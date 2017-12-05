@@ -2,10 +2,10 @@ import json
 
 import attr
 
-import pycortex.graph as graph
-import pycortex.graph.serializer as serializer
-import pycortex.test.builder as builder
-from pycortex.test.expectation.kmer import CollapsedKmerUnitgGraphExpectation
+import cortexpy.graph as graph
+import cortexpy.graph.serializer as serializer
+import cortexpy.test.builder as builder
+from cortexpy.test.expectation.kmer import CollapsedKmerUnitgGraphExpectation
 
 
 @attr.s(slots=True)

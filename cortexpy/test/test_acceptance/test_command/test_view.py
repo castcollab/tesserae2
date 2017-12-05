@@ -6,13 +6,13 @@ import io
 import json
 import sys
 
-from pycortex.__main__ import main
-import pycortex.test.builder as builder
-import pycortex.test.runner as runner
+from cortexpy.__main__ import main
+import cortexpy.test.builder as builder
+import cortexpy.test.runner as runner
 
 
 @attr.s(slots=True)
-class PycortexPrintOutputParser(object):
+class cortexpyPrintOutputParser(object):
     output = attr.ib()
 
     def get_kmer_strings(self):
@@ -26,7 +26,7 @@ class ViewExpectation(object):
     kmer_strings = attr.ib(init=False)
 
     def __attrs_post_init__(self):
-        self.parser = PycortexPrintOutputParser(self.output)
+        self.parser = cortexpyPrintOutputParser(self.output)
         self.kmer_strings = self.parser.get_kmer_strings()
 
     def has_kmer(self, kmer_string):
@@ -55,13 +55,13 @@ class Test(object):
         ]
 
         # when
-        pycortex_output = io.StringIO()
-        with contextlib.redirect_stdout(pycortex_output):
+        cortexpy_output = io.StringIO()
+        with contextlib.redirect_stdout(cortexpy_output):
             main(['view', output_graph])
 
         # then
-        assert expected_kmers == PycortexPrintOutputParser(
-            pycortex_output.getvalue()).get_kmer_strings()
+        assert expected_kmers == cortexpyPrintOutputParser(
+            cortexpy_output.getvalue()).get_kmer_strings()
 
 
 class TestTermWithRecord(object):
@@ -76,13 +76,13 @@ class TestTermWithRecord(object):
         expected_kmer = 'CAA: CAA 1 1 .c...... ........'
 
         # when
-        pycortex_output = io.StringIO()
-        with contextlib.redirect_stdout(pycortex_output):
+        cortexpy_output = io.StringIO()
+        with contextlib.redirect_stdout(cortexpy_output):
             main(['view', output_graph, '--record', 'CAA'])
 
         # then
-        assert [expected_kmer] == PycortexPrintOutputParser(
-            pycortex_output.getvalue()).get_kmer_strings()
+        assert [expected_kmer] == cortexpyPrintOutputParser(
+            cortexpy_output.getvalue()).get_kmer_strings()
 
     def test_prints_one_missing_kmer(self, tmpdir):
         # given
@@ -96,13 +96,13 @@ class TestTermWithRecord(object):
         expected_kmer = 'CCC: GGG 0 1 ........ ........'
 
         # when
-        pycortex_output = io.StringIO()
-        with contextlib.redirect_stdout(pycortex_output):
+        cortexpy_output = io.StringIO()
+        with contextlib.redirect_stdout(cortexpy_output):
             main(['view', output_graph, '--record', record])
 
         # then
-        assert [expected_kmer] == PycortexPrintOutputParser(
-            pycortex_output.getvalue()).get_kmer_strings()
+        assert [expected_kmer] == cortexpyPrintOutputParser(
+            cortexpy_output.getvalue()).get_kmer_strings()
 
     def test_prints_three_kmers(self, tmpdir):
         # given
@@ -119,13 +119,13 @@ class TestTermWithRecord(object):
         ]
 
         # when
-        pycortex_output = io.StringIO()
-        with contextlib.redirect_stdout(pycortex_output):
+        cortexpy_output = io.StringIO()
+        with contextlib.redirect_stdout(cortexpy_output):
             main(['view', output_graph, '--record', record])
 
         # then
-        assert expected_kmers == PycortexPrintOutputParser(
-            pycortex_output.getvalue()).get_kmer_strings()
+        assert expected_kmers == cortexpyPrintOutputParser(
+            cortexpy_output.getvalue()).get_kmer_strings()
 
     def test_prints_three_kmers_including_one_revcomp(self, tmpdir):
         # given
@@ -143,13 +143,13 @@ class TestTermWithRecord(object):
         ]
 
         # when
-        pycortex_output = io.StringIO()
-        with contextlib.redirect_stdout(pycortex_output):
+        cortexpy_output = io.StringIO()
+        with contextlib.redirect_stdout(cortexpy_output):
             main(['view', output_graph, '--record', record])
 
         # then
-        assert expected_kmers == PycortexPrintOutputParser(
-            pycortex_output.getvalue()).get_kmer_strings()
+        assert expected_kmers == cortexpyPrintOutputParser(
+            cortexpy_output.getvalue()).get_kmer_strings()
 
     def test_prints_one_missing_and_one_revcomp_kmer(self, tmpdir):
         # given
@@ -167,10 +167,10 @@ class TestTermWithRecord(object):
         ]
 
         # when
-        pycortex_output = io.StringIO()
-        with contextlib.redirect_stdout(pycortex_output):
+        cortexpy_output = io.StringIO()
+        with contextlib.redirect_stdout(cortexpy_output):
             main(['view', output_graph, '--record', search_record])
-        expect = ViewExpectation(pycortex_output.getvalue())
+        expect = ViewExpectation(cortexpy_output.getvalue())
 
         # then
         (expect
@@ -275,7 +275,7 @@ class TestOutputTypeJSON(object):
 
         # when
         completed_process = (runner
-                             .Pycortex(True)
+                             .cortexpy(True)
                              .view(['--record', record, '--output-type', 'json', output_graph]))
         stdout = completed_process.stdout.decode()
 
@@ -298,7 +298,7 @@ class TestOutputTypeJSON(object):
 
         # when
         completed_process = (runner
-                             .Pycortex(True)
+                             .cortexpy(True)
                              .view(['--record', record1,
                                     '--output-type', 'json',
                                     output_graph]))
@@ -335,7 +335,7 @@ class TestOutputTypeJSON(object):
 
         # when
         completed_process = (runner
-                             .Pycortex(True)
+                             .cortexpy(True)
                              .view(['--record', query_record,
                                     '--output-type', 'json',
                                     output_graph]))

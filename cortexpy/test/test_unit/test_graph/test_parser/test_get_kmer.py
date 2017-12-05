@@ -2,10 +2,10 @@ import numpy as np
 import pytest
 from hypothesis import given
 from hypothesis import strategies as s
-import pycortex.test.builder as builder
-import pycortex.graph.parser as parser
-from pycortex.test.builder.graph.body import KmerRecord, as_edge_set
-from pycortex.test.builder.graph.kmer import kmers
+import cortexpy.test.builder as builder
+import cortexpy.graph.parser as parser
+from cortexpy.test.builder.graph.body import KmerRecord, as_edge_set
+from cortexpy.test.builder.graph.kmer import kmers
 
 
 class TestDunderGetitemDunder(object):

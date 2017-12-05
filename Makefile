@@ -4,7 +4,7 @@ BIN_DIR = "./bin"
 
 TEST_COMMAND = BIN_DIR=$(BIN_DIR) pipenv run pytest \
 	--flake8 \
-	--cov=pycortex \
+	--cov=cortexpy \
 	--cov-report term-missing \
 	--cov-report html \
 	--hypothesis-profile $(HYPOTHESIS_PROFILE)
@@ -24,22 +24,22 @@ update:
 	git submodule update --init --recursive
 
 unit:
-	$(TEST_COMMAND) pycortex/test/test_unit
+	$(TEST_COMMAND) cortexpy/test/test_unit
 
 acceptance:
-	$(TEST_COMMAND) pycortex/test/test_acceptance
+	$(TEST_COMMAND) cortexpy/test/test_acceptance
 
 test:
-	$(TEST_COMMAND) pycortex
+	$(TEST_COMMAND) cortexpy
 
 
 lint:
-	- pipenv run pylint pycortex \
+	- pipenv run pylint cortexpy \
 	--ignore test \
 	--disable missing-docstring,unsubscriptable-object,no-member
 
 acceptance_: libs/seq_file/bin/dnacat
-	$(MAKE) -C pycortex/test/from-mccortex/build
+	$(MAKE) -C cortexpy/test/from-mccortex/build
 
 libs/seq_file/bin/dnacat:
 	$(MAKE) -C $$(dirname $$(dirname $@))

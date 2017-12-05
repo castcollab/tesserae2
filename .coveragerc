@@ -1,11 +1,11 @@
 [run]
 source =
-    pycortex
+    cortexpy
     tests
 branch = True
 omit =
-    pycortex/__main__.py
-    pycortex/test/*
+    cortexpy/__main__.py
+    cortexpy/test/*
 
 [report]
 exclude_lines =

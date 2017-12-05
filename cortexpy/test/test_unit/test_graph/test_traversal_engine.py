@@ -1,9 +1,9 @@
 import attr
 import pytest
 
-import pycortex as cp
-import pycortex.test.builder as builder
-import pycortex.test.expectation as expectation
+import cortexpy as cp
+import cortexpy.test.builder as builder
+import cortexpy.test.expectation as expectation
 
 
 @attr.s(slots=True)
