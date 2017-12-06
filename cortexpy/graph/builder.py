@@ -13,9 +13,7 @@ class Builder(object):
             if self.colors_to_link is not None and color not in self.colors_to_link:
                 continue
             for outgoing_kmer in edge_set.get_outgoing_kmer_strings(kmer_string):
-                self.graph.add_node(outgoing_kmer)
                 self.graph.add_edge(kmer_string, outgoing_kmer, key=color)
             for incoming_kmer in edge_set.get_incoming_kmer_strings(kmer_string):
-                self.graph.add_node(incoming_kmer)
                 self.graph.add_edge(incoming_kmer, kmer_string, key=color)
         return self
