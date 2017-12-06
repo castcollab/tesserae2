@@ -2,11 +2,12 @@ HYPOTHESIS_PROFILE = dev
 PIP = pip3
 BIN_DIR = "./bin"
 
-TEST_COMMAND = BIN_DIR=$(BIN_DIR) pipenv run pytest \
+UNIT_TEST_COMMAND = pipenv run pytest \
 	--flake8 \
 	--cov=cortexpy \
 	--cov-report term-missing \
 	--hypothesis-profile $(HYPOTHESIS_PROFILE)
+TEST_COMMAND = BIN_DIR=$(BIN_DIR) $(UNIT_TEST_COMMAND)
 
 init: update pipenv compile
 
@@ -22,7 +23,7 @@ update:
 	git submodule update --init --recursive
 
 unit:
-	$(TEST_COMMAND) cortexpy/test/test_unit
+	$(UNIT_TEST_COMMAND) cortexpy/test/test_unit
 
 acceptance:
 	$(TEST_COMMAND) cortexpy/test/test_acceptance
