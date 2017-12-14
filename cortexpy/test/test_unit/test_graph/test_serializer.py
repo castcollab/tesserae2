@@ -69,7 +69,7 @@ class JsonSerializableTestDriver(object):
         kmer_graph = self.serializer_driver.run()
         the_serializer = (serializer
                           .Serializer(kmer_graph, colors=self.serializer_driver.retriever.colors))
-        the_serializer.to_json_serializable()
+        the_serializer.to_unitig_graph()
         return CollapsedKmerUnitgGraphExpectation(the_serializer.unitig_graph)
 
 
