@@ -5,6 +5,8 @@ import attr
 import cortexpy.graph as graph
 import cortexpy.graph.serializer as serializer
 import cortexpy.test.builder as builder
+from cortexpy.graph import traversal, parser
+from cortexpy.test.expectation import KmerGraphExpectation
 from cortexpy.test.expectation.kmer import CollapsedKmerUnitgGraphExpectation
 
 
@@ -13,6 +15,10 @@ class SerializerTestDriver(object):
     graph_builder = attr.ib(attr.Factory(builder.Graph))
     contig_to_retrieve = attr.ib(None)
     retriever = attr.ib(None)
+    traverse = attr.ib(False)
+    retrieve = attr.ib(False)
+    traversal_start_kmer = attr.ib(None)
+    traversal_color = attr.ib(0)
 
     def with_kmer_size(self, n):
         self.graph_builder.with_kmer_size(n)
@@ -22,13 +28,27 @@ class SerializerTestDriver(object):
         self.graph_builder.with_kmer(*args)
         return self
 
-    def with_contig_to_retrieve(self, contig):
+    def traverse_with_start_kmer_and_color(self, start_kmer, color):
+        self.traverse = True
+        self.traversal_start_kmer = start_kmer
+        self.traversal_color = color
+        return self
+
+    def retrieve_contig(self, contig):
+        self.retrieve = True
         self.contig_to_retrieve = contig
         return self
 
     def run(self):
-        self.retriever = graph.ContigRetriever(self.graph_builder.build())
-        return self.retriever.get_kmer_graph(self.contig_to_retrieve)
+        if self.retrieve:
+            self.retriever = graph.ContigRetriever(self.graph_builder.build())
+            return self.retriever.get_kmer_graph(self.contig_to_retrieve)
+        elif self.traverse:
+            traverser = traversal.Engine(parser.RandomAccess(self.graph_builder.build()),
+                                         color=self.traversal_color)
+            return traverser.traverse_from(self.traversal_start_kmer)
+        else:
+            raise Exception("Need to load a command")
 
 
 @attr.s(slots=True)
@@ -78,7 +98,7 @@ class TestCollapseKmerUnitigsCreatesSingleUnitig(object):
         # given
         driver = (CollapseKmerUnitigsTestDriver()
                   .with_kmer_size(3)
-                  .with_contig_to_retrieve('GTT'))
+                  .retrieve_contig('GTT'))
 
         # when
         expect = driver.run()
@@ -92,7 +112,7 @@ class TestCollapseKmerUnitigsCreatesSingleUnitig(object):
         driver = (CollapseKmerUnitigsTestDriver()
                   .with_kmer_size(3)
                   .with_kmer('AAC', 1)
-                  .with_contig_to_retrieve('GTT'))
+                  .retrieve_contig('GTT'))
 
         # when
         expect = driver.run()
@@ -106,7 +126,7 @@ class TestCollapseKmerUnitigsCreatesSingleUnitig(object):
                   .with_kmer_size(3)
                   .with_kmer('AAA', 0, '.....C..')
                   .with_kmer('AAC', 0, 'a.......')
-                  .with_contig_to_retrieve('AAAC'))
+                  .retrieve_contig('AAAC'))
 
         # when
         expect = driver.run()
@@ -120,7 +140,7 @@ class TestCollapseKmerUnitigsCreatesSingleUnitig(object):
                   .with_kmer('AAA', 0, '.....C..')
                   .with_kmer('AAC', 0, 'a....C..')
                   .with_kmer('ACC', 0, 'a.......')
-                  .with_contig_to_retrieve('AAACC'))
+                  .retrieve_contig('AAACC'))
 
         # when
         expect = driver.run()
@@ -137,7 +157,7 @@ class TestCollapseKmerUnitigs(object):
                   .with_kmer_size(3)
                   .with_kmer('CAA')
                   .with_kmer('AAC')
-                  .with_contig_to_retrieve('GTTG'))
+                  .retrieve_contig('GTTG'))
 
         # when
         expect = driver.run()
@@ -153,7 +173,7 @@ class TestCollapseKmerUnitigs(object):
                   .with_kmer_size(3)
                   .with_kmer('CAA', 1)
                   .with_kmer('AAC', 1)
-                  .with_contig_to_retrieve('GTTG'))
+                  .retrieve_contig('GTTG'))
 
         # when
         expect = driver.run()
@@ -173,7 +193,7 @@ class TestCollapseKmerUnitigs(object):
                   .with_kmer('ACG', 1, 'a.g.A...')
                   .with_kmer('CGA', 1, 'a....C..')
                   .with_kmer('GAC', 1, '.c....G.')
-                  .with_contig_to_retrieve('AAACGAC'))
+                  .retrieve_contig('AAACGAC'))
 
         # when
         expect = driver.run()
@@ -194,7 +214,7 @@ class TestCollapseKmerUnitigs(object):
                   .with_kmer('CCC', 1, 'a.....G.')
                   .with_kmer('CCG', 1, 'ac..A...')
                   .with_kmer('CGA', 1, '.c......')
-                  .with_contig_to_retrieve('AACCCCGA'))
+                  .retrieve_contig('AACCCCGA'))
 
         # when
         expect = driver.run()
@@ -211,7 +231,7 @@ class TestCollapseKmerUnitigs(object):
                   .with_kmer_size(3)
                   .with_kmer('GAA', 1, '........')
                   .with_kmer('ACC', 1, '........')
-                  .with_contig_to_retrieve('GGTTC'))
+                  .retrieve_contig('GGTTC'))
 
         # when
         expect = driver.run()
@@ -229,7 +249,7 @@ class TestCollapseKmerUnitigs(object):
                   .with_kmer_size(3)
                   .with_kmer('AAA', 1, '.c...C..')
                   .with_kmer('AAC', 1, 'a.......')
-                  .with_contig_to_retrieve('GTTTA'))
+                  .retrieve_contig('GTTTA'))
 
         # when
         expect = driver.run()
@@ -268,7 +288,7 @@ class TestToJsonSerializable(object):
                   .with_kmer_size(3)
                   .with_kmer('AAA', 1, '.....C..')
                   .with_kmer('AAC', 1, 'a.......')
-                  .with_contig_to_retrieve('GTTT'))
+                  .retrieve_contig('GTTT'))
 
         # when
         expect = driver.run()
@@ -282,7 +302,7 @@ class TestToJsonSerializable(object):
                   .with_kmer_size(3)
                   .with_kmer('CAA', 1, '........')
                   .with_kmer('ACC', 1, '........')
-                  .with_contig_to_retrieve('GGTTG'))
+                  .retrieve_contig('GGTTG'))
 
         # when
         expect = driver.run()
@@ -301,7 +321,7 @@ class TestToJsonSerializable(object):
                   .with_kmer_size(3)
                   .with_kmer('AAA', 1, '.....C..')
                   .with_kmer('AAC', 1, 'a.......')
-                  .with_contig_to_retrieve('GTTTAA'))
+                  .retrieve_contig('GTTTAA'))
 
         # when
         expect = driver.run()
@@ -318,7 +338,7 @@ class TestToJsonSerializable(object):
                   .with_kmer_size(3)
                   .with_kmer('AAA', 1, '.....C..')
                   .with_kmer('AAC', 1, 'a....C..')
-                  .with_contig_to_retrieve('CAAGTTTAGG'))
+                  .retrieve_contig('CAAGTTTAGG'))
 
         # when
         expect = driver.run()
@@ -330,3 +350,43 @@ class TestToJsonSerializable(object):
         expect.has_one_node_with_repr('AGG').has_coverages([0, 1])
         expect.has_n_nodes(4)
         expect.has_n_edges(3)
+
+
+class TestEdgeAnnotation(object):
+    def test_with_single_kmer_and_link_annotates_etra_links(self):
+        driver = (SerializerTestDriver()
+                  .with_kmer_size(3)
+                  .with_kmer('AAA 1 1 ........ .c...C..')
+                  .traverse_with_start_kmer_and_color('AAA', 0))
+
+        # when
+        kmer_graph = driver.run()
+        annotated_graph = serializer.Serializer(kmer_graph,
+                                                colors=[0, 1]).to_graph_with_annotated_edges()
+        expect = KmerGraphExpectation(annotated_graph)
+
+        # then
+        expect.has_node('CAA').has_coverages(0, 0)
+        expect.has_node('AAA').has_coverages(1, 1)
+        expect.has_node('AAC').has_coverages(0, 0)
+        expect.has_n_nodes(3)
+        expect.has_edges('AAA AAC 1', 'CAA AAA 1')
+
+    def test_for_revcomp_with_single_kmer_and_link_annotates_etra_links(self):
+        driver = (SerializerTestDriver()
+                  .with_kmer_size(3)
+                  .with_kmer('AAA 1 1 ........ ..g..C..')
+                  .traverse_with_start_kmer_and_color('TTT', 0))
+
+        # when
+        kmer_graph = driver.run()
+        annotated_graph = serializer.Serializer(kmer_graph,
+                                                colors=[0, 1]).to_graph_with_annotated_edges()
+        expect = KmerGraphExpectation(annotated_graph)
+
+        # then
+        expect.has_node('TTC').has_coverages(0, 0)
+        expect.has_node('TTT').has_coverages(1, 1)
+        expect.has_node('GTT').has_coverages(0, 0)
+        expect.has_n_nodes(3)
+        expect.has_edges('TTT TTC 1', 'GTT TTT 1')
