@@ -87,8 +87,7 @@ class JsonSerializableTestDriver(object):
 
     def run(self):
         kmer_graph = self.serializer_driver.run()
-        the_serializer = (serializer
-                          .Serializer(kmer_graph, colors=self.serializer_driver.retriever.colors))
+        the_serializer = serializer.Serializer(kmer_graph)
         the_serializer.to_unitig_graph()
         return CollapsedKmerUnitgGraphExpectation(the_serializer.unitig_graph)
 
@@ -266,19 +265,23 @@ class TestCollapseKmerUnitigs(object):
 class TestToJson(object):
     def test_two_linked_kmers_are_jsonifiable(self):
         # given
+        color_names = 'samp1', 'samp2'
         graph_builder = (builder.Graph()
                          .with_kmer_size(3)
                          .with_num_colors(2)
+                         .with_color_names(*color_names)
                          .with_kmer('AAA', [1, 1], ['.....C..', '.......T'])
                          .with_kmer('AAC', [1, 0], ['a.......', '........']))
         retriever = graph.ContigRetriever(graph_builder.build())
         kmer_graph = retriever.get_kmer_graph('GTTT')
 
         # when
-        kmer_json = serializer.Serializer(kmer_graph, colors=[0, 1, 2]).to_json()
+        kmer_json = serializer.Serializer(kmer_graph).to_json()
 
         # then
-        json.loads(kmer_json)  # does not raise
+        kmer_data = json.loads(kmer_json)  # does not raise
+        assert kmer_data['graph']['colors'] == list(range(3))
+        assert kmer_data['graph']['sample_names'] == list(color_names) + ['retrieved_contig']
 
 
 class TestToJsonSerializable(object):
@@ -361,8 +364,7 @@ class TestEdgeAnnotation(object):
 
         # when
         kmer_graph = driver.run()
-        annotated_graph = serializer.Serializer(kmer_graph,
-                                                colors=[0, 1]).to_graph_with_annotated_edges()
+        annotated_graph = serializer.Serializer(kmer_graph).to_graph_with_annotated_edges()
         expect = KmerGraphExpectation(annotated_graph)
 
         # then
@@ -380,8 +382,7 @@ class TestEdgeAnnotation(object):
 
         # when
         kmer_graph = driver.run()
-        annotated_graph = serializer.Serializer(kmer_graph,
-                                                colors=[0, 1]).to_graph_with_annotated_edges()
+        annotated_graph = serializer.Serializer(kmer_graph).to_graph_with_annotated_edges()
         expect = KmerGraphExpectation(annotated_graph)
 
         # then
