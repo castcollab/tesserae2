@@ -2,7 +2,10 @@ HYPOTHESIS_PROFILE = dev
 PIP = pip3
 BIN_DIR = "./bin"
 
-UNIT_TEST_COMMAND = pipenv run pytest \
+RUN_IN_ENV = pipenv run
+PYTHON = $(RUN_IN_ENV) python
+
+UNIT_TEST_COMMAND = $(RUN_IN_ENV) pytest \
 	--flake8 \
 	--cov=cortexpy \
 	--cov-report term-missing \
@@ -31,9 +34,8 @@ acceptance:
 test:
 	$(TEST_COMMAND) cortexpy
 
-
 lint:
-	- pipenv run pylint cortexpy \
+	- $(RUN_IN_ENV) pylint cortexpy \
 	--ignore test \
 	--disable missing-docstring,unsubscriptable-object,no-member
 
@@ -43,4 +45,14 @@ acceptance_: libs/seq_file/bin/dnacat
 libs/seq_file/bin/dnacat:
 	$(MAKE) -C $$(dirname $$(dirname $@))
 
-.PHONY: test acceptance unit clean update pipenv compile
+publish: build
+	$(RUN_IN_ENV) twine upload dist/*
+
+build: clean
+	$(PYTHON) setup.py sdist
+	$(PYTHON) setup.py bdist_wheel
+
+clean:
+	rm -rf dist
+
+.PHONY: test acceptance unit clean update pipenv compile build publish

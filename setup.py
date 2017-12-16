@@ -9,7 +9,7 @@ with open('cortexpy/__init__.py', 'r') as f:
             version = line.strip().split('=')[1].strip(' \'"')
             break
         else:
-            version = '0.0.1'
+            raise Exception("Could not find __version__")
 
 
 def get_requirements_from_pipfile_lock(pipfile_lock=None):

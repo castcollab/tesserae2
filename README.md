@@ -18,3 +18,19 @@ make init
 
 See `cortexpy/__main__.py` for example uses of cortexpy.
 
+### Publishing to Pypi
+
+```bash
+# assuming version 0.0.1
+
+# Step 1: Set __version__ in cortexpy/__init__.py
+
+# Step 2: Make version commit
+git commit -am'Bump to version 0.0.1'
+
+# Step 3: tag commit
+git tag 0.0.1
+
+# Step 4: publish to pypi
+make publish
+```
