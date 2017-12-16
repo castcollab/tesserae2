@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "0be9f9de110427fae02197ff47eeeb2a5eb52bc1e060d44a784f514b7cd59913"
+            "sha256": "0e93f62ee57830fba7b6daca2ec1b3dd74108a5b264b32ac878cb84838137d2d"
         },
         "requires": {},
         "sources": [
@@ -21,6 +21,9 @@
         "bitstring": {
             "version": "==3.1.5"
         },
+        "coverage": {
+            "version": "==4.4.2"
+        },
         "decorator": {
             "version": "==4.1.2"
         },
@@ -29,6 +32,24 @@
         },
         "numpy": {
             "version": "==1.13.3"
+        },
+        "pluggy": {
+            "version": "==0.6.0"
+        },
+        "py": {
+            "version": "==1.5.2"
+        },
+        "pytest": {
+            "version": "==3.3.1"
+        },
+        "pytest-cov": {
+            "version": "==2.5.1"
+        },
+        "setuptools": {
+            "version": "==38.2.4"
+        },
+        "six": {
+            "version": "==1.11.0"
         }
     },
     "develop": {
@@ -36,7 +57,7 @@
             "version": "==0.7.10"
         },
         "astroid": {
-            "version": "==1.5.3"
+            "version": "==1.6.0"
         },
         "attrs": {
             "version": "==17.3.0"
@@ -60,7 +81,7 @@
             "version": "==3.5.0"
         },
         "hypothesis": {
-            "version": "==3.38.6"
+            "version": "==3.42.2"
         },
         "idna": {
             "version": "==2.6"
@@ -99,13 +120,10 @@
             "version": "==2.2.0"
         },
         "pylint": {
-            "version": "==1.7.4"
+            "version": "==1.8.1"
         },
         "pytest": {
-            "version": "==3.3.0"
-        },
-        "pytest-cov": {
-            "version": "==2.5.1"
+            "version": "==3.3.1"
         },
         "pytest-flake8": {
             "version": "==0.9.1"
@@ -126,7 +144,7 @@
             "version": "==2.18.4"
         },
         "setuptools": {
-            "version": "==38.2.3"
+            "version": "==38.2.4"
         },
         "six": {
             "version": "==1.11.0"

@@ -13,7 +13,7 @@ pytest-cov = "*"
 [dev-packages]
 hypothesis = "*"
 pytest = "*"
-pytest-flake8 = "*"
 pytest-pylint = "*"
 python-coveralls = "*"
 Sphinx = "*"
+pytest-flake8 = "*"
