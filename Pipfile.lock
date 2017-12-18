@@ -60,7 +60,7 @@
             "version": "==3.5.0"
         },
         "hypothesis": {
-            "version": "==3.42.2"
+            "version": "==3.44.1"
         },
         "idna": {
             "version": "==2.6"
