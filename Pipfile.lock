@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "0e93f62ee57830fba7b6daca2ec1b3dd74108a5b264b32ac878cb84838137d2d"
+            "sha256": "c6d481adc0007007e8e003a81b43ba30e23386a6323b773e2cd3539858b38f24"
         },
         "requires": {},
         "sources": [
@@ -18,12 +18,6 @@
         "biopython": {
             "version": "==1.70"
         },
-        "bitstring": {
-            "version": "==3.1.5"
-        },
-        "coverage": {
-            "version": "==4.4.2"
-        },
         "decorator": {
             "version": "==4.1.2"
         },
@@ -32,24 +26,6 @@
         },
         "numpy": {
             "version": "==1.13.3"
-        },
-        "pluggy": {
-            "version": "==0.6.0"
-        },
-        "py": {
-            "version": "==1.5.2"
-        },
-        "pytest": {
-            "version": "==3.3.1"
-        },
-        "pytest-cov": {
-            "version": "==2.5.1"
-        },
-        "setuptools": {
-            "version": "==38.2.4"
-        },
-        "six": {
-            "version": "==1.11.0"
         }
     },
     "develop": {
@@ -64,6 +40,9 @@
         },
         "babel": {
             "version": "==2.5.1"
+        },
+        "bitstring": {
+            "version": "==3.1.5"
         },
         "certifi": {
             "version": "==2017.11.5"
@@ -104,6 +83,9 @@
         "mccabe": {
             "version": "==0.6.1"
         },
+        "pkginfo": {
+            "version": "==1.4.1"
+        },
         "pluggy": {
             "version": "==0.6.0"
         },
@@ -125,6 +107,9 @@
         "pytest": {
             "version": "==3.3.1"
         },
+        "pytest-cov": {
+            "version": "==2.5.1"
+        },
         "pytest-flake8": {
             "version": "==0.9.1"
         },
@@ -143,6 +128,9 @@
         "requests": {
             "version": "==2.18.4"
         },
+        "requests-toolbelt": {
+            "version": "==0.8.0"
+        },
         "setuptools": {
             "version": "==38.2.4"
         },
@@ -158,8 +146,17 @@
         "sphinxcontrib-websupport": {
             "version": "==1.0.1"
         },
+        "tqdm": {
+            "version": "==4.19.5"
+        },
+        "twine": {
+            "version": "==1.9.1"
+        },
         "urllib3": {
             "version": "==1.22"
+        },
+        "wheel": {
+            "version": "==0.30.0"
         },
         "wrapt": {
             "version": "==1.10.11"

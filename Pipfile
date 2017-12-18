@@ -5,17 +5,17 @@ verify_ssl = true
 [packages]
 attrs = "*"
 biopython = "*"
-bitstring = "*"
 numpy = "*"
 networkx = "*"
-pytest-cov = "*"
 
 [dev-packages]
+bitstring = "*"
 hypothesis = "*"
 pytest = "*"
+pytest-cov = "*"
+pytest-flake8 = "*"
 pytest-pylint = "*"
 python-coveralls = "*"
 Sphinx = "*"
-pytest-flake8 = "*"
-wheel = "*"
 twine = "*"
+wheel = "*"

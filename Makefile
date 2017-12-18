@@ -45,10 +45,11 @@ acceptance_: libs/seq_file/bin/dnacat
 libs/seq_file/bin/dnacat:
 	$(MAKE) -C $$(dirname $$(dirname $@))
 
-publish: build
+publish: test build
 	$(RUN_IN_ENV) twine upload dist/*
 
 build: clean
+	pipenv lock
 	$(PYTHON) setup.py sdist
 	$(PYTHON) setup.py bdist_wheel
 
