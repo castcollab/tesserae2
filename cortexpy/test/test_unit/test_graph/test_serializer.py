@@ -46,7 +46,7 @@ class SerializerTestDriver(object):
         elif self.traverse:
             traverser = traversal.Engine(parser.RandomAccess(self.graph_builder.build()),
                                          color=self.traversal_color)
-            return traverser.traverse_from(self.traversal_start_kmer)
+            return traverser.traverse_from(self.traversal_start_kmer).graph
         else:
             raise Exception("Need to load a command")
 
