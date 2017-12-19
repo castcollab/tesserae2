@@ -45,7 +45,11 @@ acceptance_: libs/seq_file/bin/dnacat
 libs/seq_file/bin/dnacat:
 	$(MAKE) -C $$(dirname $$(dirname $@))
 
-publish: test build
+check_git_dirty:
+	git status --porcelain
+	test -z "$$(git status --porcelain)"
+
+publish: check_git_dirty test build
 	$(RUN_IN_ENV) twine upload dist/*
 
 build: clean
