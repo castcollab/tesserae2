@@ -60,8 +60,8 @@ build: clean
 	$(PYTHON) setup.py sdist
 	$(PYTHON) setup.py bdist_wheel
 
-docs:
-	$(MAKE) -C docs html
+doc:
+	$(MAKE) -C doc html
 
 clean:
 	rm -rf dist
