@@ -2,11 +2,11 @@ Cortexpy
 ========
 
 .. image:: https://travis-ci.org/winni2k/cortexpy.svg?branch=master
-:target: https://travis-ci.org/winni2k/cortexpy
+  :target: https://travis-ci.org/winni2k/cortexpy
 .. image:: https://coveralls.io/repos/github/winni2k/cortexpy/badge.svg?branch=admin_category
-:target: https://coveralls.io/github/winni2k/cortexpy?branch=admin_category
+  :target: https://coveralls.io/github/winni2k/cortexpy?branch=admin_category
 .. image:: https://landscape.io/github/winni2k/cortexpy/master/landscape.svg?style=flat
-:target: https://landscape.io/github/winni2k/cortexpy/master
+  :target: https://landscape.io/github/winni2k/cortexpy/master
 
 Supporting Python versions 3.5 and 3.6.
 
@@ -19,7 +19,7 @@ This project aims to mirror many of the features contained in
 Install
 -------
 
-Install the latest version of cortexpy:
+Install the latest version of cortexpy::
 
     pip install cortexpy
 
@@ -31,28 +31,27 @@ Please raise a github issue for any bugs.
 Development
 -----------
 
-Set up the project
+Set up the project::
 
-```bash
-make init
-```
+    make init
 
 See `cortexpy/__main__.py` for example uses of cortexpy.
 
 Publishing to Pypi
 ------------------
 
-```bash
-# assuming version 0.0.1
+::
 
-# Step 1: Set __version__ in cortexpy/__init__.py
+    # assuming version 0.0.1
 
-# Step 2: Make version commit
-git commit -am'Bump to version 0.0.1'
+    # Step 1: Set __version__ in cortexpy/__init__.py
 
-# Step 3: tag commit
-git tag 0.0.1
+    # Step 2: Make version commit
+    git commit -am'Bump to version 0.0.1'
 
-# Step 4: publish to pypi
-make deploy
-```
+    # Step 3: tag commit
+    git tag 0.0.1
+
+    # Step 4: publish to pypi
+    make deploy
+
