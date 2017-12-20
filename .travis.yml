@@ -1,29 +1,28 @@
 language: python
 python:
-    - "3.5"
-    - "3.6"
-
+- '3.5'
+- '3.6'
 cache:
   directories:
-  - .cache
+  - ".cache"
   - libs
-
 os:
-  - linux
-
-# For linux systems
+- linux
 addons:
   apt:
     packages:
     - liblzma-dev
     - libbz2-dev
-
-install: "make init"
-
-# command to run tests
+install: make init
 script:
-    - BIN_DIR=./bin make test HYPOTHESIS_PROFILE=ci
-
+- BIN_DIR=./bin make test HYPOTHESIS_PROFILE=ci
 after_success:
-  - make lint
-  - coveralls
+- make lint
+- coveralls
+deploy:
+  provider: pypi
+  user: wkretzsch
+  password:
+    secure: BQOBbHN7eYduzskUqLXPvcGnxxkStnwrnEUkU3AAI7pYdnISPuOD4W/y6JFw04ZjgFRfOR8yBPKSPy8NtPOye6na/9OtZ1gd8SIO++w+zmkUnUMlsVhB8TDrDGSjwWXUFeJVEXspwboHl6Gt0O2A7O6llUTOvPJoG1MfzFUK2YQph5cpWwsfTryBVdi8g5T6G6q1QHl413QlZgvPGBkCtVchH+Uq1olofoeQ6Uuh6R5Cy0P+Zaxxr8aWCqSGRGKb+zNZCRp8wjzu5nUkN95rb1TuAY8+P/2R7HlZLzUFTgSrRPj2Zpp1Nl7omgV9SJnF47ypGkIi6nft5BcMytFynmjFOe9YY7yhJ199fY2BYPQwoQUqltJxU6S3aPHEQFtKFcHSFIugE2UAmk0JfQYecogJ4VMjMJQa26psvYooaAtddmsGpCcFe6UDHOQyZTlbqFjD7czc44HcSACjUVLG3VmWsmonYox1ejA0euxjFzOq41goqyoQtdEDFClXCJDq4aYG9UdQy9InFaqw8xwPYnu2W0+jpTH4zT2JNT80btU9aAsA1waTKC/DD1SxMMdDIjmJEufpR09xbOk35105VwYQsBzb1//QzKk8qnX6MleH8a7oovP4tLGNqqmMGmdRn2iBoIdmdjHZleLFTZ3xkmKT+he2wWjGD2nom1bJd3M=
+  on:
+    tags: true
