@@ -22,10 +22,12 @@ jobs:
   include:
   - stage: deploy to pypi
     python: '3.6'
+    script: skip
     deploy:
       provider: pypi
       user: wkretzsch
       password:
-        secure: i70l7Iy0zeBx/4DwIIcnf4ZxN+/SNfos3f6dcUZN2G7T//cRg0wseiBpsed4Ti4gDAzftAucnxvfl1v1hvZ/toMjF4iqNAxsP6ABzannS+LSCe4iAv1cAVSAPQU3YV6cCKCPevyysVNg0pUtQcsD2XHVCe4igwhkqN+GEkk9QMglie4ippsTszFaLC9nB2MNE19iaUPSlQ6uL7LA+qXsfarHQoNGFAQ5r18yiY9ovEJgE4Xk0ee1N4vHnkRxxAgqY9E/vEkpSzokXV4ADIBEB+Ln+Rv3J/XpfwXY1muR6nQCRIhQtGJRnKU5yna3CVqe1iXY5cHLEwx+57vZPb8BV+WboJouWX7wwS5/+ixo4NGoGzIHaqaN3kiHvdhqaGuUfLumNaJBYHZq2GJZoMrvh6QlytSYhhBdE+MlVE+rwed03zhY3hRHQ98wvUJ47asoUwZ0Tp9SqNpi5R65zFABL3ojGMf8FvNKXOGPr9OxNb35WUvUWRSsknVfsPVJFh7P+QuH6elb/XZQMZYQOanbBksM4GN1pl+Tf3G5MGRQOcNKZcjis3wSOvBT8oiW5lcsFeHFr1EjEWCspOkYInjjzWUxAe+GLXnXBpXtOL7ZrDL+7B8oILRdJDuOdmoxsIreVXcTS15BsfwErGnWKWBF3gJ6q5XREO2viKzxn/xltl8=
+        secure: yaVRwoyjgnV8YayZW0nz743kNG7RRh/g74FZjB7nGsbUn8nWapYDphgppaiiuFLX9n7R9cTpiXghBZIXs6yMQRqBgUJa/xZE4T/yuHK+mptIOrNeBSTE16PSwdRqlFUVPs/C3LMQkEPERjUaSOjfj1iqW2BxLb8MUC1RgK2akoJOWUrZVd1HWPtlJXnJ7dWd0vkA3pYoyGO2IpZVywtWq2GjAREUY3rEKV1vpCku+prZeLZyuqcGVkFYO3YpJqfBavG1IwntgBiyDwrj69NlwRDhgc9hjUOMigQWEjQCo4t7AH75sN8a5AhyQowyO3xPLRjN56hbqKIkW5wkeKK+laL5Oip1JdwjgNxfb8fBgKcD6fbuHTZvpOVqlk/koJ40MXf5eIQpPhYKEsZmLWujldTrfbZk1m4msHo3SOx382UiJ1rp04UqVK4PDRqDsGMhhSt2TIwd64fGlJ9zbZ7QEcKB7gk5zyi8aQg9Fo7ozE58pDlV2nvySH8J5CrkQW246sqUNTU6EKXzvNW22Yzy2+ULGPVJEBrLnFlp4oUnh71aviYDksXTWtS+0qcnEcCQud2WWE+xCe9G5F8uSV417s5/iJN8vG3vKXLZm3uUR9+z0c/fxTWcFaL+/Oq0HHO/ifWCuhAgI3kEIIt3L2cDpTACwjSBZJMwCHQoMYBEVn8=
+      server: https://testpypi.python.org/pypi
       on:
         tags: true
