@@ -33,7 +33,7 @@ setup(
     url='https://github.com/winni2k/cortexpy',
     download_url='https://github.com/winni2k/cortexpy/archive/{}.tar.gz'.format(version),
     license='Apache-2.0',
-    long_description=open('README.md').read(),
+    long_description=open('README.rst').read(),
     install_requires=pipfile_lock_requirements,
     tests_require=['coverage', 'pytest'],
     python_requires=">=3.5",
