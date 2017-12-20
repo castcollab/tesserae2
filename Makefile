@@ -60,7 +60,10 @@ build: clean
 	$(PYTHON) setup.py sdist
 	$(PYTHON) setup.py bdist_wheel
 
+docs:
+	$(MAKE) -C docs html
+
 clean:
 	rm -rf dist
 
-.PHONY: test acceptance unit clean update pipenv compile build publish
+.PHONY: test acceptance unit clean update pipenv compile build publish docs

@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "c6d481adc0007007e8e003a81b43ba30e23386a6323b773e2cd3539858b38f24"
+            "sha256": "b56de9b70b74fab36ca2953f3c97a3b01df8e91d31ab5bf3cffea675e94264eb"
         },
         "requires": {},
         "sources": [
@@ -31,6 +31,9 @@
     "develop": {
         "alabaster": {
             "version": "==0.7.10"
+        },
+        "argh": {
+            "version": "==0.26.2"
         },
         "astroid": {
             "version": "==1.6.0"
@@ -77,17 +80,26 @@
         "lazy-object-proxy": {
             "version": "==1.3.1"
         },
+        "livereload": {
+            "version": "==2.5.1"
+        },
         "markupsafe": {
             "version": "==1.0"
         },
         "mccabe": {
             "version": "==0.6.1"
         },
+        "pathtools": {
+            "version": "==0.1.2"
+        },
         "pkginfo": {
             "version": "==1.4.1"
         },
         "pluggy": {
             "version": "==0.6.0"
+        },
+        "port-for": {
+            "version": "==0.3.1"
         },
         "py": {
             "version": "==1.5.2"
@@ -143,8 +155,17 @@
         "sphinx": {
             "version": "==1.6.5"
         },
+        "sphinx-autobuild": {
+            "version": "==0.7.1"
+        },
+        "sphinx-rtd-theme": {
+            "version": "==0.2.4"
+        },
         "sphinxcontrib-websupport": {
             "version": "==1.0.1"
+        },
+        "tornado": {
+            "version": "==4.5.2"
         },
         "tqdm": {
             "version": "==4.19.5"
@@ -154,6 +175,9 @@
         },
         "urllib3": {
             "version": "==1.22"
+        },
+        "watchdog": {
+            "version": "==0.8.3"
         },
         "wheel": {
             "version": "==0.30.0"
