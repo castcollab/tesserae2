@@ -20,13 +20,12 @@ after_success:
 - coveralls
 jobs:
   include:
-    - stage: publish to pypi
-      python: '3.6'
-      script: make publish
-      deploy:
-        provider: pypi
-        user: wkretzsch
-        password:
-          secure: BQOBbHN7eYduzskUqLXPvcGnxxkStnwrnEUkU3AAI7pYdnISPuOD4W/y6JFw04ZjgFRfOR8yBPKSPy8NtPOye6na/9OtZ1gd8SIO++w+zmkUnUMlsVhB8TDrDGSjwWXUFeJVEXspwboHl6Gt0O2A7O6llUTOvPJoG1MfzFUK2YQph5cpWwsfTryBVdi8g5T6G6q1QHl413QlZgvPGBkCtVchH+Uq1olofoeQ6Uuh6R5Cy0P+Zaxxr8aWCqSGRGKb+zNZCRp8wjzu5nUkN95rb1TuAY8+P/2R7HlZLzUFTgSrRPj2Zpp1Nl7omgV9SJnF47ypGkIi6nft5BcMytFynmjFOe9YY7yhJ199fY2BYPQwoQUqltJxU6S3aPHEQFtKFcHSFIugE2UAmk0JfQYecogJ4VMjMJQa26psvYooaAtddmsGpCcFe6UDHOQyZTlbqFjD7czc44HcSACjUVLG3VmWsmonYox1ejA0euxjFzOq41goqyoQtdEDFClXCJDq4aYG9UdQy9InFaqw8xwPYnu2W0+jpTH4zT2JNT80btU9aAsA1waTKC/DD1SxMMdDIjmJEufpR09xbOk35105VwYQsBzb1//QzKk8qnX6MleH8a7oovP4tLGNqqmMGmdRn2iBoIdmdjHZleLFTZ3xkmKT+he2wWjGD2nom1bJd3M=
-        on:
-          tags: true
+  - stage: deploy to testpypi
+    python: '3.6'
+    deploy:
+      provider: pypitest
+      user: wkretzsch
+      password:
+        secure: JlF4Jgihr49i+Eee0tQTSAoTzWwUU+2c8fWphwmDN+O3SW03aPINJydudozlfVNK/Rptejm0FdqkEmRpNzR8zFIwI431laqlQSuYhso4MGRLRq0vEN4APHYxr7o2MciXQFqQ4cAH4kp/zJmAAg4zSXffF7Lpv4VcZhzNKslZoMCKx/g+TUOYkR/6KY+jwkdmxiAbDhDmbbNIyb/Y2AWhX+F9e0iREdK+7DwWTt3wDSM9Xpmm2aEaWiWz1mE8lHGsEh2EXlZptlm6Ff7gaOx3hPyxH9f2MBRNbTmWAtPZj+tyaDw5IRBpfLDwZ0BfZrXEyyGwDZ0ywYtgs9JuT5rv/10cv5Yp6EDPFriUKjDYgzEOnanwemiEtFmOM2pbu7zl5OJrYF+xZ5cqkKg5yVvST+5QoWStEYyqgxrz9Rolh28/0Z3cLPRmIhaP4Bzw368hfIWD4yMvZaTxV4sf9+3ruGs8kmMzCJ1vyXcK0xBrU01o3TyM43eN+DPqfvn6pP4SAmvllIKvpyuBk136Ku4zORJzArfxUAx6jXKG76sW8rB2yj2hS8jQE2HO0w9CdzXJugq8NckKqyD0ao2EFgFEW+gkfw6iiSUVUS6NHdCEBSDI9lbJaxJMoINViyJriI7EBl1pcJ6J10DY55Qn/5oYIyLbFQGlTXOkQNC61pVYTxg=
+      on:
+        tags: true

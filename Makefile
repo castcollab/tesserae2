@@ -49,8 +49,11 @@ check_git_dirty:
 	git status --porcelain
 	test -z "$$(git status --porcelain)"
 
-publish: check_git_dirty test build
+deploy: check_git_dirty test build
 	$(RUN_IN_ENV) twine upload dist/*
+
+deploy-test: check_git_dirty test build
+	$(RUN_IN_ENV) twine --repository testpypi upload dist/*
 
 build: clean
 	pipenv lock
