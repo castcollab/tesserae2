@@ -1,14 +1,35 @@
-[![Build Status](https://travis-ci.org/winni2k/cortexpy.svg?branch=master)](https://travis-ci.org/winni2k/cortexpy)
-[![Coverage Status](https://coveralls.io/repos/github/winni2k/cortexpy/badge.svg?branch=admin_category)](https://coveralls.io/github/winni2k/cortexpy?branch=admin_category)
-[![Code Health](https://landscape.io/github/winni2k/cortexpy/master/landscape.svg?style=flat)](https://landscape.io/github/winni2k/cortexpy/master)
+Cortexpy
+========
 
-# Cortexpy
+.. image:: https://travis-ci.org/winni2k/cortexpy.svg?branch=master
+:target: https://travis-ci.org/winni2k/cortexpy
+.. image:: https://coveralls.io/repos/github/winni2k/cortexpy/badge.svg?branch=admin_category
+:target: https://coveralls.io/github/winni2k/cortexpy?branch=admin_category
+.. image:: https://landscape.io/github/winni2k/cortexpy/master/landscape.svg?style=flat
+:target: https://landscape.io/github/winni2k/cortexpy/master
 
-Python implementation of [CortexJDK](https://github.com/mcveanlab/CortexJDK)
+Supporting Python versions 3.5 and 3.6.
 
-Cortexpy supports python versions 3.5 and 3.6.
+Cortexpy is a Python package for sequence analys using linked and colored de Bruijn graphs such as
+the ones created by `Mccortex <https://github.com/mcveanlab/mccortex>`_.
+This project aims to mirror many of the features contained in
+`CortexJDK <https://github.com/mcveanlab/CortexJDK>`_.
 
-## Development
+
+Install
+-------
+
+Install the latest version of cortexpy:
+
+    pip install cortexpy
+
+Bugs
+----
+
+Please raise a github issue for any bugs.
+
+Development
+-----------
 
 Set up the project
 
@@ -18,7 +39,8 @@ make init
 
 See `cortexpy/__main__.py` for example uses of cortexpy.
 
-### Publishing to Pypi
+Publishing to Pypi
+------------------
 
 ```bash
 # assuming version 0.0.1
