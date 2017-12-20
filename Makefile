@@ -66,4 +66,4 @@ doc:
 clean:
 	rm -rf dist
 
-.PHONY: test acceptance unit clean update pipenv compile build publish docs
+.PHONY: test acceptance unit clean update pipenv compile build publish doc
