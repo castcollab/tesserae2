@@ -57,6 +57,9 @@ deploy-test: check_git_dirty test build
 
 build: clean
 	pipenv lock
+	$(MAKE) dist
+
+dist:
 	$(PYTHON) setup.py sdist
 	$(PYTHON) setup.py bdist_wheel
 
@@ -66,4 +69,4 @@ doc:
 clean:
 	rm -rf dist
 
-.PHONY: test acceptance unit clean update pipenv compile build publish doc
+.PHONY: test acceptance unit clean update pipenv compile build publish doc dist

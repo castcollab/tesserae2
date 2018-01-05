@@ -10,7 +10,7 @@ Cortexpy
 
 Supporting Python versions 3.5 and 3.6.
 
-Cortexpy is a Python package for sequence analys using linked and colored de Bruijn graphs such as
+Cortexpy is a Python package for sequence analysis using linked and colored de Bruijn graphs such as
 the ones created by `Mccortex <https://github.com/mcveanlab/mccortex>`_.
 This project aims to mirror many of the features contained in
 `CortexJDK <https://github.com/mcveanlab/CortexJDK>`_.

@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "b56de9b70b74fab36ca2953f3c97a3b01df8e91d31ab5bf3cffea675e94264eb"
+            "sha256": "a57b6eff6ec21d58194f9215904db064e7370ca13792c678a3914f1c1825ca48"
         },
         "requires": {},
         "sources": [
@@ -13,7 +13,7 @@
     },
     "default": {
         "attrs": {
-            "version": "==17.3.0"
+            "version": "==17.4.0"
         },
         "biopython": {
             "version": "==1.70"
@@ -21,11 +21,17 @@
         "decorator": {
             "version": "==4.1.2"
         },
+        "docopt": {
+            "version": "==0.6.2"
+        },
         "networkx": {
             "version": "==2.0"
         },
         "numpy": {
             "version": "==1.13.3"
+        },
+        "schema": {
+            "version": "==0.6.6"
         }
     },
     "develop": {
@@ -39,7 +45,7 @@
             "version": "==1.6.0"
         },
         "attrs": {
-            "version": "==17.3.0"
+            "version": "==17.4.0"
         },
         "babel": {
             "version": "==2.5.1"
@@ -63,7 +69,7 @@
             "version": "==3.5.0"
         },
         "hypothesis": {
-            "version": "==3.44.3"
+            "version": "==3.44.7"
         },
         "idna": {
             "version": "==2.6"
@@ -117,7 +123,7 @@
             "version": "==1.8.1"
         },
         "pytest": {
-            "version": "==3.3.1"
+            "version": "==3.3.2"
         },
         "pytest-cov": {
             "version": "==2.5.1"
@@ -144,7 +150,7 @@
             "version": "==0.8.0"
         },
         "setuptools": {
-            "version": "==38.2.4"
+            "version": "==38.4.0"
         },
         "six": {
             "version": "==1.11.0"

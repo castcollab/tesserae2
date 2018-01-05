@@ -49,4 +49,7 @@ setup(
         'Programming Language :: Python :: Implementation :: PyPy',
     ],
     packages=packages,
+    entry_points={
+        'console_scripts': ['cortexpy=cortexpy.__main__:main_without_argv'],
+    },
 )
