@@ -52,4 +52,5 @@ setup(
     entry_points={
         'console_scripts': ['cortexpy=cortexpy.__main__:main_without_argv'],
     },
+    include_package_data=True,
 )
