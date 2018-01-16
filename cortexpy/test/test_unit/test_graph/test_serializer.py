@@ -18,7 +18,7 @@ class SerializerTestDriver(object):
     traverse = attr.ib(False)
     retrieve = attr.ib(False)
     traversal_start_kmer = attr.ib(None)
-    traversal_color = attr.ib(0)
+    traversal_colors = attr.ib((0,))
 
     def with_kmer_size(self, n):
         self.graph_builder.with_kmer_size(n)
@@ -31,7 +31,7 @@ class SerializerTestDriver(object):
     def traverse_with_start_kmer_and_color(self, start_kmer, color):
         self.traverse = True
         self.traversal_start_kmer = start_kmer
-        self.traversal_color = color
+        self.traversal_colors = [color]
         return self
 
     def retrieve_contig(self, contig):
@@ -45,7 +45,7 @@ class SerializerTestDriver(object):
             return self.retriever.get_kmer_graph(self.contig_to_retrieve)
         elif self.traverse:
             traverser = traversal.Engine(parser.RandomAccess(self.graph_builder.build()),
-                                         color=self.traversal_color)
+                                         traversal_colors=self.traversal_colors)
             return traverser.traverse_from(self.traversal_start_kmer).graph
         else:
             raise Exception("Need to load a command")

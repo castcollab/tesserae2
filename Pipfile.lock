@@ -48,7 +48,7 @@
             "version": "==17.4.0"
         },
         "babel": {
-            "version": "==2.5.1"
+            "version": "==2.5.3"
         },
         "bitstring": {
             "version": "==3.1.5"

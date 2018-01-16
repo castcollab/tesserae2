@@ -3,13 +3,9 @@ from setuptools import setup, find_packages
 import json
 from io import open
 
-with open('cortexpy/__init__.py', 'r') as f:
-    for line in f:
-        if line.startswith('__version__'):
-            version = line.strip().split('=')[1].strip(' \'"')
-            break
-        else:
-            raise Exception("Could not find __version__")
+import cortexpy
+
+version = cortexpy.__version__
 
 
 def get_requirements_from_pipfile_lock(pipfile_lock=None):
