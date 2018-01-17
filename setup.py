@@ -1,11 +1,12 @@
 import os
+import sys
 from setuptools import setup, find_packages
 import json
 from io import open
 
-import cortexpy
-
-version = cortexpy.__version__
+sys.path.append(os.path.join(__file__, 'cortexpy'))
+from cortexpy import __version__
+version = __version__
 
 
 def get_requirements_from_pipfile_lock(pipfile_lock=None):
