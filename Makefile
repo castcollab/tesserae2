@@ -68,7 +68,6 @@ doc:
 	$(MAKE) -C doc html
 
 setup-benchmark:
-	(test -d $(BENCHMARK_DIR) && cd $(BENCHMARK_DIR) && git pull) || git clone https://github.com/winni2k/cortex_tools_benchmark.git
 	$(MAKE) -C $(BENCHMARK_DIR) setup
 
 benchmark:
