@@ -31,3 +31,8 @@ jobs:
       server: https://test.pypi.org/legacy/
       on:
         tags: true
+
+  - stage: benchmark
+    python: '3.6'
+    if: tag =~ ^\d
+    script: make benchmark

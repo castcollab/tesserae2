@@ -11,6 +11,7 @@ UNIT_TEST_COMMAND = $(RUN_IN_ENV) pytest \
 	--cov-report term-missing \
 	--hypothesis-profile $(HYPOTHESIS_PROFILE)
 TEST_COMMAND = BIN_DIR=$(BIN_DIR) $(UNIT_TEST_COMMAND)
+BENCHMARK_DIR := cortex_tools_benchmark
 
 init: update pipenv compile
 
@@ -65,6 +66,12 @@ dist:
 
 doc:
 	$(MAKE) -C doc html
+
+benchmark:
+	(test -d $(BENCHMARK_DIR) && cd $(BENCHMARK_DIR) && git pull) || git clone https://github.com/winni2k/cortex_tools_benchmark.git
+	$(MAKE) -C $(BENCHMARK_DIR) setup
+	$(MAKE) -C $(BENCHMARK_DIR)
+
 
 clean:
 	rm -rf dist
