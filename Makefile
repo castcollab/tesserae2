@@ -73,7 +73,6 @@ setup-benchmark:
 benchmark:
 	$(MAKE) -C $(BENCHMARK_DIR)
 
-
 clean:
 	rm -rf dist
 

@@ -32,10 +32,12 @@ jobs:
       server: https://test.pypi.org/legacy/
       on:
         tags: true
+    after_success: skip
 
   - stage: benchmark
     python: '3.6'
-    if: tag =~ ^\d
+    on:
+      tags: true
     before_script:
     - mkdir /tmp/bin
     - export PATH=$PATH:/tmp/bin
@@ -46,3 +48,4 @@ jobs:
     - echo "$GDRIVE_ACCOUNT_CREDENTIALS" > ~/.gdrive/$GDRIVE_ACCOUNT_CREDENTIALS_JSON
     - make setup-benchmark
     script: make benchmark
+    after_success: make -C cortex_tools_benchmark upload-results
