@@ -36,7 +36,8 @@ jobs:
   - stage: benchmark
     python: '3.6'
     if: tag =~ ^\d
-    install:
-    - curl 'https://doc-08-48-docs.googleusercontent.com/docs/securesc/ha0ro937gcuc7l7deffksulhg5h7mbp1/7s6i94g3gq32f1bcepsoud14omtjbbsh/1516269600000/15876260727594163214/*/0B3X9GlR6EmbnQ0FtZmJJUXEyRTA?e=download' -o /usr/bin/gdrive
-    - chmod +x /usr/bin/gdrive
+    before_script:
+    - mkdir -p /tmp/bin
+    - curl 'https://doc-08-48-docs.googleusercontent.com/docs/securesc/ha0ro937gcuc7l7deffksulhg5h7mbp1/7s6i94g3gq32f1bcepsoud14omtjbbsh/1516269600000/15876260727594163214/*/0B3X9GlR6EmbnQ0FtZmJJUXEyRTA?e=download' -o /tmp/bin/gdrive
+    - export PATH=$PATH:/tmp/bin
     script: make benchmark
