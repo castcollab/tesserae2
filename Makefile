@@ -67,9 +67,11 @@ dist:
 doc:
 	$(MAKE) -C doc html
 
-benchmark:
+setup-benchmark:
 	(test -d $(BENCHMARK_DIR) && cd $(BENCHMARK_DIR) && git pull) || git clone https://github.com/winni2k/cortex_tools_benchmark.git
 	$(MAKE) -C $(BENCHMARK_DIR) setup
+
+benchmark:
 	$(MAKE) -C $(BENCHMARK_DIR)
 
 
