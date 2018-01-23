@@ -6,7 +6,6 @@ import cortexpy.graph as graph
 import cortexpy.graph.serializer as serializer
 import cortexpy.test.builder as builder
 from cortexpy.graph import traversal, parser
-from cortexpy.test.expectation import KmerGraphExpectation
 from cortexpy.test.expectation.kmer import CollapsedKmerUnitgGraphExpectation
 
 
@@ -67,29 +66,9 @@ class CollapseKmerUnitigsTestDriver(object):
     def run(self):
         kmer_graph = self.serializer_driver.run()
         collapser = (serializer
-                     .UnitigCollapser(kmer_graph, colors=self.serializer_driver.retriever.colors)
+                     .UnitigCollapser(kmer_graph)
                      .collapse_kmer_unitigs())
         return CollapsedKmerUnitgGraphExpectation(collapser.unitig_graph)
-
-
-@attr.s(slots=True)
-class JsonSerializableTestDriver(object):
-    serializer_driver = attr.ib(attr.Factory(SerializerTestDriver))
-
-    def __getattr__(self, name):
-        serializer_method = getattr(self.serializer_driver, name)
-
-        def method(*args):
-            serializer_method(*args)
-            return self
-
-        return method
-
-    def run(self):
-        kmer_graph = self.serializer_driver.run()
-        the_serializer = serializer.Serializer(kmer_graph)
-        the_serializer.to_unitig_graph()
-        return CollapsedKmerUnitgGraphExpectation(the_serializer.unitig_graph)
 
 
 class TestCollapseKmerUnitigsCreatesSingleUnitig(object):
@@ -183,6 +162,20 @@ class TestCollapseKmerUnitigs(object):
         expect.has_one_node_with_repr('G').has_coverages(1, 1)
         expect.has_n_edges(1)
 
+    def test_two_linked_kmers_collapse_to_one_kmer(self):
+        # given
+        driver = (CollapseKmerUnitigsTestDriver()
+                  .with_kmer_size(3)
+                  .with_kmer('AAA', 1, '.....C..')
+                  .with_kmer('AAC', 1, 'a.......')
+                  .retrieve_contig('GTTT'))
+
+        # when
+        expect = driver.run()
+
+        # then
+        expect.has_n_nodes(1).has_one_node_with_repr('GTTT').has_coverages([1, 1], [1, 1])
+
     def test_with_two_node_path_and_three_node_cycle_results_in_two_unitigs(self):
         # given
         driver = (CollapseKmerUnitigsTestDriver()
@@ -261,6 +254,42 @@ class TestCollapseKmerUnitigs(object):
         expect.has_n_nodes(3)
         expect.has_n_edges(2)
 
+    def test_unlinked_kmers_followed_by_two_linked_kmers_collapse_to_two_unitigs(self):
+        # given
+        driver = (CollapseKmerUnitigsTestDriver()
+                  .with_kmer_size(3)
+                  .with_kmer('AAA', 1, '.....C..')
+                  .with_kmer('AAC', 1, 'a.......')
+                  .retrieve_contig('GTTTAA'))
+
+        # when
+        expect = driver.run()
+
+        # then
+        expect.has_one_node_with_repr('GTTT').has_coverages([1, 1], [1, 1])
+        expect.has_one_node_with_repr('AA').has_coverages([0, 1], [0, 1])
+        expect.has_n_nodes(2)
+        expect.has_n_edges(1)
+
+    def test_linked_kmers_with_outgoing_edge_surrounded_by_missing_kmers_returns_four_unitigs(self):
+        # given
+        driver = (CollapseKmerUnitigsTestDriver()
+                  .with_kmer_size(3)
+                  .with_kmer('AAA', 1, '.....C..')
+                  .with_kmer('AAC', 1, 'a....C..')
+                  .retrieve_contig('CAAGTTTAGG'))
+
+        # when
+        expect = driver.run()
+
+        # then
+        expect.has_one_node_with_repr('TT').has_coverages([1, 1], [1, 1])
+        expect.has_one_node_with_repr('CAAGT').has_coverages([[0, 1] for _ in range(3)])
+        expect.has_one_node_with_repr('GGT').has_coverages([0, 0])
+        expect.has_one_node_with_repr('AGG').has_coverages([0, 1])
+        expect.has_n_nodes(4)
+        expect.has_n_edges(3)
+
 
 class TestToJson(object):
     def test_two_linked_kmers_are_jsonifiable(self):
@@ -282,112 +311,3 @@ class TestToJson(object):
         kmer_data = json.loads(kmer_json)  # does not raise
         assert kmer_data['graph']['colors'] == list(range(3))
         assert kmer_data['graph']['sample_names'] == list(color_names) + ['retrieved_contig']
-
-
-class TestToJsonSerializable(object):
-    def test_two_linked_kmers_collapse_to_one_kmer(self):
-        # given
-        driver = (JsonSerializableTestDriver()
-                  .with_kmer_size(3)
-                  .with_kmer('AAA', 1, '.....C..')
-                  .with_kmer('AAC', 1, 'a.......')
-                  .retrieve_contig('GTTT'))
-
-        # when
-        expect = driver.run()
-
-        # then
-        expect.has_n_nodes(1).has_one_node_with_repr('GTTT').has_coverages([1, 1], [1, 1])
-
-    def test_two_kmers_one_kmer_apart_do_not_collapse(self):
-        # given
-        driver = (JsonSerializableTestDriver()
-                  .with_kmer_size(3)
-                  .with_kmer('CAA', 1, '........')
-                  .with_kmer('ACC', 1, '........')
-                  .retrieve_contig('GGTTG'))
-
-        # when
-        expect = driver.run()
-
-        # then
-        expect.has_one_node_with_repr('GGT').has_coverages([1, 1])
-        expect.has_one_node_with_repr('T').has_coverages([0, 1])
-        expect.has_one_node_with_repr('G').has_coverages([1, 1])
-
-        expect.has_n_nodes(3)
-        expect.has_n_edges(2)
-
-    def test_unlinked_kmers_followed_by_two_linked_kmers_collapse_to_two_unitigs(self):
-        # given
-        driver = (JsonSerializableTestDriver()
-                  .with_kmer_size(3)
-                  .with_kmer('AAA', 1, '.....C..')
-                  .with_kmer('AAC', 1, 'a.......')
-                  .retrieve_contig('GTTTAA'))
-
-        # when
-        expect = driver.run()
-
-        # then
-        expect.has_one_node_with_repr('GTTT').has_coverages([1, 1], [1, 1])
-        expect.has_one_node_with_repr('AA').has_coverages([0, 1], [0, 1])
-        expect.has_n_nodes(2)
-        expect.has_n_edges(1)
-
-    def test_linked_kmers_with_outgoing_edge_surrounded_by_missing_kmers(self):
-        # given
-        driver = (JsonSerializableTestDriver()
-                  .with_kmer_size(3)
-                  .with_kmer('AAA', 1, '.....C..')
-                  .with_kmer('AAC', 1, 'a....C..')
-                  .retrieve_contig('CAAGTTTAGG'))
-
-        # when
-        expect = driver.run()
-
-        # then
-        expect.has_one_node_with_repr('TT').has_coverages([1, 1], [1, 1])
-        expect.has_one_node_with_repr('CAAGT').has_coverages([[0, 1] for _ in range(3)])
-        expect.has_one_node_with_repr('GGT').has_coverages([0, 0])
-        expect.has_one_node_with_repr('AGG').has_coverages([0, 1])
-        expect.has_n_nodes(4)
-        expect.has_n_edges(3)
-
-
-class TestEdgeAnnotation(object):
-    def test_with_single_kmer_and_link_annotates_etra_links(self):
-        driver = (SerializerTestDriver()
-                  .with_kmer_size(3)
-                  .with_kmer('AAA 1 1 ........ .c...C..')
-                  .traverse_with_start_kmer_and_color('AAA', 0))
-
-        # when
-        kmer_graph = driver.run()
-        annotated_graph = serializer.Serializer(kmer_graph).to_graph_with_annotated_edges()
-        expect = KmerGraphExpectation(annotated_graph)
-
-        # then
-        expect.has_node('CAA').has_coverages(0, 0)
-        expect.has_node('AAA').has_coverages(1, 1)
-        expect.has_node('AAC').has_coverages(0, 0)
-        expect.has_n_nodes(3)
-        expect.has_edges('AAA AAC 1', 'CAA AAA 1')
-
-    def test_for_revcomp_with_single_kmer_and_link_annotates_etra_links(self):
-        driver = (SerializerTestDriver()
-                  .with_kmer_size(3)
-                  .with_kmer('AAA 1 1 ........ ..g..C..')
-                  .traverse_with_start_kmer_and_color('TTT', 0))
-
-        # when
-        kmer_graph = driver.run()
-        annotated_graph = serializer.Serializer(kmer_graph).to_graph_with_annotated_edges()
-        expect = KmerGraphExpectation(annotated_graph)
-
-        # then
-        expect.has_node('TTC').has_coverages(0, 0)
-        expect.has_node('TTT').has_coverages(1, 1)
-        expect.has_node('GTT').has_coverages(0, 0)
-        expect.has_n_nodes(3)
-        expect.has_edges('TTT TTC 1', 'GTT TTT 1')
