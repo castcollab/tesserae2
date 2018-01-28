@@ -32,7 +32,6 @@ jobs:
       server: https://test.pypi.org/legacy/
       on:
         tags: true
-    after_success: skip
 
   - stage: benchmark
     python: '3.6'
