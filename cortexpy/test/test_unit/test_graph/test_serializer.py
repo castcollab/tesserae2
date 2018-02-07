@@ -206,7 +206,7 @@ class TestCollapseKmerUnitigs(object):
                   .with_kmer('CCC', 1, 'a.....G.')
                   .with_kmer('CCG', 1, 'ac..A...')
                   .with_kmer('CGA', 1, '.c......')
-                  .retrieve_contig('AACCCCGA'))
+                  .retrieve_contig('AACCCGA'))
 
         # when
         expect = driver.run()
@@ -267,7 +267,7 @@ class TestCollapseKmerUnitigs(object):
 
         # then
         expect.has_one_node_with_repr('GTTT').has_coverages([1, 1], [1, 1])
-        expect.has_one_node_with_repr('AA').has_coverages([0, 1], [0, 1])
+        expect.has_one_node_with_repr('AA').has_coverages([0, 2], [0, 2])
         expect.has_n_nodes(2)
         expect.has_n_edges(1)
 
