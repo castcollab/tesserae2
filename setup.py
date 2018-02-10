@@ -25,8 +25,6 @@ setup(
     description='The python sister project to CortexJDK',
     author='Warren W. Kretzschmar, Kiran V Garimella',
     author_email='winni@warrenwk.com, kiran.garimella@gmail.com',
-    maintainer='Warren W. Kretzschmar and Kiran Garimella',
-    maintainer_email='winni@warrenwk.com and kiran.garimella@gmail.com',
     url='https://github.com/winni2k/cortexpy',
     download_url='https://github.com/winni2k/cortexpy/archive/{}.tar.gz'.format(version),
     license='Apache-2.0',
