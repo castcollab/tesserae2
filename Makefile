@@ -32,6 +32,9 @@ unit:
 acceptance:
 	$(TEST_COMMAND) cortexpy/test/test_acceptance
 
+fixtures:
+	$(MAKE) -C $(BENCHMARK_DIR) test-fixtures
+
 test:
 	$(TEST_COMMAND) cortexpy
 

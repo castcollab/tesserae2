@@ -46,5 +46,5 @@ jobs:
     - export GDRIVE_ACCOUNT_CREDENTIALS_JSON='gdrive-credentials.json'
     - echo "$GDRIVE_ACCOUNT_CREDENTIALS" > ~/.gdrive/$GDRIVE_ACCOUNT_CREDENTIALS_JSON
     - make setup-benchmark
-    script: make benchmark
+    script: make test-fixtures && make benchmark
     after_success: make -C cortex_tools_benchmark upload-results

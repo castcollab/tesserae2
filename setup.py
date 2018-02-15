@@ -16,7 +16,7 @@ def get_requirements_from_pipfile_lock(pipfile_lock=None):
     return [package_name for package_name in lock_data.get('default', {}).keys()]
 
 
-packages = find_packages('.', exclude=['*.test', '*.test.*'])
+packages = find_packages('.')
 pipfile_lock_requirements = get_requirements_from_pipfile_lock()
 
 setup(
