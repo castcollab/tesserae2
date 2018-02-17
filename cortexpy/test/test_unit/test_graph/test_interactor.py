@@ -26,7 +26,7 @@ def test_follows_two_colors_with_no_color_specified():
     paths = list(interactor.Contigs(graph).all_simple_paths())
 
     # then
-    assert ['AAATA'] == [str(p.seq) for p in paths]
+    assert {'AAATA'} == set([str(p.seq) for p in paths])
 
 
 def test_follows_three_colors_with_no_color_specified():
@@ -40,4 +40,4 @@ def test_follows_three_colors_with_no_color_specified():
     paths = list(interactor.Contigs(graph).all_simple_paths())
 
     # then
-    assert ['AAATA', 'AAATC'] == [str(p.seq) for p in paths]
+    assert {'AAATA', 'AAATC'} == set([str(p.seq) for p in paths])
