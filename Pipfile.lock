@@ -221,9 +221,9 @@
         },
         "hypothesis": {
             "hashes": [
-                "sha256:4c93bf88ce31b65ce2b9f5ae4434cc8e676737446567f398baf904f4c51907db"
+                "sha256:8c45bf21a9c696236c3be9ac2cec93630cbaee0d9074e5de4aa23e8dbcb67da0"
             ],
-            "version": "==3.45.0"
+            "version": "==3.45.1"
         },
         "idna": {
             "hashes": [
@@ -234,10 +234,10 @@
         },
         "imagesize": {
             "hashes": [
-                "sha256:6ebdc9e0ad188f9d1b2cdd9bc59cbe42bf931875e829e7a595e6b3abdc05cdfb",
-                "sha256:0ab2c62b87987e3252f89d30b7cedbec12a01af9274af9ffa48108f2c13c6062"
+                "sha256:3620cc0cadba3f7475f9940d22431fc4d407269f1be59ec9b8edcca26440cf18",
+                "sha256:5b326e4678b6925158ccc66a9fa3122b6106d7c876ee32d7de6ce59385b96315"
             ],
-            "version": "==0.7.1"
+            "version": "==1.0.0"
         },
         "isort": {
             "hashes": [
