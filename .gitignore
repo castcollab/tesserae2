@@ -104,3 +104,4 @@ ENV/
 .idea/
 
 scratch/
+coverage_html_report/

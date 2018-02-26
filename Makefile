@@ -9,6 +9,7 @@ UNIT_TEST_COMMAND = $(RUN_IN_ENV) pytest \
 	--flake8 \
 	--cov=cortexpy \
 	--cov-report term-missing \
+	--cov-report html \
 	--hypothesis-profile $(HYPOTHESIS_PROFILE)
 TEST_COMMAND = BIN_DIR=$(BIN_DIR) $(UNIT_TEST_COMMAND)
 BENCHMARK_DIR := cortex_tools_benchmark

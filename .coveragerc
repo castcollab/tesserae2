@@ -6,12 +6,16 @@ omit =
     cortexpy/test/*
 
 [report]
+skip_covered = True
 exclude_lines =
     no cov
     no qa
     noqa
     pragma: no cover
-    if __name__ == .__main__.:
+
+    # Don't complain if tests don't hit defensive assertion code:
+    raise AssertionError
+    raise NotImplementedError
 
 [html]
 directory = coverage_html_report
