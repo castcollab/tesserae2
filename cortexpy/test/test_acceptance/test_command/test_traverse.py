@@ -26,3 +26,18 @@ class TestSubgraphs(object):
 
         # then
         expect.has_n_graphs(2)
+
+    def test_traverses_all_colors_without_color_specification(self, tmpdir):
+        # given
+        d = command.Traverse(tmpdir)
+        d.with_record('CCCG', name='0')
+        d.with_record('CCGAA', name='1')
+        d.with_initial_contigs('CCC')
+        d.without_traversal_colors()
+        d.with_kmer_size(3)
+
+        # when
+        expect = d.run()
+
+        # then
+        expect.has_nodes('CCC', 'CCG', 'CGA', 'GAA')
