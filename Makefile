@@ -55,16 +55,13 @@ check_git_dirty:
 	test -z "$$(git status --porcelain)"
 
 deploy: check_git_dirty
+	pipenv lock
+	$(MAKE) check_git_dirty
 	$(MAKE) test
 	$(MAKE) build
 	$(RUN_IN_ENV) twine upload dist/*
 
-deploy-test: test
-	$(MAKE) build
-	$(RUN_IN_ENV) twine --repository testpypi upload dist/*
-
 build: clean
-	pipenv lock
 	$(MAKE) check_git_dirty
 	$(MAKE) dist
 

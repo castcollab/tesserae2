@@ -221,9 +221,9 @@
         },
         "hypothesis": {
             "hashes": [
-                "sha256:809c23b7d84bb8b1eba41c3ecca1c1c01f04e05485ac11b41c9f21f159b68d07"
+                "sha256:bbc087781000b0e461a6c5834c317f3eb1c409d5baa4192378102eaaafe34946"
             ],
-            "version": "==3.46.1"
+            "version": "==3.47.0"
         },
         "idna": {
             "hashes": [
