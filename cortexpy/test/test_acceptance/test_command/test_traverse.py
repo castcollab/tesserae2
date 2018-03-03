@@ -44,19 +44,19 @@ class TestSubgraphs(object):
 
 
 class TestLogging(object):
-    def test_without_logging_args_emits_info_log_message(self, tmpdir):
+    def test_without_logging_args_emits_info_log_message(self, tmpdir, caplog):
         # given
         d = command.Traverse(tmpdir)
         d.with_records('CCCGC')
         d.with_kmer_size(3)
 
         # when
-        stderr = d.run_for_stderr()
+        d.run()
 
         # then
-        assert 'Log level is INFO' in stderr
+        assert 'Log level is' in caplog.text
 
-    def test_with_logging_args_emits_info_log_message(self, tmpdir):
+    def test_with_logging_args_emits_info_log_message(self, tmpdir, caplog):
         # given
         d = command.Traverse(tmpdir)
         d.with_records('CCCGC')
@@ -65,13 +65,13 @@ class TestLogging(object):
         d.with_logging_interval(0)
 
         # when
-        stderr = d.run_for_stderr()
+        d.run()
 
         # then
-        assert 'Log level is DEBUG' in stderr
-        assert 'current graph size: 3' in stderr
+        assert 'Log level is' in caplog.text
+        assert 'current graph size: 3' in caplog.text
 
-    def test_with_logging_interval_2_does_not_report_current_graph_size(self, tmpdir):
+    def test_with_logging_interval_2_does_not_report_current_graph_size(self, tmpdir, caplog):
         # given
         d = command.Traverse(tmpdir)
         d.with_records('CCCGC')
@@ -80,21 +80,8 @@ class TestLogging(object):
         d.with_logging_interval(10)
 
         # when
-        stderr = d.run_for_stderr()
+        d.run()
 
         # then
-        assert 'Log level is DEBUG' in stderr
-        assert 'current graph size: 3' not in stderr
-
-    def test_with_silent_arg_emits_no_info_log_message(self, tmpdir):
-        # given
-        d = command.Traverse(tmpdir)
-        d.with_records('CCCGC')
-        d.with_kmer_size(3)
-        d.with_silent_arg()
-
-        # when
-        stderr = d.run_for_stderr()
-
-        # then
-        assert 'Log level is' not in stderr
+        assert 'Log level is' in caplog.text
+        assert 'current graph size: 3' not in caplog.text
