@@ -105,3 +105,4 @@ ENV/
 
 scratch/
 coverage_html_report/
+.pytest_cache/
