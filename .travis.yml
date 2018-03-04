@@ -18,7 +18,6 @@ install:
 script: BIN_DIR=./bin make test HYPOTHESIS_PROFILE=dev
 after_success:
 - make lint
-- coveralls
 jobs:
   include:
   - stage: deploy to pypi
