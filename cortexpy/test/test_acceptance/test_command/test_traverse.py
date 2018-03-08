@@ -98,3 +98,23 @@ class TestLogging(object):
 
         # then
         assert 'Log level is' not in stderr
+
+
+class Test(object):
+
+    def test_creates_two_transcripts_from_four_records_in_four_colors_in_four_graphs(self, tmpdir):
+        # given
+        d = command.Traverse(tmpdir)
+        nodes = ['CCCG', 'CCGC', 'AAAT', 'AATA']
+        for idx, seq in enumerate(nodes):
+            if idx != 0:
+                d.with_extra_graph()
+            d.with_record(seq)
+
+        d.with_kmer_size(3)
+
+        # when
+        expect = d.run()
+
+        # then
+        expect.has_nodes('CCC', 'CCG', 'CGC', 'AAA', 'AAT', 'ATA')

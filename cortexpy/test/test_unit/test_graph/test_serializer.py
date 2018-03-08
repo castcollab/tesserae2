@@ -255,11 +255,11 @@ class TestPickle(object):
     def test_two_linked_kmers_pickle_ok(self):
         # given
         color_names = 'samp1', 'samp2'
-        graph_builder = builder.Graph()\
-            .with_kmer_size(3)\
-            .with_num_colors(2)\
-            .with_color_names(*color_names)\
-            .with_kmer('AAA', [1, 1], ['.....C..', '.......T'])\
+        graph_builder = builder.Graph() \
+            .with_kmer_size(3) \
+            .with_num_colors(2) \
+            .with_color_names(*color_names) \
+            .with_kmer('AAA', [1, 1], ['.....C..', '.......T']) \
             .with_kmer('AAC', [1, 0], ['a.......', '........'])
         retriever = graph.ContigRetriever(graph_builder.build())
         kmer_graph = retriever.get_kmer_graph('GTTT')
