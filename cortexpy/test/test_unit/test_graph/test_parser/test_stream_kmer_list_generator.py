@@ -1,7 +1,11 @@
 from hypothesis import given
 from hypothesis import strategies as s
 
-from cortexpy.graph.parser.streaming import kmer_list_generator_from_stream_and_header
+from cortexpy.graph.parser.streaming import (
+    kmer_list_generator_from_stream_and_header,
+    kmer_string_generator_from_stream,
+)
+from cortexpy.test.builder import Graph
 from cortexpy.test.builder.graph.body import Body, KmerRecord
 from cortexpy.test.builder.graph.kmer import kmers
 from cortexpy.test.mock.graph import Header
@@ -45,3 +49,16 @@ class TestStreamKmerListGenerator(object):
         kmer_list = next(kmer_list_generator_from_stream_and_header(builder.build(), header))
 
         assert expected_kmer.kmer == ''.join(kmer_list)
+
+
+class TestStreamKmerStringGenerator(object):
+    def test_parses_aac_kmer(self):
+        kmer_size = 3
+        num_colors = 1
+        expected_kmer_string = 'AAC'
+        b = Graph()
+        b.with_kmer_size(kmer_size).with_num_colors(num_colors).with_kmer(expected_kmer_string)
+
+        kmer_string = next(kmer_string_generator_from_stream(b.build()))
+
+        assert expected_kmer_string == kmer_string
