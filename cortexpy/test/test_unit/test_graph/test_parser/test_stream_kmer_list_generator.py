@@ -7,7 +7,7 @@ from cortexpy.test.builder.graph.kmer import kmers
 from cortexpy.test.mock.graph import Header
 
 
-class TestStreamKmerGenerator(object):
+class TestStreamKmerListGenerator(object):
     @given(s.data(),
            s.integers(min_value=1, max_value=260),
            s.integers(min_value=0, max_value=10),
