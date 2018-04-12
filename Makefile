@@ -72,8 +72,7 @@ dist:
 doc:
 	$(MAKE) -C doc html
 
-setup-benchmark:
-	$(MAKE) dist
+setup-benchmark: dist
 	$(eval CORTEXPY_WHEEL := $(shell find dist/cortexpy-*.whl))
 	CORTEXPY_WHEEL=$(CORTEXPY_WHEEL) $(MAKE) -C $(BENCHMARK_DIR) setup
 
