@@ -59,6 +59,9 @@ deploy: check_git_dirty
 	$(MAKE) check_git_dirty
 	$(MAKE) test
 	$(MAKE) build
+	$(MAKE) upload
+
+upload:
 	$(RUN_IN_ENV) twine upload dist/*
 
 build: clean
