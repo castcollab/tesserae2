@@ -1,20 +1,16 @@
 [[source]]
-
 url = "https://pypi.python.org/simple"
 verify_ssl = true
 
-
 [packages]
-
 attrs = "*"
 biopython = "*"
 numpy = "*"
 networkx = "*"
 schema = "*"
-
+delegation = "*"
 
 [dev-packages]
-
 bitstring = "*"
 hypothesis = "*"
 pytest = "*"
