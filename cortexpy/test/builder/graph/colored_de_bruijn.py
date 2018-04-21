@@ -27,10 +27,12 @@ class ColoredDeBruijnGraphBuilder(object):
         return self
 
     def add_node(self, node):
-        self.with_node_kmer(node, self.kmer_builder.build_or_get(node))
+        if node not in self.graph:
+            self.with_node_kmer(node, self.kmer_builder.build_or_get(node))
         return self
 
     def with_colors(self, *colors):
+        assert len(self.graph) == 0
         self.colors = set(colors)
         self.kmer_builder.num_colors = len(self.colors)
         return self
@@ -55,14 +57,14 @@ class ColoredDeBruijnGraphBuilder(object):
     def add_path(self, iterable, color=0, coverage=0):
         k_strings = list(iterable)
         kmer = self.kmer_builder.build_or_get(k_strings[0])
-        for color in range(kmer.num_colors):
-            kmer.coverage[color] = coverage
+        for cov_color in range(kmer.num_colors):
+            kmer.coverage[cov_color] = coverage
         self.graph.add_node(k_strings[0], kmer=kmer)
         if len(k_strings) > 1:
             for k_string1, k_string2 in zip(k_strings[:-1], k_strings[1:]):
                 kmer = self.kmer_builder.build_or_get(k_string2)
-                for color in range(kmer.num_colors):
-                    kmer.coverage[color] = coverage
+                for cov_color in range(kmer.num_colors):
+                    kmer.coverage[cov_color] = coverage
                 self.graph.add_node(k_string2, kmer=kmer)
                 self.add_edge_with_color(k_string1, k_string2, color)
 

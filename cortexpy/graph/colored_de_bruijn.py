@@ -2,30 +2,35 @@ from collections import Collection, Mapping
 from delegation import SingleDelegated
 import attr
 
+from cortexpy.constants import EdgeTraversalOrientation
 from cortexpy.graph.parser.kmer import connect_kmers
 
 
-class SubscriptableKmer(SingleDelegated):
-
-    def __contains__(self, item):
-        if item == 'kmer':
-            return True
-        return False
+class SubscriptableKmer(SingleDelegated, Mapping):
 
     def __getitem__(self, item):
         assert item == 'kmer'
-        return self
+        return self.delegate
 
     def __str__(self):
         return str(self.delegate)
+
+    def __iter__(self):
+        yield 'kmer'
+
+    def __len__(self):
+        return 1
 
 
 @attr.s(slots=True)
 class NodeView(Collection):
     _nodes = attr.ib()
 
-    def __call__(self, *args, **kwargs):
-        yield from self._nodes.items()
+    def __call__(self, *args, data=False, **kwargs):
+        if data:
+            yield from self._nodes.items()
+        else:
+            yield from self._nodes.keys()
 
     def __len__(self):
         return len(self._nodes)
@@ -41,8 +46,8 @@ class NodeView(Collection):
 class EdgeView(object):
     _nodes = attr.ib()
 
-    def __call__(self, *args, **kwargs):
-        yield from self._edge_iter()
+    def __call__(self, *args, data=False, keys=False, **kwargs):
+        yield from self._edge_iter(data=data, keys=keys)
 
     def __len__(self):
         return len(list(self._edge_iter()))
@@ -53,14 +58,37 @@ class EdgeView(object):
     def __contains__(self, item):
         return item in self._edge_iter()
 
-    def _edge_iter(self):
+    def _edge_iter(self, data=False, keys=False):
         for node, kmer in self._nodes.items():
             is_lexlo = node == kmer.kmer
             for color in kmer.colors:
                 for kmer_string in kmer.edges[color].get_outgoing_kmer_strings(node,
                                                                                is_lexlo=is_lexlo):
                     if kmer_string in self._nodes:
-                        yield (node, kmer_string, color)
+                        if keys:
+                            yield (node, kmer_string, color)
+                        else:
+                            yield (node, kmer_string)
+
+
+@attr.s(slots=True)
+class AdjancencyView(object):
+    kmer = attr.ib()
+    kmer_string_is_lexlo = attr.ib()
+    orientation = attr.ib()
+
+    def __iter__(self):
+        edge_kmers = set()
+        for color in self.kmer.colors:
+            if self.orientation == EdgeTraversalOrientation.original:
+                node_iter = self.kmer.edges[color].get_outgoing_kmer_strings(self.kmer.kmer,
+                                                                             is_lexlo=self.kmer_string_is_lexlo)
+            else:
+                node_iter = self.kmer.edges[color].get_incoming_kmer_strings(self.kmer.kmer,
+                                                                             is_lexlo=self.kmer_string_is_lexlo)
+            for out_node in node_iter:
+                edge_kmers.add(out_node)
+        return iter(edge_kmers)
 
 
 @attr.s(slots=True)
@@ -104,9 +132,8 @@ class ColoredBeBruijn(Collection):
         return EdgeView(self._nodes)
 
     def out_edges(self, node, keys=False, default=None):
-        kmer = self._nodes[node]
-        is_lexlo = kmer.kmer == node
-        for color in kmer.colors:
+        for out_kmer in self.succ(node)
+            for color in kmer.colors:
             for out_node in kmer.edges[color].get_outgoing_kmer_strings(node, is_lexlo=is_lexlo):
                 if keys:
                     yield (node, out_node, color)
@@ -123,6 +150,12 @@ class ColoredBeBruijn(Collection):
                 else:
                     yield (in_node, node)
 
+    def out_degree(self, node):
+        return len(list(self.out_edges(node)))
+
+    def in_degree(self, node):
+        return len(list(self.in_edges(node)))
+
     def add_edge(self, first, second, *, key):
         """Note: edges can only be added to existing nodes"""
         first_kmer = self._nodes[first]
@@ -135,3 +168,16 @@ class ColoredBeBruijn(Collection):
 
     def __str__(self):
         return '\n'.join(self._nodes.items())
+
+    def succ(self, node):
+        kmer = self._nodes[node]
+        is_lexlo = kmer.kmer == node
+        return AdjancencyView(kmer, kmer_string_is_lexlo=is_lexlo,
+                              orientation=EdgeTraversalOrientation.original)
+
+    def pred(self, node):
+        kmer = self._nodes[node]
+
+        is_lexlo = kmer.kmer == node
+        return AdjancencyView(kmer, kmer_string_is_lexlo=is_lexlo,
+                              orientation=EdgeTraversalOrientation.reverse)
