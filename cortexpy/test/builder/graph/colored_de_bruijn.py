@@ -7,7 +7,7 @@ from cortexpy.graph.parser.kmer import EmptyKmerBuilder
 
 @attr.s(slots=True)
 class ColoredDeBruijnGraphBuilder(object):
-    graph = attr.ib(attr.Factory(colored_de_bruijn.ColoredBeBruijn))
+    graph = attr.ib(attr.Factory(colored_de_bruijn.ColoredDeBruijn))
     colors = attr.ib(attr.Factory(lambda: {0}))
     kmer_builder = attr.ib(attr.Factory(EmptyKmerBuilder))
 

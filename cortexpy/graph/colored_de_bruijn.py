@@ -1,4 +1,6 @@
 from collections import Collection, Mapping
+
+import copy
 from delegation import SingleDelegated
 import attr
 
@@ -41,6 +43,9 @@ class NodeView(Collection):
     def __contains__(self, item):
         return item in self._nodes
 
+    def __getitem__(self, item):
+        return self._nodes[item]
+
 
 @attr.s(slots=True)
 class EdgeView(object):
@@ -65,10 +70,12 @@ class EdgeView(object):
                 for kmer_string in kmer.edges[color].get_outgoing_kmer_strings(node,
                                                                                is_lexlo=is_lexlo):
                     if kmer_string in self._nodes:
+                        ret = [node, kmer_string]
                         if keys:
-                            yield (node, kmer_string, color)
-                        else:
-                            yield (node, kmer_string)
+                            ret.append(color)
+                        if data:
+                            ret.append({})
+                        yield tuple(ret)
 
 
 @attr.s(slots=True)
@@ -92,7 +99,42 @@ class AdjancencyView(object):
 
 
 @attr.s(slots=True)
-class ColoredBeBruijn(Collection):
+class MultiAdjacencyView(object):
+    _nodes = attr.ib()
+    orientation = attr.ib()
+
+    def __getitem__(self, item):
+        kmer = self._nodes[item]
+        is_lexlo = kmer.kmer == item
+        return AdjancencyView(kmer,
+                              kmer_string_is_lexlo=is_lexlo,
+                              orientation=self.orientation)
+
+
+@attr.s(slots=True)
+class DictView(Mapping):
+    base_dict = attr.ib()
+    allowed_keys = attr.ib(None)
+
+    def __getitem__(self, item):
+        if item in self.allowed_keys:
+            return self.base_dict[item]
+
+    def __iter__(self):
+        for key, val in self.base_dict.items():
+            if key in self.allowed_keys:
+                yield key, val
+
+    def __len__(self):
+        num_overlap = len(self.allowed_keys & self.base_dict.keys())
+        return len(self.base_dict) - num_overlap
+
+    def __copy__(self):
+        return {k: v for k, v in self}
+
+
+@attr.s(slots=True)
+class ColoredDeBruijn(Collection):
     """Stores cortex k-mers and conforms to parts of the interface of networkx.MultiDiGraph"""
     _nodes = attr.ib(attr.Factory(dict))
     graph = attr.ib(attr.Factory(dict))
@@ -132,9 +174,11 @@ class ColoredBeBruijn(Collection):
         return EdgeView(self._nodes)
 
     def out_edges(self, node, keys=False, default=None):
-        for out_kmer in self.succ(node)
-            for color in kmer.colors:
-            for out_node in kmer.edges[color].get_outgoing_kmer_strings(node, is_lexlo=is_lexlo):
+        kmer = self._nodes[node]
+        is_lexlo = kmer.kmer == node
+        for color in kmer.colors:
+            for out_node in kmer.edges[color].get_outgoing_kmer_strings(node,
+                                                                        is_lexlo=is_lexlo):
                 if keys:
                     yield (node, out_node, color)
                 else:
@@ -169,15 +213,21 @@ class ColoredBeBruijn(Collection):
     def __str__(self):
         return '\n'.join(self._nodes.items())
 
-    def succ(self, node):
-        kmer = self._nodes[node]
-        is_lexlo = kmer.kmer == node
-        return AdjancencyView(kmer, kmer_string_is_lexlo=is_lexlo,
-                              orientation=EdgeTraversalOrientation.original)
+    @property
+    def succ(self):
+        return MultiAdjacencyView(self._nodes, EdgeTraversalOrientation.original)
 
-    def pred(self, node):
-        kmer = self._nodes[node]
+    @property
+    def pred(self):
+        return MultiAdjacencyView(self._nodes, EdgeTraversalOrientation.reverse)
 
-        is_lexlo = kmer.kmer == node
-        return AdjancencyView(kmer, kmer_string_is_lexlo=is_lexlo,
-                              orientation=EdgeTraversalOrientation.reverse)
+    def subgraph(self, kmer_strings):
+        """Return a subgraph from kmer_strings"""
+        dict_view = DictView(self._nodes, set(kmer_strings))
+        return ColoredDeBruijn(dict_view, self.graph)
+
+    def copy(self):
+        return self.__copy__()
+
+    def __copy__(self):
+        return ColoredDeBruijn(copy.copy(self._nodes), self.graph.copy())

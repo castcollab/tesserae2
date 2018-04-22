@@ -9,6 +9,7 @@ numpy = "*"
 networkx = "*"
 schema = "*"
 delegation = "*"
+msgpack = "*"
 
 [dev-packages]
 bitstring = "*"

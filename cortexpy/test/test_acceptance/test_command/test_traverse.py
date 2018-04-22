@@ -18,7 +18,6 @@ class TestSubgraphs(object):
         # given
         d = command.Traverse(tmpdir)
         d.with_records('CCCGC', 'AAA')
-        d.with_subgraph_output()
         d.with_kmer_size(3)
 
         # when
