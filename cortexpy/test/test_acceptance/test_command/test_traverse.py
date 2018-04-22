@@ -12,19 +12,19 @@ class TestSubgraphs(object):
         expect = d.run()
 
         # then
-        expect.has_n_graphs(1)
+        expect.has_n_nodes(3)
 
-    def test_traverses_two_subgraphs_as_two_subgraphs(self, tmpdir):
+    def test_traverses_two_subgraphs_as_single_graph(self, tmpdir):
         # given
         d = command.Traverse(tmpdir)
-        d.with_records('CCCGC', 'AAA')
+        d.with_records('CCCGC', 'TTT')
         d.with_kmer_size(3)
 
         # when
         expect = d.run()
 
         # then
-        expect.has_n_graphs(2)
+        expect.has_nodes('CCC', 'CCG', 'CGC', 'AAA')
 
     def test_traverses_all_colors_without_color_specification(self, tmpdir):
         # given
@@ -100,7 +100,6 @@ class TestLogging(object):
 
 
 class Test(object):
-
     def test_creates_two_transcripts_from_four_records_in_four_colors_in_four_graphs(self, tmpdir):
         # given
         d = command.Traverse(tmpdir)

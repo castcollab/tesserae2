@@ -1,11 +1,122 @@
 from collections import Collection, Mapping
 
 import copy
+from itertools import chain
+
 from delegation import SingleDelegated
 import attr
 
 from cortexpy.constants import EdgeTraversalOrientation
 from cortexpy.graph.parser.kmer import connect_kmers
+from cortexpy.utils import lexlo
+
+
+@attr.s(slots=True)
+class ColoredDeBruijn(Collection):
+    """Stores cortex k-mers and conforms to parts of the interface of networkx.MultiDiGraph"""
+    _nodes = attr.ib(attr.Factory(dict))
+    graph = attr.ib(attr.Factory(dict))
+
+    @property
+    def nodes(self):
+        return NodeView(self._nodes)
+
+    @property
+    def node(self):
+        return self._nodes
+
+    def __len__(self):
+        return len(self._nodes)
+
+    def __iter__(self):
+        return iter(self._nodes)
+
+    def __contains__(self, item):
+        return item in self._nodes
+
+    def __getitem__(self, item):
+        return {n for n in chain(self.pred[item], self.succ[item])}
+
+    def add_node(self, kmer_string, *, kmer):
+        self._nodes[kmer_string] = SubscriptableKmer(kmer)
+
+    def add_nodes_from(self, node_iterable):
+        for node in node_iterable:
+            self.add_node(node[0], kmer=node[1])
+
+    def is_multigraph(self):
+        return True
+
+    def is_directed(self):
+        return True
+
+    @property
+    def edges(self):
+        return EdgeView(self._nodes)
+
+    def out_edges(self, node, keys=False, default=None):
+        kmer = self._nodes[node]
+        is_lexlo = kmer.kmer == node
+        for color in kmer.colors:
+            for out_node in kmer.edges[color].get_outgoing_kmer_strings(node,
+                                                                        is_lexlo=is_lexlo):
+                if keys:
+                    yield (node, out_node, color)
+                else:
+                    yield (node, out_node)
+
+    def in_edges(self, node, keys=False, default=None):
+        kmer = self._nodes[node]
+        is_lexlo = kmer.kmer == node
+        for color in kmer.colors:
+            for in_node in kmer.edges[color].get_incoming_kmer_strings(node, is_lexlo=is_lexlo):
+                if keys:
+                    yield (in_node, node, color)
+                else:
+                    yield (in_node, node)
+
+    def out_degree(self, node):
+        return len(list(self.out_edges(node)))
+
+    def in_degree(self, node):
+        return len(list(self.in_edges(node)))
+
+    def add_edge(self, first, second, *, key):
+        """Note: edges can only be added to existing nodes"""
+        first_kmer = self._nodes[first]
+        second_kmer = self._nodes[second]
+        connect_kmers(first_kmer, second_kmer, color=key)
+
+    def add_edges_from(self, edge_iterable):
+        for edge in edge_iterable:
+            self.add_edge(edge[0], edge[1], key=edge[2])
+
+    def __str__(self):
+        return '\n'.join(self._nodes.items())
+
+    @property
+    def succ(self):
+        return MultiAdjacencyView(self._nodes, EdgeTraversalOrientation.original)
+
+    @property
+    def pred(self):
+        return MultiAdjacencyView(self._nodes, EdgeTraversalOrientation.reverse)
+
+    def subgraph(self, kmer_strings):
+        """Return a subgraph from kmer_strings"""
+        dict_view = DictView(self._nodes, set(kmer_strings))
+        return ColoredDeBruijn(dict_view, self.graph)
+
+    def copy(self):
+        return self.__copy__()
+
+    def __copy__(self):
+        return ColoredDeBruijn(copy.copy(self._nodes), self.graph.copy())
+
+    def remove_node(self, node):
+        for neighbor in self[node]:
+            self.in_edges(neighbor, keys=True)
+        del self._nodes[node]
 
 
 class SubscriptableKmer(SingleDelegated, Mapping):
@@ -94,7 +205,7 @@ class AdjancencyView(object):
                 node_iter = self.kmer.edges[color].get_incoming_kmer_strings(self.kmer.kmer,
                                                                              is_lexlo=self.kmer_string_is_lexlo)
             for out_node in node_iter:
-                edge_kmers.add(out_node)
+                edge_kmers.add(lexlo(out_node))
         return iter(edge_kmers)
 
 
@@ -131,103 +242,3 @@ class DictView(Mapping):
 
     def __copy__(self):
         return {k: v for k, v in self}
-
-
-@attr.s(slots=True)
-class ColoredDeBruijn(Collection):
-    """Stores cortex k-mers and conforms to parts of the interface of networkx.MultiDiGraph"""
-    _nodes = attr.ib(attr.Factory(dict))
-    graph = attr.ib(attr.Factory(dict))
-
-    @property
-    def nodes(self):
-        return NodeView(self._nodes)
-
-    @property
-    def node(self):
-        return self._nodes
-
-    def __len__(self):
-        return len(self._nodes)
-
-    def __iter__(self):
-        return iter(self._nodes)
-
-    def __contains__(self, item):
-        return item in self._nodes
-
-    def add_node(self, kmer_string, *, kmer):
-        self._nodes[kmer_string] = SubscriptableKmer(kmer)
-
-    def add_nodes_from(self, node_iterable):
-        for node in node_iterable:
-            self.add_node(node[0], kmer=node[1])
-
-    def is_multigraph(self):
-        return True
-
-    def is_directed(self):
-        return True
-
-    @property
-    def edges(self):
-        return EdgeView(self._nodes)
-
-    def out_edges(self, node, keys=False, default=None):
-        kmer = self._nodes[node]
-        is_lexlo = kmer.kmer == node
-        for color in kmer.colors:
-            for out_node in kmer.edges[color].get_outgoing_kmer_strings(node,
-                                                                        is_lexlo=is_lexlo):
-                if keys:
-                    yield (node, out_node, color)
-                else:
-                    yield (node, out_node)
-
-    def in_edges(self, node, keys=False, default=None):
-        kmer = self._nodes[node]
-        is_lexlo = kmer.kmer == node
-        for color in kmer.colors:
-            for in_node in kmer.edges[color].get_incoming_kmer_strings(node, is_lexlo=is_lexlo):
-                if keys:
-                    yield (in_node, node, color)
-                else:
-                    yield (in_node, node)
-
-    def out_degree(self, node):
-        return len(list(self.out_edges(node)))
-
-    def in_degree(self, node):
-        return len(list(self.in_edges(node)))
-
-    def add_edge(self, first, second, *, key):
-        """Note: edges can only be added to existing nodes"""
-        first_kmer = self._nodes[first]
-        second_kmer = self._nodes[second]
-        connect_kmers(first_kmer, second_kmer, color=key)
-
-    def add_edges_from(self, edge_iterable):
-        for edge in edge_iterable:
-            self.add_edge(edge[0], edge[1], key=edge[2])
-
-    def __str__(self):
-        return '\n'.join(self._nodes.items())
-
-    @property
-    def succ(self):
-        return MultiAdjacencyView(self._nodes, EdgeTraversalOrientation.original)
-
-    @property
-    def pred(self):
-        return MultiAdjacencyView(self._nodes, EdgeTraversalOrientation.reverse)
-
-    def subgraph(self, kmer_strings):
-        """Return a subgraph from kmer_strings"""
-        dict_view = DictView(self._nodes, set(kmer_strings))
-        return ColoredDeBruijn(dict_view, self.graph)
-
-    def copy(self):
-        return self.__copy__()
-
-    def __copy__(self):
-        return ColoredDeBruijn(copy.copy(self._nodes), self.graph.copy())
