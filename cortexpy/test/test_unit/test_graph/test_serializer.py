@@ -4,7 +4,7 @@ import json
 import networkx as nx
 
 import cortexpy.graph as graph
-import cortexpy.graph.serializer as serializer
+import cortexpy.graph.serializer.unitig as serializer
 import cortexpy.test.builder as builder
 from cortexpy.test.driver.graph.serializer import CollapseKmerUnitigsTestDriver
 
