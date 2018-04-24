@@ -5,6 +5,9 @@ BIN_DIR = "./bin"
 RUN_IN_ENV = pipenv run
 PYTHON = $(RUN_IN_ENV) python
 
+FAST_TEST_COMMAND = pytest \
+	--hypothesis-profile $(HYPOTHESIS_PROFILE)
+
 UNIT_TEST_COMMAND = $(RUN_IN_ENV) pytest \
 	--flake8 \
 	--cov=cortexpy \
@@ -26,6 +29,9 @@ compile: update
 
 update:
 	git submodule update --init --recursive
+
+fast:
+	$(FAST_TEST_COMMAND) cortexpy/test/test_unit
 
 unit:
 	$(UNIT_TEST_COMMAND) cortexpy/test/test_unit
