@@ -191,18 +191,6 @@ class ColoredDeBruijnLexloDiGraph(SingleDelegated):
         self.delegate.node[kmer_string] = SubscriptableKmer(kmer)
 
 
-class ConsistentColoredDeBruijnDiGraph(SingleDelegated):
-
-    def is_consistent(self):
-        return True
-
-    def __iter__(self):
-        yield from self.delegate
-
-    def __len__(self):
-        return len(self.delegate)
-
-
 class SubscriptableKmer(SingleDelegated, Mapping):
 
     def __getitem__(self, item):
@@ -303,11 +291,13 @@ class AdjancencyView(object):
         edge_kmers = set()
         for color in self.colors:
             if self.orientation == EdgeTraversalOrientation.original:
-                node_iter = self.kmer.edges[color].get_outgoing_kmer_strings(self.kmer.kmer,
-                                                                             is_lexlo=self.kmer_string_is_lexlo)
+                node_iter = self.kmer.edges[color].get_outgoing_kmer_strings(
+                    self.kmer.kmer, is_lexlo=self.kmer_string_is_lexlo
+                )
             else:
-                node_iter = self.kmer.edges[color].get_incoming_kmer_strings(self.kmer.kmer,
-                                                                             is_lexlo=self.kmer_string_is_lexlo)
+                node_iter = self.kmer.edges[color].get_incoming_kmer_strings(
+                    self.kmer.kmer, is_lexlo=self.kmer_string_is_lexlo
+                )
             for out_node in node_iter:
                 edge_kmers.add(lexlo(out_node))
         return iter(edge_kmers)
