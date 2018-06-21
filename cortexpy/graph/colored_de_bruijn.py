@@ -260,10 +260,7 @@ class EdgeView(object):
             yield from self._edge_iter(data=data, keys=keys)
         else:
             if self.graph.is_directed():
-                if lexlo(node) == node:
-                    yield from self.graph.out_edges(node, data=data, keys=keys)
-                else:
-                    yield from self.graph.in_edges(node, data=data, keys=keys)
+                yield from self.graph.out_edges(node, data=data, keys=keys)
             else:
                 yield from self._edge_iter(data=data, keys=keys)
 
