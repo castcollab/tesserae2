@@ -3,7 +3,7 @@ from unittest.mock import Mock
 import attr
 from delegation import SingleDelegated
 
-from cortexpy.graph import colored_de_bruijn
+from cortexpy.graph import cortex
 from cortexpy.graph.parser.kmer import EmptyKmerBuilder
 from cortexpy.graph.parser.streaming import load_de_bruijn_graph
 from cortexpy.test.builder import Graph
@@ -11,7 +11,7 @@ from cortexpy.test.builder import Graph
 
 @attr.s(slots=True)
 class ColoredDeBruijnGraphBuilder(object):
-    graph = attr.ib(attr.Factory(colored_de_bruijn.ColoredDeBruijnDiGraph))
+    graph = attr.ib(attr.Factory(cortex.CortexDiGraph))
     colors = attr.ib(init=False)
     kmer_builder = attr.ib(attr.Factory(EmptyKmerBuilder))
 

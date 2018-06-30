@@ -81,18 +81,15 @@ class TestEdges(object):
 
         # when
         cdb = b.build()
-        ucdb = make_multi_graph(cdb)
 
         # then
         assert {0, 2} == set(cdb.succ['AAA']['AAC'])
         assert set() == set(cdb.pred['AAA']['AAC'])
         assert {0, 2} == set(cdb['AAA']['AAC'])
-        assert {0, 2} == set(ucdb['AAA']['AAC'])
 
         assert set() == set(cdb.succ['AAC']['AAA'])
         assert {0, 2} == set(cdb.pred['AAC']['AAA'])
         assert set() == set(cdb['AAC']['AAA'])
-        assert {0, 2} == set(ucdb['AAC']['AAA'])
 
 
 class TestInOutEdges(object):
@@ -104,14 +101,11 @@ class TestInOutEdges(object):
         cdb = b.build()
         seed = 'AAA'
 
-        # when
-        graph = Interactor(cdb, colors=None).make_graph_nodes_consistent([seed]).graph
+        # when / then
+        assert [('AAA', 'AAG')] == list(cdb.out_edges(seed))
+        assert [] == list(cdb.in_edges(seed))
 
-        # then
-        assert [('AAA', 'AAG')] == list(graph.out_edges(seed))
-        assert [] == list(graph.in_edges(seed))
-
-    def test_single_kmer_revcomp_seed(self):
+    def test_single_kmer_revcomp(self):
         # given
         b = get_cdb_builder()
         b.with_kmer('AAA 0 ......G.')
@@ -119,9 +113,52 @@ class TestInOutEdges(object):
         cdb = b.build()
         seed = 'TTT'
 
+        # when / then
+        assert [('CTT', 'TTT')] == list(cdb.in_edges(seed))
+        assert [] == list(cdb.out_edges(seed))
+
+
+class TestConsistentCortexGraph(object):
+    @given(s.sampled_from(('AAA', 'TTT')))
+    def test_single_kmer_revcomp_seed(self, seed):
+        # given
+        b = get_cdb_builder()
+        b.with_kmer('AAA 0 ......G.')
+        b.with_kmer('AAG 0 a.......')
+        cdb = b.build()
+
         # when
         graph = Interactor(cdb, colors=None).make_graph_nodes_consistent([seed]).graph
 
         # then
-        assert [('CTT', 'TTT')] == list(graph.in_edges(seed))
-        assert [] == list(graph.out_edges(seed))
+        if seed == 'AAA':
+            assert [] == list(graph.in_edges(seed))
+            assert [('AAA', 'AAG')] == list(graph.out_edges(seed))
+        else:
+            assert [('CTT', 'TTT')] == list(graph.in_edges(seed))
+            assert [] == list(graph.out_edges(seed))
+
+    def test_gets_correct_neighbors_of_kmer(self):
+        # given
+        b = get_cdb_builder()
+        b.with_kmer('AAC 0 .......T')
+        b.with_kmer('ACT 0 a.....G.')
+        b.with_kmer('CAG 0 .......T')
+        cdb = b.build()
+        seed = 'AAC'
+
+        # when
+        graph = Interactor(cdb, colors=None).make_graph_nodes_consistent([seed]).graph
+
+        # then
+        assert ['CTG'] == list(graph['ACT'])
+        assert ['CTG'] == list(graph.succ['ACT'])
+        assert ['AAC'] == list(graph.pred['ACT'])
+        assert [('ACT', 'CTG')] == list(graph.out_edges('ACT'))
+        assert [('AAC', 'ACT')] == list(graph.in_edges('ACT'))
+
+        assert [] == list(graph['CTG'])
+        assert [] == list(graph.succ['CTG'])
+        assert ['ACT'] == list(graph.pred['CTG'])
+        assert [] == list(graph.out_edges('CTG'))
+        assert [('ACT', 'CTG')] == list(graph.in_edges('CTG'))
