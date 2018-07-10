@@ -1,5 +1,3 @@
-from unittest.mock import Mock
-
 import attr
 from delegation import SingleDelegated
 
@@ -10,7 +8,7 @@ from cortexpy.test.builder import Graph
 
 
 @attr.s(slots=True)
-class ColoredDeBruijnGraphBuilder(object):
+class CortexGraphBuilder(object):
     graph = attr.ib(attr.Factory(cortex.CortexDiGraph))
     colors = attr.ib(init=False)
     kmer_builder = attr.ib(attr.Factory(EmptyKmerBuilder))
@@ -78,17 +76,7 @@ class ColoredDeBruijnGraphBuilder(object):
                 self.add_edge_with_color(k_string1, k_string2, color)
 
     def build(self):
-        add_kmers_to_graph(self.graph, num_colors=len(self.colors))
         return self.graph
-
-
-def add_kmers_to_graph(graph, *, num_colors=1):
-    for node, node_data in graph.nodes(data=True):
-        if 'kmer' not in node_data:
-            kmer_mock = Mock()
-            kmer_mock.coverage = tuple(1 for _ in range(num_colors))
-            kmer_mock.kmer = node
-            graph.node[node]['kmer'] = kmer_mock
 
 
 class CdbBuilder(SingleDelegated):
