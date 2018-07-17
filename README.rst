@@ -8,8 +8,6 @@ Cortexpy
 .. image:: https://landscape.io/github/winni2k/cortexpy/master/landscape.svg?style=flat
   :target: https://landscape.io/github/winni2k/cortexpy/master
 
-Supporting Python versions 3.5 and 3.6.
-
 Cortexpy is a Python package for sequence analysis using linked and colored de Bruijn graphs such as
 the ones created by `Mccortex <https://github.com/mcveanlab/mccortex>`_.
 This project aims to mirror many of the features contained in
