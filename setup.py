@@ -1,11 +1,13 @@
 import os
 import sys
-from setuptools import setup, find_packages
 import json
 from io import open
+from setuptools import setup, find_packages
+from Cython.Build import cythonize
 
 sys.path.append(os.path.join(__file__, 'cortexpy'))
 from cortexpy import __version__
+
 version = __version__
 
 
@@ -47,4 +49,5 @@ setup(
         'console_scripts': ['cortexpy=cortexpy.__main__:main_without_argv'],
     },
     include_package_data=True,
+    ext_modules=cythonize("cortexpy/graph/parser/kmer_ext.pyx", language='c++', annotate=True)
 )
