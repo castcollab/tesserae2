@@ -10,6 +10,7 @@ networkx = "*"
 schema = "*"
 delegation = "*"
 msgpack = "*"
+cython = "*"
 
 [dev-packages]
 cython = "*"

@@ -1,25 +1,27 @@
 import os
 import sys
-import json
 from io import open
-from setuptools import setup, find_packages
-from Cython.Build import cythonize
+from setuptools import setup, find_packages, Extension
 
 sys.path.append(os.path.join(__file__, 'cortexpy'))
 from cortexpy import __version__
 
 version = __version__
 
+try:
+    from Cython.Build import cythonize
+except ImportError:
+    USE_CYTHON = False
+else:
+    USE_CYTHON = True
 
-def get_requirements_from_pipfile_lock(pipfile_lock=None):
-    if pipfile_lock is None:
-        pipfile_lock = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'Pipfile.lock')
-    lock_data = json.load(open(pipfile_lock))
-    return [package_name for package_name in lock_data.get('default', {}).keys()]
+ext = '.pyx' if USE_CYTHON else '.cpp'
+extensions = [Extension("cortexpy.graph.parser.kmer_ext", ["cortexpy/graph/parser/kmer_ext" + ext])]
 
+if USE_CYTHON:
+    extensions = cythonize(extensions)  # , annotate=True)
 
 packages = find_packages('.')
-pipfile_lock_requirements = get_requirements_from_pipfile_lock()
 
 setup(
     name='cortexpy',
@@ -39,7 +41,6 @@ setup(
     schema
     delegation
     msgpack
-    cython
     """.split('\n'),
     tests_require=['coverage', 'pytest'],
     python_requires=">=3.6",
@@ -58,5 +59,5 @@ setup(
         'console_scripts': ['cortexpy=cortexpy.__main__:main_without_argv'],
     },
     include_package_data=True,
-    ext_modules=cythonize("cortexpy/graph/parser/kmer_ext.pyx")#, annotate=True)
+    ext_modules=extensions
 )
