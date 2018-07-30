@@ -16,7 +16,12 @@ else:
     USE_CYTHON = True
 
 ext = '.pyx' if USE_CYTHON else '.cpp'
-extensions = [Extension("cortexpy.graph.parser.kmer_ext", ["cortexpy/graph/parser/kmer_ext" + ext])]
+extensions = [Extension(
+    "cortexpy.graph.parser.kmer_ext",
+    ["cortexpy/graph/parser/kmer_ext" + ext],
+    extra_compile_args=["-std=c++11"],
+    extra_link_args=["-std=c++11"]
+)]
 
 if USE_CYTHON:
     extensions = cythonize(extensions)  # , annotate=True)
