@@ -12,6 +12,7 @@ delegation = "*"
 msgpack = "*"
 
 [dev-packages]
+cython = "*"
 bitstring = "*"
 hypothesis = "*"
 pytest = "*"

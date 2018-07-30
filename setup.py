@@ -49,5 +49,5 @@ setup(
         'console_scripts': ['cortexpy=cortexpy.__main__:main_without_argv'],
     },
     include_package_data=True,
-    ext_modules=cythonize("cortexpy/graph/parser/kmer_ext.pyx", language='c++', annotate=True)
+    ext_modules=cythonize("cortexpy/graph/parser/kmer_ext.pyx")#, annotate=True)
 )
