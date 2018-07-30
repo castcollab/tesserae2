@@ -61,8 +61,7 @@ check_git_dirty:
 	test -z "$$(git status --porcelain)"
 
 deploy: check_git_dirty
-	pipenv lock
-	$(MAKE) check_git_dirty
+	pipenv install --deploy
 	$(MAKE) test
 	$(MAKE) build
 	$(MAKE) upload

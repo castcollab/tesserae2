@@ -31,7 +31,16 @@ setup(
     download_url='https://github.com/winni2k/cortexpy/archive/{}.tar.gz'.format(version),
     license='Apache-2.0',
     long_description=open('README.rst').read(),
-    install_requires=pipfile_lock_requirements,
+    install_requires="""
+    attrs
+    biopython
+    numpy
+    networkx
+    schema
+    delegation
+    msgpack
+    cython
+    """.split('\n'),
     tests_require=['coverage', 'pytest'],
     python_requires=">=3.6",
     classifiers=[
