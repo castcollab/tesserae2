@@ -55,7 +55,7 @@ Overview
 
 .. end-badges
 
-Cortexpy is a Python package for sequence analysis using linked and colored de Bruijn graphs such as
+Cortexpy is a Python package for sequence analysis using linked and colored De Bruijn graphs such as
 the ones created by `Mccortex <https://github.com/mcveanlab/mccortex>`_.
 This project aims to mirror many of the features contained in
 `CortexJDK <https://github.com/mcveanlab/CortexJDK>`_.
