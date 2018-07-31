@@ -36,7 +36,7 @@ Overview
     :alt: PyPI Package latest release
     :target: https://pypi.python.org/pypi/cortexpy
 
-.. |commits-since| image:: https://img.shields.io/github/commits-since/winni2k/cortexpy/v0.32.2.svg
+.. |commits-since| image:: https://img.shields.io/github/commits-since/winni2k/cortexpy/0.32.2.svg
     :alt: Commits since latest release
     :target: https://github.com/winni2k/cortexpy/compare/0.32.2...master
 
