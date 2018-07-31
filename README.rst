@@ -10,9 +10,8 @@ Overview
     * - docs
       - |docs|
     * - tests
-      - | |travis| |requires|
+      - | |travis|
         | |coveralls| |codecov|
-        | |codeclimate|
     * - package
       - | |version| |wheel| |supported-versions| |supported-implementations|
         | |commits-since|
@@ -39,7 +38,7 @@ Overview
 
 .. |commits-since| image:: https://img.shields.io/github/commits-since/winni2k/cortexpy/v0.32.2.svg
     :alt: Commits since latest release
-    :target: https://github.com/winni2k/cortexpy/compare/v0.32.2...master
+    :target: https://github.com/winni2k/cortexpy/compare/0.32.2...master
 
 .. |wheel| image:: https://img.shields.io/pypi/wheel/cortexpy.svg
     :alt: PyPI Wheel
