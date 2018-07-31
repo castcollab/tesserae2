@@ -9,7 +9,6 @@ FAST_TEST_COMMAND = pytest \
 	--hypothesis-profile $(HYPOTHESIS_PROFILE)
 
 UNIT_TEST_COMMAND = $(RUN_IN_ENV) pytest \
-	--flake8 \
 	--cov=cortexpy \
 	--cov-report term-missing \
 	--cov-report html \
@@ -78,7 +77,7 @@ build: clean
 
 dist: pycompile
 	$(PYTHON) setup.py sdist
-	$(PYTHON) setup.py bdist_wheel
+#	$(PYTHON) setup.py bdist_wheel
 
 doc:
 	$(MAKE) -C doc html
