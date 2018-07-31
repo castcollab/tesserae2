@@ -1,6 +1,69 @@
 Cortexpy
 ========
 
+.. start-badges
+
+.. list-table::
+    :stub-columns: 1
+
+    * - docs
+      - |docs|
+    * - tests
+      - | |travis| |requires|
+        | |coveralls| |codecov|
+        | |codeclimate|
+    * - package
+      - | |version| |wheel| |supported-versions| |supported-implementations|
+        | |commits-since|
+
+.. |docs| image:: https://readthedocs.org/projects/cortexpy/badge/?style=flat
+    :target: https://readthedocs.org/projects/cortexpy
+    :alt: Documentation Status
+
+.. |travis| image:: https://travis-ci.org/winni2k/cortexpy.svg?branch=master
+    :alt: Travis-CI Build Status
+    :target: https://travis-ci.org/winni2k/cortexpy
+
+.. |requires| image:: https://requires.io/github/winni2k/cortexpy/requirements.svg?branch=master
+    :alt: Requirements Status
+    :target: https://requires.io/github/winni2k/cortexpy/requirements/?branch=master
+
+.. |coveralls| image:: https://coveralls.io/repos/winni2k/cortexpy/badge.svg?branch=master&service=github
+    :alt: Coverage Status
+    :target: https://coveralls.io/r/winni2k/cortexpy
+
+.. |codecov| image:: https://codecov.io/github/winni2k/cortexpy/coverage.svg?branch=master
+    :alt: Coverage Status
+    :target: https://codecov.io/github/winni2k/cortexpy
+
+.. |codeclimate| image:: https://codeclimate.com/github/winni2k/cortexpy/badges/gpa.svg
+   :target: https://codeclimate.com/github/winni2k/cortexpy
+   :alt: CodeClimate Quality Status
+
+.. |version| image:: https://img.shields.io/pypi/v/cortexpy.svg
+    :alt: PyPI Package latest release
+    :target: https://pypi.python.org/pypi/cortexpy
+
+.. |commits-since| image:: https://img.shields.io/github/commits-since/winni2k/cortexpy/v0.32.2.svg
+    :alt: Commits since latest release
+    :target: https://github.com/winni2k/cortexpy/compare/v0.32.2...master
+
+.. |wheel| image:: https://img.shields.io/pypi/wheel/cortexpy.svg
+    :alt: PyPI Wheel
+    :target: https://pypi.python.org/pypi/cortexpy
+
+.. |supported-versions| image:: https://img.shields.io/pypi/pyversions/cortexpy.svg
+    :alt: Supported versions
+    :target: https://pypi.python.org/pypi/cortexpy
+
+.. |supported-implementations| image:: https://img.shields.io/pypi/implementation/cortexpy.svg
+    :alt: Supported implementations
+    :target: https://pypi.python.org/pypi/cortexpy
+
+
+.. end-badges
+
+
 .. image:: https://travis-ci.org/winni2k/cortexpy.svg?branch=master
   :target: https://travis-ci.org/winni2k/cortexpy
 .. image:: https://coveralls.io/repos/github/winni2k/cortexpy/badge.svg?branch=admin_category
