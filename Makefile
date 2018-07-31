@@ -42,8 +42,11 @@ acceptance:
 fixtures:
 	$(MAKE) -C $(BENCHMARK_DIR) test-fixtures
 
-test:
-	$(TEST_COMMAND) cortexpy
+pycompile:
+	$(PYTHON) setup.py build_ext --inplace
+
+test: pycompile
+	$(TEST_COMMAND) cortexpy/test/test_unit cortexpy/test/test_acceptance
 
 lint:
 	- $(RUN_IN_ENV) pylint cortexpy \
@@ -73,8 +76,7 @@ build: clean
 	$(MAKE) check_git_dirty
 	$(MAKE) dist
 
-dist:
-	$(PYTHON) setup.py build_ext --inplace
+dist: pycompile
 	$(PYTHON) setup.py sdist
 	$(PYTHON) setup.py bdist_wheel
 
@@ -91,4 +93,4 @@ benchmark:
 clean:
 	rm -rf dist
 
-.PHONY: test acceptance unit clean update pipenv compile build publish doc dist
+.PHONY: test acceptance unit clean update pipenv compile build publish doc dist pycompile
