@@ -64,7 +64,7 @@ check_git_dirty:
 
 deploy: check_git_dirty
 	pipenv install --deploy
-	$(MAKE) test
+	tox
 	$(MAKE) build
 	$(MAKE) upload
 

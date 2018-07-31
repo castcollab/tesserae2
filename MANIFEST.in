@@ -1,1 +1,11 @@
-include Pipfile.lock
+graft tests
+graft src
+
+include README.rst
+include tox.ini .travis.yml
+include Pipfile Pipfile.lock
+
+
+prune **/.hypothesis
+
+global-exclude *.py[cod] __pycache__ *.so *.dylib .DS_Store

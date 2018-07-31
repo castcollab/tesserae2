@@ -1,12 +1,22 @@
 import os
-import sys
+import re
+from glob import glob
 from io import open
+
+from os.path import dirname, splitext, basename
 from setuptools import setup, find_packages, Extension
 
-sys.path.append(os.path.join(__file__, 'cortexpy'))
-from cortexpy import __version__
-
-version = __version__
+# version_re = re.compile(r'\d+\.\d+\.\d+')
+# with open(os.path.join(dirname(__file__), 'src', 'cortexpy', '__init__.py'), 'rt') as fp:
+#     for line in fp:
+#         print(line)
+#         match = version_re.search(line)
+#         print(match)
+#         if match:
+#             version = match.group()
+#             break
+#
+# assert version
 
 try:
     from Cython.Build import cythonize
@@ -18,7 +28,7 @@ else:
 ext = '.pyx' if USE_CYTHON else '.cpp'
 extensions = [Extension(
     "cortexpy.graph.parser.kmer_ext",
-    ["cortexpy/graph/parser/kmer_ext" + ext],
+    ["src/cortexpy/graph/parser/kmer_ext" + ext],
     extra_compile_args=["-std=c++11"],
     extra_link_args=["-std=c++11"]
 )]
@@ -26,8 +36,7 @@ extensions = [Extension(
 if USE_CYTHON:
     extensions = cythonize(extensions)  # , annotate=True)
 
-packages = find_packages('.')
-
+version='0.31.2'
 setup(
     name='cortexpy',
     version=version,
@@ -49,6 +58,10 @@ setup(
     """.split('\n'),
     tests_require=['coverage', 'pytest'],
     python_requires=">=3.6",
+    packages=find_packages('src'),
+    package_dir={'': 'src'},
+    py_modules=[splitext(basename(path))[0] for path in glob('src/*.py')],
+    ext_modules=extensions,
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Science/Research',
@@ -59,10 +72,8 @@ setup(
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: Implementation :: CPython',
     ],
-    packages=packages,
     entry_points={
-        'console_scripts': ['cortexpy=cortexpy.__main__:main_without_argv'],
+        'console_scripts': ['cortexpy=cortexpy.__main__:main'],
     },
     include_package_data=True,
-    ext_modules=extensions
 )
