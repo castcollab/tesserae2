@@ -1,4 +1,5 @@
-Cortexpy
+========
+Overview
 ========
 
 .. start-badges
@@ -24,10 +25,6 @@ Cortexpy
     :alt: Travis-CI Build Status
     :target: https://travis-ci.org/winni2k/cortexpy
 
-.. |requires| image:: https://requires.io/github/winni2k/cortexpy/requirements.svg?branch=master
-    :alt: Requirements Status
-    :target: https://requires.io/github/winni2k/cortexpy/requirements/?branch=master
-
 .. |coveralls| image:: https://coveralls.io/repos/winni2k/cortexpy/badge.svg?branch=master&service=github
     :alt: Coverage Status
     :target: https://coveralls.io/r/winni2k/cortexpy
@@ -35,10 +32,6 @@ Cortexpy
 .. |codecov| image:: https://codecov.io/github/winni2k/cortexpy/coverage.svg?branch=master
     :alt: Coverage Status
     :target: https://codecov.io/github/winni2k/cortexpy
-
-.. |codeclimate| image:: https://codeclimate.com/github/winni2k/cortexpy/badges/gpa.svg
-   :target: https://codeclimate.com/github/winni2k/cortexpy
-   :alt: CodeClimate Quality Status
 
 .. |version| image:: https://img.shields.io/pypi/v/cortexpy.svg
     :alt: PyPI Package latest release
@@ -63,56 +56,51 @@ Cortexpy
 
 .. end-badges
 
-
-.. image:: https://travis-ci.org/winni2k/cortexpy.svg?branch=master
-  :target: https://travis-ci.org/winni2k/cortexpy
-.. image:: https://coveralls.io/repos/github/winni2k/cortexpy/badge.svg?branch=admin_category
-  :target: https://coveralls.io/github/winni2k/cortexpy?branch=admin_category
-.. image:: https://landscape.io/github/winni2k/cortexpy/master/landscape.svg?style=flat
-  :target: https://landscape.io/github/winni2k/cortexpy/master
-
 Cortexpy is a Python package for sequence analysis using linked and colored de Bruijn graphs such as
 the ones created by `Mccortex <https://github.com/mcveanlab/mccortex>`_.
 This project aims to mirror many of the features contained in
 `CortexJDK <https://github.com/mcveanlab/CortexJDK>`_.
 
+* Free software: Apache Software License 2.0
 
-Install
--------
+Installation
+============
 
-Install the latest version of cortexpy::
+::
 
     pip install cortexpy
 
-Bugs
-----
-
-Please raise a github issue for any bugs.
 
 Development
------------
+===========
 
 Set up the project::
 
     make init
 
-See `cortexpy/__main__.py` for example uses of cortexpy.
+To run the all tests run::
 
-Publishing to Pypi
-------------------
+    tox
 
-::
+Note, to combine the coverage data from all the tox environments run:
 
-    # assuming version 0.0.1
+.. list-table::
+    :widths: 10 90
+    :stub-columns: 1
 
-    # Step 1: Set __version__ in cortexpy/__init__.py
+    - - Windows
+      - ::
 
-    # Step 2: Make version commit
-    git commit -am'Bump to version 0.0.1'
+            set PYTEST_ADDOPTS=--cov-append
+            tox
 
-    # Step 3: tag commit
-    git tag 0.0.1
+    - - Other
+      - ::
 
-    # Step 4: publish to pypi
-    make deploy
+            PYTEST_ADDOPTS=--cov-append tox
+
+Bugs
+====
+
+Please raise a github issue for any bugs.
 
