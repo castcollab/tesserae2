@@ -2,28 +2,12 @@
 url = "https://pypi.python.org/simple"
 verify_ssl = true
 
-[packages]
-attrs = "*"
-biopython = "*"
-numpy = "*"
-networkx = "*"
-schema = "*"
-delegation = "*"
-msgpack = "*"
-cython = "*"
-
 [dev-packages]
 cython = "*"
-bitstring = "*"
-hypothesis = "*"
-pytest = "*"
-pytest-cov = "*"
-# "pytest-flake8" = "*"
-pytest-pylint = "*"
 sphinx = "*"
 twine = "*"
 wheel = "*"
 sphinx-autobuild = "*"
 sphinx_rtd_theme = "*"
-coverage = ">=4.5"
 bumpversion = "*"
+tox = "*"
