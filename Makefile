@@ -63,7 +63,6 @@ check_git_dirty:
 	test -z "$$(git status --porcelain)"
 
 deploy: check_git_dirty
-	pipenv install --deploy
 	tox
 	$(MAKE) build
 	$(MAKE) upload
