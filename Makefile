@@ -63,7 +63,7 @@ check_git_dirty:
 	test -z "$$(git status --porcelain)"
 
 deploy: check_git_dirty
-	tox
+	tox -r
 	$(MAKE) build
 	$(MAKE) upload
 
