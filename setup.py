@@ -55,6 +55,7 @@ setup(
     schema
     delegation
     msgpack
+    pyyaml
     """.split('\n'),
     tests_require=['coverage', 'pytest'],
     python_requires=">=3.6",
