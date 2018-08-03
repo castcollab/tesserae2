@@ -36,7 +36,7 @@ extensions = [Extension(
 if USE_CYTHON:
     extensions = cythonize(extensions)  # , annotate=True)
 
-version='0.36.0'
+version='0.36.1'
 setup(
     name='cortexpy',
     version=version,
