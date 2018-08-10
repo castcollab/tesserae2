@@ -15,14 +15,15 @@ addons:
     - libbz2-dev
 install:
 - make init
-script: BIN_DIR=./bin make test HYPOTHESIS_PROFILE=dev
 after_success:
 - codecov
 - codecov --token='6b85102c-c69a-4b95-8ddc-4325d01b4c9f'
 - make lint
 jobs:
   include:
-  - stage: deploy to pypi
+  - stage: Tests
+    script: BIN_DIR=./bin make test HYPOTHESIS_PROFILE=dev
+  - stage: Deploy to pypi
     python: '3.6'
     script: skip
     deploy:
