@@ -8,11 +8,7 @@ PYTHON = $(RUN_IN_ENV) python
 FAST_TEST_COMMAND = pytest \
 	--hypothesis-profile $(HYPOTHESIS_PROFILE)
 
-UNIT_TEST_COMMAND = $(RUN_IN_ENV) pytest \
-	--cov=cortexpy \
-	--cov-report term-missing \
-	--cov-report html \
-	--hypothesis-profile $(HYPOTHESIS_PROFILE)
+UNIT_TEST_COMMAND = tox -- --hypothesis-profile $(HYPOTHESIS_PROFILE)
 TEST_COMMAND = BIN_DIR=$(BIN_DIR) $(UNIT_TEST_COMMAND)
 BENCHMARK_DIR := cortex_tools_benchmark
 
@@ -30,13 +26,13 @@ update:
 	git submodule update --init --recursive
 
 fast:
-	$(FAST_TEST_COMMAND) cortexpy/test/test_unit
+	$(FAST_TEST_COMMAND) tests/test_unit
 
 unit:
-	$(UNIT_TEST_COMMAND) cortexpy/test/test_unit
+	$(UNIT_TEST_COMMAND) tests/test_unit
 
 acceptance:
-	$(TEST_COMMAND) cortexpy/test/test_acceptance
+	$(TEST_COMMAND) tests/test_acceptance
 
 fixtures:
 	$(MAKE) -C $(BENCHMARK_DIR) test-fixtures
@@ -45,15 +41,11 @@ pycompile:
 	$(PYTHON) setup.py build_ext --inplace
 
 test: pycompile
-	$(TEST_COMMAND) cortexpy/test/test_unit cortexpy/test/test_acceptance
+	$(TEST_COMMAND) tests/test_unit tests/test_acceptance
 
 lint:
-	- $(RUN_IN_ENV) pylint cortexpy \
-	--ignore test \
+	- $(RUN_IN_ENV) pylint src \
 	--disable missing-docstring,unsubscriptable-object,no-member
-
-acceptance_: libs/seq_file/bin/dnacat
-	$(MAKE) -C cortexpy/test/from-mccortex/build
 
 libs/seq_file/bin/dnacat:
 	$(MAKE) -C $$(dirname $$(dirname $@))

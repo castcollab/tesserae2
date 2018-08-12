@@ -22,7 +22,7 @@ after_success:
 jobs:
   include:
   - stage: Tests
-    script: tox -- --hypothesis-profile ci tests
+    script: tox -- -vv --hypothesis-profile ci tests/test_unit tests/test_acceptance
   - stage: Deploy to pypi
     python: '3.6'
     script: skip
