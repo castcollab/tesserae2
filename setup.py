@@ -1,22 +1,8 @@
-import os
-import re
 from glob import glob
 from io import open
+from os.path import splitext, basename
 
-from os.path import dirname, splitext, basename
 from setuptools import setup, find_packages, Extension
-
-# version_re = re.compile(r'\d+\.\d+\.\d+')
-# with open(os.path.join(dirname(__file__), 'src', 'cortexpy', '__init__.py'), 'rt') as fp:
-#     for line in fp:
-#         print(line)
-#         match = version_re.search(line)
-#         print(match)
-#         if match:
-#             version = match.group()
-#             break
-#
-# assert version
 
 try:
     from Cython.Build import cythonize
@@ -36,7 +22,7 @@ extensions = [Extension(
 if USE_CYTHON:
     extensions = cythonize(extensions)  # , annotate=True)
 
-version='0.36.1'
+version = '0.36.1'
 setup(
     name='cortexpy',
     version=version,
