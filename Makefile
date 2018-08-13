@@ -10,7 +10,7 @@ FAST_TEST_COMMAND = pytest \
 
 UNIT_TEST_COMMAND = tox -- --hypothesis-profile $(HYPOTHESIS_PROFILE)
 ACCEPTANCE_TEST_COMMAND = BIN_DIR=$(BIN_DIR) $(UNIT_TEST_COMMAND) --flake8
-TEST_COMMAND = $(ACCEPTANCE_TEST_COMMAND) --pylint tests/test_unit tests/test_acceptance
+TEST_COMMAND = $(ACCEPTANCE_TEST_COMMAND) tests/test_unit tests/test_acceptance
 BENCHMARK_DIR := cortex_tools_benchmark
 
 init: update pipenv compile
@@ -45,7 +45,10 @@ test: pycompile
 	$(TEST_COMMAND)
 
 ci:
-	$(TEST_COMMAND) -vv
+	$(TEST_COMMAND) -vv --pylint
+
+lint:
+	$(TEST_COMMAND) --pylint
 
 libs/seq_file/bin/dnacat:
 	$(MAKE) -C $$(dirname $$(dirname $@))
