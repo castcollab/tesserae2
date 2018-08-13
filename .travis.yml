@@ -1,7 +1,6 @@
 language: python
 python:
 - '3.6'
-# - '3.7'
 cache:
   directories:
   - ".cache"
@@ -30,23 +29,7 @@ jobs:
       provider: pypi
       user: wkretzsch
       password:
-        secure: yaVRwoyjgnV8YayZW0nz743kNG7RRh/g74FZjB7nGsbUn8nWapYDphgppaiiuFLX9n7R9cTpiXghBZIXs6yMQRqBgUJa/xZE4T/yuHK+mptIOrNeBSTE16PSwdRqlFUVPs/C3LMQkEPERjUaSOjfj1iqW2BxLb8MUC1RgK2akoJOWUrZVd1HWPtlJXnJ7dWd0vkA3pYoyGO2IpZVywtWq2GjAREUY3rEKV1vpCku+prZeLZyuqcGVkFYO3YpJqfBavG1IwntgBiyDwrj69NlwRDhgc9hjUOMigQWEjQCo4t7AH75sN8a5AhyQowyO3xPLRjN56hbqKIkW5wkeKK+laL5Oip1JdwjgNxfb8fBgKcD6fbuHTZvpOVqlk/koJ40MXf5eIQpPhYKEsZmLWujldTrfbZk1m4msHo3SOx382UiJ1rp04UqVK4PDRqDsGMhhSt2TIwd64fGlJ9zbZ7QEcKB7gk5zyi8aQg9Fo7ozE58pDlV2nvySH8J5CrkQW246sqUNTU6EKXzvNW22Yzy2+ULGPVJEBrLnFlp4oUnh71aviYDksXTWtS+0qcnEcCQud2WWE+xCe9G5F8uSV417s5/iJN8vG3vKXLZm3uUR9+z0c/fxTWcFaL+/Oq0HHO/ifWCuhAgI3kEIIt3L2cDpTACwjSBZJMwCHQoMYBEVn8=
+        secure: lt1qlccGfTVaaKMwVfB0T95FUtV+T0XlZjr7UXL/IaCQ6PgllYskcg/RJ60WP7wRe9VxNgxxsnYFJqjowgYNIebEIFQ5k19O414voSIJiu2XYyG5FqNQLBg9CBdVPobZtNMH4I80aKaKjngUMzPyRvS1t04kNkVgu+rRwgVRcnO+N5w4CzXm9WDC21FelOvbxLGp2xuuaddd1ilCmiv1iXTd+a+noHNXZ8SwZMDu/0jT6zOCcZuQK5Dj0qH1gGk70uoTQCHE7n41U5qx/51UmJP5R0pTquyfR0ofXIO4Wsnd7wg/9a2DSsGSXduFWI205p3pGWbnrJSkhD5FzoB1/ThM9d2CrozXJi20KTlVY/11F0X9ezFy9vZ9GSshlOQ3/ajD39Zcg/ZfhtoAcgVSkQTifYD2LVgRSV/Ga8csBsOjsx2Rs2Kd1Xi5Y1wWHZN+3DQ/SOTvF66aYzqU8joHqLOnYIlz0HpgSvgy2TRNfLQcwzASsv3jA4fI7ctm3EiQc6eh0JBtNN9TPsNJIbtdssCRcyDd/dR05DIc0wkRgdl10H18QhSOVrsnz+s7wa8Iq3F9YI1NfUw2Lthe260wGUZSD9t1NlaPFmqqtLBDlZ5okjguF9ZjCVglrOtBp77IP1YQTOLySSBR2TX8mRUB1pwf2i0pgNribxMFTJLafeU=
       server: https://test.pypi.org/legacy/
       on:
         tags: true
-
-#  - stage: benchmark
-#    python: '3.6'
-#    on:
-#      tags: true
-#    before_script:
-#    - mkdir /tmp/bin
-#    - export PATH=$PATH:/tmp/bin
-#    - unzip cortex_tools_benchmark/assets/gdrive-linux-x64.zip
-#    - mv gdrive -f /tmp/bin
-#    - mkdir -p ~/.gdrive
-#    - export GDRIVE_ACCOUNT_CREDENTIALS_JSON='gdrive-credentials.json'
-#    - echo "$GDRIVE_ACCOUNT_CREDENTIALS" > ~/.gdrive/$GDRIVE_ACCOUNT_CREDENTIALS_JSON
-#    - make setup-benchmark
-#    script: make fixtures && make benchmark
-#    after_success: make -C cortex_tools_benchmark upload-results
