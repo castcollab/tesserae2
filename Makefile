@@ -8,9 +8,13 @@ PYTHON = $(RUN_IN_ENV) python
 FAST_TEST_COMMAND = pytest \
 	--hypothesis-profile $(HYPOTHESIS_PROFILE)
 
-UNIT_TEST_COMMAND = tox -- --hypothesis-profile $(HYPOTHESIS_PROFILE)
-ACCEPTANCE_TEST_COMMAND = BIN_DIR=$(BIN_DIR) $(UNIT_TEST_COMMAND) --flake8
-TEST_COMMAND = $(ACCEPTANCE_TEST_COMMAND) tests/test_unit tests/test_acceptance
+BASE_TEST_COMMAND = tox -- pytest \
+           --flake8 \
+           --cov \
+           --cov-report term-missing \
+           --cov-report html \
+           --hypothesis-profile $(HYPOTHESIS_PROFILE)
+TEST_COMMAND = $(BASE_TEST_COMMAND) tests/test_unit tests/test_acceptance
 BENCHMARK_DIR := cortex_tools_benchmark
 
 init: update pipenv compile
@@ -30,10 +34,10 @@ fast:
 	$(FAST_TEST_COMMAND) tests/test_unit
 
 unit:
-	$(UNIT_TEST_COMMAND) tests/test_unit
+	$(BASE_TEST_COMMAND) tests/test_unit
 
 acceptance:
-	$(ACCEPTANCE_TEST_COMMAND) tests/test_acceptance
+	BIN_DIR=$(BIN_DIR) $(BASE_TEST_COMMAND) tests/test_acceptance
 
 fixtures:
 	$(MAKE) -C $(BENCHMARK_DIR) test-fixtures
@@ -45,10 +49,10 @@ test: pycompile
 	$(TEST_COMMAND)
 
 ci:
-	$(TEST_COMMAND) -vv --pylint
+	$(TEST_COMMAND) -vv
 
 lint:
-	$(TEST_COMMAND) --pylint
+	tox -- pytest --pylint src
 
 libs/seq_file/bin/dnacat:
 	$(MAKE) -C $$(dirname $$(dirname $@))
