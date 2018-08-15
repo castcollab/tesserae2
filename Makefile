@@ -8,7 +8,7 @@ PYTHON = $(RUN_IN_ENV) python
 FAST_TEST_COMMAND = pytest \
 	--hypothesis-profile $(HYPOTHESIS_PROFILE)
 
-BASE_TEST_COMMAND = tox -- pytest \
+BASE_TEST_COMMAND = $(RUN_IN_ENV) tox -- pytest \
            --flake8 \
            --cov \
            --cov-report term-missing \
