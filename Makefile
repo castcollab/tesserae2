@@ -5,8 +5,8 @@ BIN_DIR = "./bin"
 RUN_IN_ENV = pipenv run
 PYTHON = $(RUN_IN_ENV) python
 
-FAST_TEST_COMMAND = pytest \
-	--hypothesis-profile $(HYPOTHESIS_PROFILE)
+FAST_TEST_COMMAND = $(RUN_IN_ENV) pytest \
+	--hypothesis-profile dev
 
 BASE_TEST_COMMAND = $(RUN_IN_ENV) tox -- pytest \
            --flake8 \
@@ -18,6 +18,10 @@ TEST_COMMAND = $(BASE_TEST_COMMAND) tests/test_unit tests/test_acceptance
 BENCHMARK_DIR := cortex_tools_benchmark
 
 init: update pipenv compile
+
+dev: init
+	pipenv install -e .
+	echo development environment set up at $$(pipenv --venv)
 
 pipenv: update
 	$(PIP) install pipenv

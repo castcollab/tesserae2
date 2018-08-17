@@ -13,3 +13,8 @@ bumpversion = "*"
 tox = "*"
 "flake8" = "*"
 codecov = "*"
+hypothesis = "*"
+bitstring = "*"
+
+[packages]
+cortexpy = {editable = true, path = "."}
