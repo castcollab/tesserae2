@@ -8,12 +8,14 @@ PYTHON = $(RUN_IN_ENV) python
 FAST_TEST_COMMAND = $(RUN_IN_ENV) pytest \
 	--hypothesis-profile dev
 
-BASE_TEST_COMMAND = $(RUN_IN_ENV) tox -- pytest \
+PYTEST_COMMAND = pytest \
            --flake8 \
-           --cov \
+           --cov cortexpy \
            --cov-report term-missing \
            --cov-report html \
+           --cov-config setup.cfg \
            --hypothesis-profile $(HYPOTHESIS_PROFILE)
+BASE_TEST_COMMAND = $(RUN_IN_ENV) tox -- $(PYTEST_COMMAND)
 TEST_COMMAND = $(BASE_TEST_COMMAND) tests/test_unit tests/test_acceptance
 BENCHMARK_DIR := cortex_tools_benchmark
 
@@ -34,6 +36,9 @@ compile: update
 update:
 	git submodule update --init --recursive
 
+doctest:
+	$(RUN_IN_ENV) tox -- python -m doctest $$(find src/cortexpy/graph -type f -name '*.py' | grep -v '__*' )
+
 fast:
 	$(FAST_TEST_COMMAND) tests/test_unit
 
@@ -49,7 +54,8 @@ fixtures:
 pycompile:
 	$(PYTHON) setup.py build_ext --inplace
 
-test: pycompile
+test:
+	$(MAKE) doctest
 	$(TEST_COMMAND)
 
 ci:
@@ -67,6 +73,7 @@ check_git_dirty:
 
 deploy: check_git_dirty
 	tox -r
+	$(MAKE) test
 	$(MAKE) build
 	$(MAKE) upload
 
