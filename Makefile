@@ -19,7 +19,9 @@ BASE_TEST_COMMAND = $(RUN_IN_ENV) tox -- $(PYTEST_COMMAND)
 TEST_COMMAND = $(BASE_TEST_COMMAND) tests/test_unit tests/test_acceptance
 BENCHMARK_DIR := cortex_tools_benchmark
 
-init: update pipenv compile
+init:
+	$(MAKE) pipenv
+	$(MAKE) compile
 
 dev: init
 	pipenv install -e .
