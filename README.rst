@@ -54,6 +54,8 @@ the ones created by `Mccortex <https://github.com/mcveanlab/mccortex>`_.
 This project aims to mirror many of the features contained in
 `CortexJDK <https://github.com/mcveanlab/CortexJDK>`_.
 
+The use of links is not implemented yet.
+
 * Free software: Apache Software License 2.0
 
 Installation
