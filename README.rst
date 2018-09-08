@@ -73,7 +73,7 @@ Set up the project::
 
     make init
 
-To run the all tests run::
+Run all tests::
 
     make test
 
