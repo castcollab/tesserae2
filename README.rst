@@ -7,18 +7,12 @@ Overview
 .. list-table::
     :stub-columns: 1
 
-    * - docs
-      - |docs|
     * - tests
       - | |travis|
         | |coveralls| |codecov|
     * - package
       - | |version| |wheel| |supported-versions| |supported-implementations|
         | |commits-since|
-
-.. |docs| image:: https://readthedocs.org/projects/cortexpy/badge/?style=flat
-    :target: https://readthedocs.org/projects/cortexpy
-    :alt: Documentation Status
 
 .. |travis| image:: https://travis-ci.org/winni2k/cortexpy.svg?branch=master
     :alt: Travis-CI Build Status
