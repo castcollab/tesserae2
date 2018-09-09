@@ -2,6 +2,7 @@ graft tests
 graft src
 
 include README.rst
+include LICENSE
 include tox.ini .travis.yml
 include Pipfile Pipfile.lock
 
