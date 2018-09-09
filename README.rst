@@ -7,18 +7,12 @@ Overview
 .. list-table::
     :stub-columns: 1
 
-    * - docs
-      - |docs|
     * - tests
       - | |travis|
         | |coveralls| |codecov|
     * - package
       - | |version| |wheel| |supported-versions| |supported-implementations|
         | |commits-since|
-
-.. |docs| image:: https://readthedocs.org/projects/cortexpy/badge/?style=flat
-    :target: https://readthedocs.org/projects/cortexpy
-    :alt: Documentation Status
 
 .. |travis| image:: https://travis-ci.org/winni2k/cortexpy.svg?branch=master
     :alt: Travis-CI Build Status
@@ -60,6 +54,8 @@ the ones created by `Mccortex <https://github.com/mcveanlab/mccortex>`_.
 This project aims to mirror many of the features contained in
 `CortexJDK <https://github.com/mcveanlab/CortexJDK>`_.
 
+The use of links is not implemented yet.
+
 * Free software: Apache Software License 2.0
 
 Installation
@@ -77,26 +73,9 @@ Set up the project::
 
     make init
 
-To run the all tests run::
+Run all tests::
 
-    tox
-
-Note, to combine the coverage data from all the tox environments run:
-
-.. list-table::
-    :widths: 10 90
-    :stub-columns: 1
-
-    - - Windows
-      - ::
-
-            set PYTEST_ADDOPTS=--cov-append
-            tox
-
-    - - Other
-      - ::
-
-            PYTEST_ADDOPTS=--cov-append tox
+    make test
 
 Bugs
 ====
