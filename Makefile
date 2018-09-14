@@ -15,7 +15,7 @@ PYTEST_COMMAND = pytest \
            --cov-report html \
            --cov-config setup.cfg \
            --hypothesis-profile $(HYPOTHESIS_PROFILE)
-BASE_TEST_COMMAND = $(RUN_IN_ENV) tox -- $(PYTEST_COMMAND)
+BASE_TEST_COMMAND = tox -- $(PYTEST_COMMAND)
 TEST_COMMAND = $(BASE_TEST_COMMAND) tests/test_unit tests/test_acceptance
 BENCHMARK_DIR := cortex_tools_benchmark
 
@@ -39,7 +39,7 @@ update:
 	git submodule update --init --recursive
 
 doctest:
-	$(RUN_IN_ENV) tox -- python -m doctest $$(find src/cortexpy/graph -type f -name '*.py' | grep -v '__*' )
+	tox -- python -m doctest $$(find src/cortexpy/graph -type f -name '*.py' | grep -v '__*' )
 
 fast:
 	$(FAST_TEST_COMMAND) tests/test_unit
