@@ -37,7 +37,7 @@ setup(
     attrs
     biopython
     numpy
-    networkx
+    networkx==2.1
     schema
     delegation
     msgpack
