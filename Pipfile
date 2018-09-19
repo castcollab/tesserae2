@@ -15,6 +15,7 @@ tox = "*"
 codecov = "*"
 hypothesis = "*"
 bitstring = "*"
+pytest = "*"
 
 [packages]
 cortexpy = {editable = true, path = "."}
