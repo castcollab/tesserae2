@@ -1,6 +1,6 @@
 HYPOTHESIS_PROFILE = dev
 PIP = pip3
-BIN_DIR = "./bin"
+BIN_DIR := "./bin"
 
 RUN_IN_ENV = pipenv run
 PYTHON = $(RUN_IN_ENV) python
@@ -15,7 +15,7 @@ PYTEST_COMMAND = pytest \
            --cov-report html \
            --cov-config setup.cfg \
            --hypothesis-profile $(HYPOTHESIS_PROFILE)
-BASE_TEST_COMMAND = tox -- $(PYTEST_COMMAND)
+BASE_TEST_COMMAND = PATH=$(BIN_DIR):$(PATH) tox -- $(PYTEST_COMMAND)
 TEST_COMMAND = $(BASE_TEST_COMMAND) tests/test_unit tests/test_acceptance
 BENCHMARK_DIR := cortex_tools_benchmark
 
@@ -48,7 +48,7 @@ unit:
 	$(BASE_TEST_COMMAND) tests/test_unit
 
 acceptance:
-	BIN_DIR=$(BIN_DIR) $(BASE_TEST_COMMAND) tests/test_acceptance
+	$(BASE_TEST_COMMAND) tests/test_acceptance
 
 fixtures:
 	$(MAKE) -C $(BENCHMARK_DIR) test-fixtures
