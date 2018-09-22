@@ -12,8 +12,6 @@ addons:
     packages:
     - liblzma-dev
     - libbz2-dev
-install:
-- make init
 after_success:
 - codecov
 - codecov --token='6b85102c-c69a-4b95-8ddc-4325d01b4c9f'
@@ -21,6 +19,8 @@ after_success:
 jobs:
   include:
   - stage: Tests
+    install:
+      - source scripts/bootstrap
     script: make ci HYPOTHESIS_PROFILE=ci
   - stage: Deploy to pypi
     python: '3.6'

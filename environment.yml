@@ -1,0 +1,9 @@
+name: test-environment
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python=3.6
+  - mccortex >=1.0
+  - tox
+
