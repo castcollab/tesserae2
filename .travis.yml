@@ -7,11 +7,6 @@ cache:
   - libs
 os:
 - linux
-addons:
-  apt:
-    packages:
-    - liblzma-dev
-    - libbz2-dev
 after_success:
 - codecov
 - codecov --token='6b85102c-c69a-4b95-8ddc-4325d01b4c9f'
