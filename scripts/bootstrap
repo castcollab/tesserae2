@@ -28,3 +28,4 @@ conda info -a
 conda env create -q -f environment.yml
 source activate test-environment
 python setup.py install
+mccortex 3 || echo continue...
