@@ -1,12 +1,3 @@
-[submodule "libs/seq_file"]
-	path = libs/seq_file
-	url = https://github.com/noporpoise/seq_file.git
-[submodule "libs/bioinf-perl"]
-	path = libs/bioinf-perl
-	url = https://github.com/noporpoise/bioinf-perl.git
-[submodule "libs/mccortex"]
-	path = libs/mccortex
-	url = https://github.com/mcveanlab/mccortex
 [submodule "cortex_tools_benchmark"]
 	path = cortex_tools_benchmark
 	url = https://github.com/winni2k/cortex_tools_benchmark.git
