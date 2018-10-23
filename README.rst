@@ -30,9 +30,9 @@ Overview
     :alt: PyPI Package latest release
     :target: https://pypi.python.org/pypi/cortexpy
 
-.. |commits-since| image:: https://img.shields.io/github/commits-since/winni2k/cortexpy/0.45.2.svg
+.. |commits-since| image:: https://img.shields.io/github/commits-since/winni2k/cortexpy/0.45.3.svg
     :alt: Commits since latest release
-    :target: https://github.com/winni2k/cortexpy/compare/0.45.2...master
+    :target: https://github.com/winni2k/cortexpy/compare/0.45.3...master
 
 .. |wheel| image:: https://img.shields.io/pypi/wheel/cortexpy.svg
     :alt: PyPI Wheel
