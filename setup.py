@@ -62,5 +62,5 @@ setup(
     entry_points={
         'console_scripts': ['cortexpy=cortexpy.__main__:main'],
     },
-    include_package_data=True,
+    include_package_data=True
 )
