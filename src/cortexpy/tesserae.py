@@ -2,6 +2,7 @@ import numpy as np
 
 # constants
 SMALL = -1e32
+STATES = 5
 
 # default transition probabilities
 DEFAULT_DEL = 0.025
@@ -75,14 +76,15 @@ class Tesserae(object):
     def __initialize(self, query, targets):
         self.nseq = len(targets) + 1
         self.maxl = max_length(query, targets)
+        self.qlen = len(query)
 
-        self.vt_m = np.full([self.nseq, self.maxl + 1, self.maxl + 1], SMALL, dtype=np.float64)
-        self.vt_i = np.full([self.nseq, self.maxl + 1, self.maxl + 1], SMALL, dtype=np.float64)
-        self.vt_d = np.full([self.nseq, self.maxl + 1, self.maxl + 1], SMALL, dtype=np.float64)
+        self.vt_m = np.full([self.nseq, self.maxl + 1, self.qlen + 2], SMALL, dtype=np.float64)
+        self.vt_i = np.full([self.nseq, self.maxl + 1, self.qlen + 2], SMALL, dtype=np.float64)
+        self.vt_d = np.full([self.nseq, self.maxl + 1, self.qlen + 2], SMALL, dtype=np.float64)
 
-        self.tb_m = np.zeros([self.nseq, self.maxl + 1, self.maxl + 1], dtype=np.float64)
-        self.tb_i = np.zeros([self.nseq, self.maxl + 1, self.maxl + 1], dtype=np.float64)
-        self.tb_d = np.zeros([self.nseq, self.maxl + 1, self.maxl + 1], dtype=np.float64)
+        self.tb_m = np.zeros([self.nseq, self.maxl + 1, self.qlen + 2], dtype=np.float64)
+        self.tb_i = np.zeros([self.nseq, self.maxl + 1, self.qlen + 2], dtype=np.float64)
+        self.tb_d = np.zeros([self.nseq, self.maxl + 1, self.qlen + 2], dtype=np.float64)
 
         self.who_copy = np.ones([self.nseq], dtype=np.int64)
         self.who_copy[0] = 0
@@ -96,18 +98,18 @@ class Tesserae(object):
 
         self.combined_llk = 0.0
 
-        self.sm = np.zeros([5, 5], dtype=np.float64)
-        self.lsm = np.zeros([5, 5], dtype=np.float64)
+        self.sm = np.zeros([STATES, STATES], dtype=np.float64)
+        self.lsm = np.zeros([STATES, STATES], dtype=np.float64)
 
-        for i in range(0, len(self.sm)):
-            for j in range(0, len(self.sm[0])):
+        for i in range(0, STATES):
+            for j in range(0, STATES):
                 self.sm[i][j] = self.emiss_match_nt[i][j]
                 self.lsm[i][j] = np.log(self.emiss_match_nt[i][j])
 
-        self.si = np.zeros([5], dtype=np.float64)
-        self.lsi = np.zeros([5], dtype=np.float64)
+        self.si = np.zeros([STATES], dtype=np.float64)
+        self.lsi = np.zeros([STATES], dtype=np.float64)
 
-        for i in range(0, len(self.si)):
+        for i in range(0, STATES):
             self.si[i] = self.emiss_gap_nt[i]
             self.lsi[i] = np.log(self.emiss_gap_nt[i])
 
@@ -125,12 +127,12 @@ class Tesserae(object):
     def __align_all(self, panel):
         query = panel["query"]
 
-        l1 = len(query)
+        l1 = self.qlen
         size_l = 0.0
         for target in panel.values():
             size_l += len(target)
 
-        size_l -= len(query)
+        size_l -= self.qlen
         lsize_l = np.log(size_l)
 
         max_r, pos_max, state_max, who_max = self.__initialization(query, panel, lsize_l)
@@ -225,6 +227,13 @@ class Tesserae(object):
                 sb.append(c)
         self.path.append((current_track, "".join(sb), pos_start, pos_end))
 
+    def __to_traceback_indices(self, index):
+        who = int(index / 10)
+        state_float = index - who * 10
+        state = int(state_float)
+        pos = int((state_float - state) * self.tb_divisor + 1e-6)
+        return who, state, pos
+
     def __termination(self, l1, pos_max, state_max, who_max):
         cp = 2 * self.maxl
         self.maxpath_copy[cp] = who_max
@@ -237,20 +246,11 @@ class Tesserae(object):
         pos_next = 0
         while pos_target >= 1:
             if state_max == 1:
-                who_next = int(self.tb_m[who_max][pos_max][pos_target] / 10)
-                state_next = int(self.tb_m[who_max][pos_max][pos_target] - who_next * 10)
-                pos_next = int((self.tb_m[who_max][pos_max][pos_target] - who_next * 10 - state_next) *
-                               self.tb_divisor + 1e-6)
+                who_next, state_next, pos_next = self.__to_traceback_indices(self.tb_m[who_max][pos_max][pos_target])
             elif state_max == 2:
-                who_next = int(self.tb_i[who_max][pos_max][pos_target] / 10)
-                state_next = int(self.tb_i[who_max][pos_max][pos_target] - who_next * 10)
-                pos_next = int((self.tb_i[who_max][pos_max][pos_target] - who_next * 10 - state_next) *
-                               self.tb_divisor + 1e-6)
+                who_next, state_next, pos_next = self.__to_traceback_indices(self.tb_i[who_max][pos_max][pos_target])
             elif state_max == 3:
-                who_next = int(self.tb_d[who_max][pos_max][pos_target] / 10)
-                state_next = int(self.tb_d[who_max][pos_max][pos_target] - who_next * 10)
-                pos_next = int((self.tb_d[who_max][pos_max][pos_target] - who_next * 10 - state_next) *
-                               self.tb_divisor + 1e-6)
+                who_next, state_next, pos_next = self.__to_traceback_indices(self.tb_d[who_max][pos_max][pos_target])
 
             cp -= 1
 
@@ -274,62 +274,57 @@ class Tesserae(object):
         for pos_target in range(2, l1 + 1):
             max_rn = SMALL + max_r
             seq = 0
+            seq_10 = 0
 
             for target in panel.values():
                 if self.who_copy[seq] == 1:
+                    vt_m_base = max_r + self.lrho + self.lpiM - lsize_l
+                    vt_i_base = max_r + self.lrho + self.lpiI - lsize_l
+                    tb_base = who_max * 10 + state_max + pos_max / self.tb_divisor
                     for pos_seq in range(1, len(target) + 1):
                         # Match
-                        self.vt_m[seq][pos_seq][pos_target] = max_r + self.lrho + self.lpiM - lsize_l
-                        self.tb_m[seq][pos_seq][pos_target] = who_max * 10 + state_max + pos_max / self.tb_divisor
+                        self.vt_m[seq][pos_seq][pos_target] = vt_m_base
+                        self.tb_m[seq][pos_seq][pos_target] = tb_base
 
-                        # Compare to MM
-                        if self.vt_m[seq][pos_seq - 1][pos_target - 1] + self.lmm > self.vt_m[seq][pos_seq][pos_target]:
-                            self.vt_m[seq][pos_seq][pos_target] = self.vt_m[seq][pos_seq - 1][pos_target - 1] + self.lmm
-                            self.tb_m[seq][pos_seq][pos_target] = seq * 10 + 1 + (pos_seq - 1) / self.tb_divisor
+                        vt_m_n, tb_m_n = max([
+                            (self.vt_m[seq][pos_seq - 1][pos_target - 1] + self.lmm, 1),
+                            (self.vt_i[seq][pos_seq - 1][pos_target - 1] + self.lgm, 2),
+                            (self.vt_d[seq][pos_seq - 1][pos_target - 1] + self.ldm, 3)
+                        ])
 
-                        # Compare to IM
-                        if self.vt_i[seq][pos_seq - 1][pos_target - 1] + self.lgm > self.vt_m[seq][pos_seq][pos_target]:
-                            self.vt_m[seq][pos_seq][pos_target] = self.vt_i[seq][pos_seq - 1][pos_target - 1] + self.lgm
-                            self.tb_m[seq][pos_seq][pos_target] = seq * 10 + 2 + (pos_seq - 1) / self.tb_divisor
-
-                        # Compare to DM
-                        if self.vt_d[seq][pos_seq - 1][pos_target - 1] + self.ldm > self.vt_m[seq][pos_seq][pos_target]:
-                            self.vt_m[seq][pos_seq][pos_target] = self.vt_d[seq][pos_seq - 1][pos_target - 1] + self.ldm
-                            self.tb_m[seq][pos_seq][pos_target] = seq * 10 + 3 + (pos_seq - 1) / self.tb_divisor
+                        if vt_m_n > self.vt_m[seq][pos_seq][pos_target]:
+                            self.vt_m[seq][pos_seq][pos_target] = vt_m_n
+                            self.tb_m[seq][pos_seq][pos_target] = seq_10 + tb_m_n + (pos_seq - 1) / self.tb_divisor
 
                         # Add in state match
                         self.vt_m[seq][pos_seq][pos_target] += \
                             self.lsm[convert[query[pos_target - 1]]][convert[target[pos_seq - 1]]]
 
                         # Insert
-                        self.vt_i[seq][pos_seq][pos_target] = max_r + self.lrho + self.lpiI - lsize_l
-                        self.tb_i[seq][pos_seq][pos_target] = who_max * 10 + state_max + pos_max / self.tb_divisor
+                        self.vt_i[seq][pos_seq][pos_target] = vt_i_base
+                        self.tb_i[seq][pos_seq][pos_target] = tb_base
 
-                        # Compare to MI
-                        if self.vt_m[seq][pos_seq][pos_target - 1] + self.ldel > self.vt_i[seq][pos_seq][pos_target]:
-                            self.vt_i[seq][pos_seq][pos_target] = self.vt_m[seq][pos_seq][pos_target - 1] + self.ldel
-                            self.tb_i[seq][pos_seq][pos_target] = seq * 10 + 1 + pos_seq / self.tb_divisor
+                        vt_i_n, tb_i_n = max([
+                            (self.vt_m[seq][pos_seq][pos_target - 1] + self.ldel, 1),
+                            (self.vt_i[seq][pos_seq][pos_target - 1] + self.leps, 2)
+                        ])
 
-                        # Compare to II
-                        if self.vt_i[seq][pos_seq][pos_target - 1] + self.leps > self.vt_i[seq][pos_seq][pos_target]:
-                            self.vt_i[seq][pos_seq][pos_target] = self.vt_i[seq][pos_seq][pos_target - 1] + self.leps
-                            self.tb_i[seq][pos_seq][pos_target] = seq * 10 + 2 + pos_seq / self.tb_divisor
+                        if vt_i_n > self.vt_i[seq][pos_seq][pos_target]:
+                            self.vt_i[seq][pos_seq][pos_target] = vt_i_n
+                            self.tb_i[seq][pos_seq][pos_target] = seq_10 + tb_i_n + pos_seq / self.tb_divisor
 
                         # Add in state insert
                         self.vt_i[seq][pos_seq][pos_target] += self.lsi[convert[query[pos_target - 1]]]
 
                         # Delete
                         if pos_target < l1 and pos_seq > 1:
-                            # Initialize with match
-                            self.vt_d[seq][pos_seq][pos_target] = self.vt_m[seq][pos_seq - 1][pos_target] + self.ldel
-                            self.tb_d[seq][pos_seq][pos_target] = seq * 10 + 1 + (pos_seq - 1) / self.tb_divisor
+                            vt_d_n, tb_d_n = max([
+                                (self.vt_m[seq][pos_seq - 1][pos_target] + self.ldel, 1),
+                                (self.vt_d[seq][pos_seq - 1][pos_target] + self.leps, 3)
+                            ])
 
-                            # Compare to DD
-                            if self.vt_d[seq][pos_seq - 1][pos_target] + self.leps > self.vt_d[seq][pos_seq][
-                                pos_target]:
-                                self.vt_d[seq][pos_seq][pos_target] = self.vt_d[seq][pos_seq - 1][
-                                                                          pos_target] + self.leps
-                                self.tb_d[seq][pos_seq][pos_target] = seq * 10 + 3 + (pos_seq - 1) / self.tb_divisor
+                            self.vt_d[seq][pos_seq][pos_target] = vt_d_n
+                            self.tb_d[seq][pos_seq][pos_target] = seq_10 + tb_d_n + (pos_seq - 1) / self.tb_divisor
 
                         if self.vt_m[seq][pos_seq][pos_target] > max_rn:
                             max_rn = self.vt_m[seq][pos_seq][pos_target]
@@ -344,6 +339,7 @@ class Tesserae(object):
                             pos_max_n = pos_seq
 
                 seq += 1
+                seq_10 += 10
 
             max_r = max_rn
             who_max = who_max_n
@@ -369,12 +365,12 @@ class Tesserae(object):
                     self.vt_i[seq][pos_seq][1] = self.lpiI - lsize_l + self.lsi[convert[query[0]]]
 
                     if pos_seq > 0:
-                        self.vt_d[seq][pos_seq][1] = self.vt_m[seq][pos_seq - 1][1] + self.ldel
-                        self.tb_d[seq][pos_seq][1] = seq * 10 + 1 + (pos_seq - 1) / self.tb_divisor
-
-                        if self.vt_d[seq][pos_seq - 1][1] + self.leps > self.vt_d[seq][pos_seq][1]:
-                            self.vt_d[seq][pos_seq][1] = self.vt_d[seq][pos_seq - 1][1] + self.leps
-                            self.tb_d[seq][pos_seq][1] = seq * 10 + 3 + (pos_seq - 1) / self.tb_divisor
+                        vt_d_1, tb_d_1 = max([
+                            (self.vt_m[seq][pos_seq - 1][1] + self.ldel, 1),
+                            (self.vt_d[seq][pos_seq - 1][1] + self.leps, 3)
+                        ])
+                        self.vt_d[seq][pos_seq][1] = vt_d_1
+                        self.tb_d[seq][pos_seq][1] = seq * 10 + tb_d_1 + (pos_seq - 1) / self.tb_divisor
 
                     if self.vt_m[seq][pos_seq][1] > max_r:
                         max_r = self.vt_m[seq][pos_seq][1]
