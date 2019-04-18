@@ -2,10 +2,9 @@ HYPOTHESIS_PROFILE = dev
 PIP = pip3
 # BIN_DIR := "./bin"
 
-RUN_IN_ENV = pipenv run
-PYTHON = $(RUN_IN_ENV) python
+PYTHON = python3
 
-FAST_TEST_COMMAND = $(RUN_IN_ENV) pytest \
+FAST_TEST_COMMAND = pytest \
 	--hypothesis-profile dev
 
 PYTEST_COMMAND = pytest \
@@ -19,21 +18,7 @@ BASE_TEST_COMMAND = tox -- $(PYTEST_COMMAND)
 TEST_COMMAND = $(BASE_TEST_COMMAND) tests/test_unit tests/test_acceptance
 BENCHMARK_DIR := cortex_tools_benchmark
 
-init:
-	$(MAKE) pipenv
-	$(MAKE) compile
-
-dev: init
-	pipenv install -e .
-	echo development environment set up at $$(pipenv --venv)
-
-pipenv: update
-	$(PIP) install pipenv
-	pipenv install --dev
-
-compile: update
-	$(MAKE) -C libs/mccortex all MAXK=63
-	$(MAKE) -C libs/mccortex all MAXK=31
+init: update
 
 update:
 	git submodule update --init --recursive
@@ -80,7 +65,7 @@ deploy: check_git_dirty
 	$(MAKE) upload
 
 upload:
-	$(RUN_IN_ENV) twine upload dist/*
+	twine upload dist/*
 
 build: clean
 	$(MAKE) check_git_dirty
@@ -98,6 +83,9 @@ setup-benchmark: dist
 
 benchmark:
 	$(MAKE) -C $(BENCHMARK_DIR)
+
+lock:
+	conda env export | grep -v '^name:' |grep -v '^prefix:' > environment.lock.yml
 
 clean:
 	rm -rf dist

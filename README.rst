@@ -67,13 +67,47 @@ Installation
 Development
 ===========
 
-Set up the project::
+1. Install `conda <https://docs.conda.io/en/latest/miniconda.html>`_.
+2. Download development and testing tools::
 
-    make init
+    conda env create -f environment.lock.yml -n my-dev-environment
 
-Run all tests::
+3. Activate development environment::
+
+    conda activate my-dev-environment
+
+All remaining commands in the development section need to be run in an activated
+conda dev environment.
+
+Tests
+~~~~~
+
+::
 
     make test
+
+Update the dev environment
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+::
+
+    # Create a new env from the high-level requirements file
+    conda env create -f environment.yml -n another-dev-env
+
+    # activate the new environment
+    conda activate another-dev-env
+
+    # save new env to environment.lock.yml
+    make lock
+
+Deploy new cortexpy version to pypi
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Requires access credentials for pypi.
+
+::
+
+    make deploy
 
 Bugs
 ====

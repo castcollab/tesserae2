@@ -1,9 +1,13 @@
-name: test-environment
 channels:
   - conda-forge
   - bioconda
+  - defaults
 dependencies:
   - python=3.6
   - mccortex >=1.0
   - tox
+  - cython
+  - wheel
+  - bumpversion
+  - twine
 
