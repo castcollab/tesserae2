@@ -70,7 +70,7 @@ Development
 1. Install `conda <https://docs.conda.io/en/latest/miniconda.html>`_.
 2. Download development and testing tools::
 
-    conda env create -f environment.lock.yml -n my-dev-environment
+    conda env create -f environment.yml -n my-dev-environment
 
 3. Activate development environment::
 
@@ -86,8 +86,19 @@ Tests
 
     make test
 
+Deploy new cortexpy version to pypi
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Requires access credentials for pypi.
+
+::
+
+    make deploy
+
 Update the dev environment
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This section is experimental because it does not work on travis-CI yet.
 
 ::
 
@@ -99,15 +110,6 @@ Update the dev environment
 
     # save new env to environment.lock.yml
     make lock
-
-Deploy new cortexpy version to pypi
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Requires access credentials for pypi.
-
-::
-
-    make deploy
 
 Bugs
 ====

@@ -25,7 +25,7 @@ conda update -q conda
 # Useful for debugging any issues with conda
 conda info -a
 
-conda env create -q -f environment.lock.yml -n test-env
+conda env create -q -f environment.yml -n test-env
 source activate test-env
 python setup.py install
 mccortex 3 || echo continue...
