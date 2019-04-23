@@ -13,7 +13,7 @@ Overview of Cortexpy_
       - | |version| |wheel| |supported-versions|
         | |supported-implementations| |commits-since|
     * - docs
-        | |readthedocs|
+      - | |readthedocs|
 
 .. |travis| image:: https://travis-ci.org/winni2k/cortexpy.svg?branch=master
     :alt: Travis-CI Build Status
