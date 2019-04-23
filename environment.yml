@@ -5,6 +5,8 @@ channels:
 dependencies:
   - python=3.6
   - mccortex >=1.0
+  - sphinx
+  - sphinx_rtd_theme
   - tox
   - cython
   - wheel

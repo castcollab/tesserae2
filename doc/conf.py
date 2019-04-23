@@ -19,8 +19,8 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath('..'))
 
+sys.path.insert(0, os.path.abspath('..'))
 
 # -- General configuration ------------------------------------------------
 
@@ -31,9 +31,12 @@ sys.path.insert(0, os.path.abspath('..'))
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['sphinx.ext.todo',
+extensions = [
+    'sphinx.ext.todo',
     'sphinx.ext.coverage',
-    'sphinx.ext.viewcode']
+    'sphinx.ext.viewcode',
+    'sphinx.ext.autodoc',
+]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -58,6 +61,7 @@ author = 'Warren Kretzschmar and Kiran Garimella'
 #
 # The short X.Y version.
 import cortexpy
+
 version = cortexpy.__version__
 release = version
 
@@ -78,7 +82,6 @@ pygments_style = 'sphinx'
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = True
-
 
 # -- Options for HTML output ----------------------------------------------
 
@@ -110,12 +113,10 @@ html_sidebars = {
     ]
 }
 
-
 # -- Options for HTMLHelp output ------------------------------------------
 
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'cortexpydoc'
-
 
 # -- Options for LaTeX output ---------------------------------------------
 
@@ -145,7 +146,6 @@ latex_documents = [
      'Warren Kretzschmar and Kiran Garimella', 'manual'),
 ]
 
-
 # -- Options for manual page output ---------------------------------------
 
 # One entry per manual page. List of tuples
@@ -154,7 +154,6 @@ man_pages = [
     (master_doc, 'cortexpy', 'cortexpy Documentation',
      [author], 1)
 ]
-
 
 # -- Options for Texinfo output -------------------------------------------
 
@@ -166,6 +165,3 @@ texinfo_documents = [
      author, 'cortexpy', 'One line description of project.',
      'Miscellaneous'),
 ]
-
-
-
