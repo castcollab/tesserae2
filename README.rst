@@ -10,8 +10,10 @@ Overview of Cortexpy_
       - | |travis|
         | |coveralls| |codecov|
     * - package
-      - | |version| |wheel| |supported-versions| |supported-implementations|
-        | |commits-since|
+      - | |version| |wheel| |supported-versions|
+        | |supported-implementations| |commits-since|
+    * - docs
+        | |readthedocs|
 
 .. |travis| image:: https://travis-ci.org/winni2k/cortexpy.svg?branch=master
     :alt: Travis-CI Build Status
@@ -44,6 +46,10 @@ Overview of Cortexpy_
 .. |supported-implementations| image:: https://img.shields.io/pypi/implementation/cortexpy.svg
     :alt: Supported implementations
     :target: https://pypi.python.org/pypi/cortexpy
+
+.. |readthedocs| image:: https://readthedocs.org/projects/cortexpy/badge/?version=latest
+   :target: https://cortexpy.readthedocs.io/en/latest/?badge=latest
+   :alt: Documentation Status
 
 
 .. end-badges
