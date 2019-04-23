@@ -62,7 +62,11 @@ deploy: check_git_dirty
 	tox -r
 	$(MAKE) test
 	$(MAKE) build
+	$(MAKE) check
 	$(MAKE) upload
+
+check:
+	twine check dist/*
 
 upload:
 	twine upload dist/*
