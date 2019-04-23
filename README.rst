@@ -1,6 +1,5 @@
-========
-Overview
-========
+Overview of Cortexpy_
+=====================
 
 .. start-badges
 
@@ -32,7 +31,7 @@ Overview
 
 .. |commits-since| image:: https://img.shields.io/github/commits-since/winni2k/cortexpy/0.46.0.svg
     :alt: Commits since latest release
-    :target: https://github.com/winni2k/cortexpy/compare/0.46.0...master
+    :target: https://github.com/winni2k/cortexpy/compare/v0.46.0...master
 
 .. |wheel| image:: https://img.shields.io/pypi/wheel/cortexpy.svg
     :alt: PyPI Wheel
@@ -50,22 +49,52 @@ Overview
 .. end-badges
 
 Cortexpy is a Python package for sequence analysis using linked and colored De Bruijn graphs such as
-the ones created by `Mccortex <https://github.com/mcveanlab/mccortex>`_.
+the ones created by Cortex_ and Mccortex_.
 This project aims to mirror many of the features contained in
 `CortexJDK <https://github.com/mcveanlab/CortexJDK>`_.
 
-* Free software: Apache Software License 2.0
+.. _cortexpy: https://github.com/winni2k/cortexpy
+
+Cortexpy also comes with a command-line tool for basic inspection and manipulation of Cortex graphs with and without links.
+
+.. _Cortex: https://github.com/iqbal-lab/cortex
+.. _Mccortex: https://github.com/mcveanlab/mccortex
+
+Audience
+--------
+
+The audience of cortexpy is researchers working with colored De Bruijn graphs and link information in Cortex_ and Mccortex_ format.
+
+
+Free software
+-------------
+
+Cortexpy is free software; you can redistribute it and/or modify it under the
+terms of the :doc:`Apache License version 2.0</license>`.  Contributions are welcome. Please join us on `GitHub <https://github.com/winni2k/cortexpy>`_.
+
 
 Installation
-============
+------------
 
 ::
 
     pip install cortexpy
 
 
+Documentation
+-------------
+
+For more information, please see cortexpy documentation_.
+
+.. _documentation: https://cortexpy.readthedocs.io/en/latest/index.html#documentation
+
+Bugs
+----
+
+Please raise a github issue for any bugs.
+
 Development
-===========
+-----------
 
 1. Install `conda <https://docs.conda.io/en/latest/miniconda.html>`_.
 2. Download development and testing tools::
@@ -78,6 +107,8 @@ Development
 
 All remaining commands in the development section need to be run in an activated
 conda dev environment.
+
+
 
 Tests
 ~~~~~
@@ -95,6 +126,17 @@ Requires access credentials for pypi.
 
     make deploy
 
+Building the docs
+~~~~~~~~~~~~~~~~~
+
+The documentation is automatically built by read-the-docs on push to master.
+To build the documentation manually::
+
+    # install sphinx dependencies
+    pip install docs/requirements.txt
+
+    make docs
+
 Update the dev environment
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -110,9 +152,4 @@ This section is experimental because it does not work on travis-CI yet.
 
     # save new env to environment.lock.yml
     make lock
-
-Bugs
-====
-
-Please raise a github issue for any bugs.
 
