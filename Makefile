@@ -74,8 +74,8 @@ build: clean
 dist: pycompile
 	$(PYTHON) setup.py sdist
 
-doc:
-	$(MAKE) -C doc html
+docs:
+	$(MAKE) -C docs html
 
 setup-benchmark: dist
 	$(eval CORTEXPY_WHEEL := $(shell find dist/cortexpy-*.whl))
@@ -90,4 +90,4 @@ lock:
 clean:
 	rm -rf dist
 
-.PHONY: test acceptance unit clean update pipenv compile build publish doc dist pycompile
+.PHONY: test acceptance unit clean update pipenv compile build publish doc dist pycompile docs
