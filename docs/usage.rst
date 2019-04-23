@@ -1,10 +1,13 @@
-Getting started
+Usage examples
 ===============
 
-Inspecting cortex files
------------------------
+Python API
+~~~~~~~~~~
 
-After you have installed cortexpy, you can start using it
+Check if a cortex graph contains a kmer
+---------------------------------------
+
+We can use the After you have installed cortexpy, you can start using it
 to access cortex files from python::
 
     from cortexpy.graph.parser.random_access import RandomAccess

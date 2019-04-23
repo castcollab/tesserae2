@@ -86,7 +86,7 @@ Documentation
 
 For more information, please see cortexpy documentation_.
 
-.. _documentation: https://cortexpy.readthedocs.io/en/latest/index.html#documentation
+.. _documentation: https://cortexpy.readthedocs.io/en/latest/index.html
 
 Bugs
 ----
