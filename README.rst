@@ -94,6 +94,13 @@ For more information, please see cortexpy documentation_.
 
 .. _documentation: https://cortexpy.readthedocs.io/en/latest/index.html
 
+Citing cortexpy
+---------------
+
+If you use cortexpy in your work, please consider citing:
+
+    Akhter, Shirin, Warren W. Kretzschmar, Veronika Nordal, Nicolas Delhomme, Nathaniel R. Street, Ove Nilsson, Olof Emanuelsson, and Jens F. Sundström. "Integrative analysis of three RNA sequencing methods identifies mutually exclusive exons of MADS-box isoforms during early bud development in *Picea abies*." *Frontiers in Plant Science* 9 (2018). https://doi.org/10.3389/fpls.2018.01625
+
 Bugs
 ----
 
@@ -117,14 +124,14 @@ conda dev environment.
 
 
 Tests
-~~~~~
+`````
 
 ::
 
     make test
 
 Deploy new cortexpy version to pypi
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```````````````````````````````````
 
 Requires access credentials for pypi.
 
@@ -133,7 +140,7 @@ Requires access credentials for pypi.
     make deploy
 
 Building the docs
-~~~~~~~~~~~~~~~~~
+`````````````````
 
 The documentation is automatically built by read-the-docs on push to master.
 To build the documentation manually::
@@ -143,8 +150,8 @@ To build the documentation manually::
 
     make docs
 
-Update the dev environment
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+Updating the dev environment
+````````````````````````````
 
 This section is experimental because it does not work on travis-CI yet.
 
