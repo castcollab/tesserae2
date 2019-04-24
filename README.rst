@@ -104,7 +104,8 @@ If you use cortexpy in your work, please consider citing:
 Bugs
 ----
 
-Please raise a github issue for any bugs.
+This code is maintained by Warren Kretzschmar <warrenk@kth.se>.
+For bugs, please raise a `GitHub issue <https://github.com/winni2k/cortexpy/issues>`_.
 
 Development
 -----------
