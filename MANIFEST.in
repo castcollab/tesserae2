@@ -2,10 +2,8 @@ graft tests
 graft src
 
 include README.rst
-include LICENSE
+include LICENSE.txt
 include tox.ini .travis.yml
-include Pipfile Pipfile.lock
-
 
 prune **/.hypothesis
 
