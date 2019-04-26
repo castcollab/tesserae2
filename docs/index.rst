@@ -10,8 +10,8 @@ Documentation
    :maxdepth: 2
 
    overview
-   main
    tutorial
+   main
    api
    license
 
