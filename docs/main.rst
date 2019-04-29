@@ -52,7 +52,7 @@ allows the easy application of :py:mod:`networkx` algorithms to Cortex graphs.
 :py:meth:`~cortexpy.links.LinkedGraphTraverser.__getitem__` method. To understand why this works, let us first take a look at the
 all-simple-paths algorithm:
 
-.. code-block::
+.. code-block:: python3
    :lineno-start: 1
    :emphasize-lines: 22
 
