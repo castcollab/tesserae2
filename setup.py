@@ -34,7 +34,7 @@ setup(
     license='Apache-2.0',
     long_description=open('README.rst').read(),
     install_requires="""
-    attrs
+    attrs>=19.2
     biopython
     numpy
     networkx==2.1
