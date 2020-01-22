@@ -7,8 +7,7 @@ Overview of Cortexpy_
     :stub-columns: 1
 
     * - tests
-      - | |travis|
-        | |coveralls| |codecov|
+      - | |travis| |codecov|
     * - package
       - | |version| |wheel| |supported-versions|
         | |supported-implementations| |commits-since|
@@ -18,10 +17,6 @@ Overview of Cortexpy_
 .. |travis| image:: https://travis-ci.org/winni2k/cortexpy.svg?branch=master
     :alt: Travis-CI Build Status
     :target: https://travis-ci.org/winni2k/cortexpy
-
-.. |coveralls| image:: https://coveralls.io/repos/winni2k/cortexpy/badge.svg?branch=master&service=github
-    :alt: Coverage Status
-    :target: https://coveralls.io/r/winni2k/cortexpy
 
 .. |codecov| image:: https://codecov.io/github/winni2k/cortexpy/coverage.svg?branch=master
     :alt: Coverage Status
