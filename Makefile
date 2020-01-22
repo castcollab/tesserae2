@@ -12,6 +12,7 @@ PYTEST_COMMAND = pytest \
            --cov cortexpy \
            --cov-report term-missing \
            --cov-report html \
+           --cov-report xml \
            --cov-config setup.cfg \
            --hypothesis-profile $(HYPOTHESIS_PROFILE)
 BASE_TEST_COMMAND = tox -- $(PYTEST_COMMAND)
