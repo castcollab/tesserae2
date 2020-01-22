@@ -18,7 +18,7 @@ jobs:
       - source scripts/bootstrap
     script: make ci HYPOTHESIS_PROFILE=ci
     after_success:
-      - bash < (curl -s https://codecov.io/bash)
+      - bash <(curl -s https://codecov.io/bash)
   - stage: Deploy to pypi
     python: '3.6'
     script: skip
