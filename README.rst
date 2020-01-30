@@ -99,7 +99,7 @@ If you use cortexpy in your work, please consider citing:
 Bugs
 ----
 
-This code is maintained by Warren Kretzschmar <warrenk@kth.se>.
+This code is maintained by Warren Kretzschmar <winni@warrenwk.com>.
 For bugs, please raise a `GitHub issue <https://github.com/winni2k/cortexpy/issues>`_.
 
 Development
