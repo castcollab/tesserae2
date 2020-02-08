@@ -1,0 +1,7 @@
+pytest
+hypothesis
+bitstring
+pytest-cov
+pytest-pylint
+pytest-flake8
+coverage >= 4.5
