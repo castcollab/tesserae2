@@ -106,13 +106,18 @@ Development
 -----------
 
 1. Install `conda <https://docs.conda.io/en/latest/miniconda.html>`_.
-2. Download development and testing tools::
+2. Download mccortex for testing::
 
     conda env create -f environment.yml -n my-dev-environment
 
 3. Activate development environment::
 
     conda activate my-dev-environment
+
+4. Install remaining development tools::
+
+    pip3 install -r requirements.txt
+
 
 All remaining commands in the development section need to be run in an activated
 conda dev environment.
