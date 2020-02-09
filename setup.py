@@ -22,7 +22,7 @@ extensions = [Extension(
 if USE_CYTHON:
     extensions = cythonize(extensions)  # , annotate=True)
 
-version = '0.46.4'
+version = '0.46.5'
 setup(
     name='cortexpy',
     version=version,
