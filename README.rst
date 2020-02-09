@@ -147,7 +147,7 @@ The documentation is automatically built by read-the-docs on push to master.
 To build the documentation manually::
 
     # install sphinx dependencies
-    pip install docs/requirements.txt
+    pip install -r docs/requirements.txt
 
     make docs
 

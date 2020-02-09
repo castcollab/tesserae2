@@ -54,16 +54,10 @@ all-simple-paths algorithm:
 
 .. code-block:: python3
    :lineno-start: 1
-   :emphasize-lines: 22
+   :emphasize-lines: 18
 
-    def _all_simple_paths_graph(G, source, target, cutoff=None):
-        """This function was copied from Networkx before being edited by Warren Kretzschmar
-        todo: switch back to nx.all_simple_paths once Networkx 2.2 is released"""
-        assert cutoff is not None
-        if target in G:
-            targets = {target}
-        else:
-            targets = set(target)
+    def _all_simple_paths_graph(G, source, targets, cutoff):
+        """From networkx.algorithms.simple_paths"""
         visited = collections.OrderedDict.fromkeys([source])
         stack = [iter(G[source])]
         while stack:
@@ -73,18 +67,22 @@ all-simple-paths algorithm:
                 stack.pop()
                 visited.popitem()
             elif len(visited) < cutoff:
+                if child in visited:
+                    continue
                 if child in targets:
                     yield list(visited) + [child]
-                elif child not in visited:
-                    visited[child] = None
+                visited[child] = None
+                if targets - set(visited.keys()):  # expand stack until find all targets
                     stack.append(iter(G[child]))
+                else:
+                    visited.popitem()  # maybe other ways to child
             else:  # len(visited) == cutoff:
-                if child in targets or len(targets & children) != 0:
-                    yield list(visited) + [child]
+                for target in (targets & (set(children) | {child})) - set(visited.keys()):
+                    yield list(visited) + [target]
                 stack.pop()
                 visited.popitem()
 
-The key line here is the highlighted line 22. This is the line that appends an iterator of a node's
+The key line here is the highlighted line 18. This is the line that appends an iterator of a node's
 successors to the stack of nodes to visit. The algorithm asks the graph object :py:obj:`G`
 for the successor nodes of :py:obj:`child` by calling the
 :py:meth:`~cortexpy.links.LinkedGraphTraverser.__getitem__` method of :py:obj:`G`::
