@@ -150,20 +150,3 @@ To build the documentation manually::
     pip install -r docs/requirements.txt
 
     make docs
-
-Updating the dev environment
-````````````````````````````
-
-This section is experimental because it does not work on travis-CI yet.
-
-::
-
-    # Create a new env from the high-level requirements file
-    conda env create -f environment.yml -n another-dev-env
-
-    # activate the new environment
-    conda activate another-dev-env
-
-    # save new env to environment.lock.yml
-    make lock
-
