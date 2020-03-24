@@ -54,6 +54,13 @@ Tests
     # run only (fast) unit tests
     tox -- -k unit
 
+Bumping versions
+````````````````
+
+When making code changes, please bump the version using `bumpversion`. Please make
+patch version increments (`bumpversion patch`) for bug fixes, and minor version
+increments (`bumpversion minor`) for feature additions **and** incompatible API changes.
+
 Building the docs
 `````````````````
 
