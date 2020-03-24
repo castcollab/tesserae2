@@ -3,6 +3,8 @@ Overview of Tesserae2
 
 Tesserae2: Fast recombination-aware global and local alignment.
 
+Current version: 1.0.0
+
 Audience
 --------
 
@@ -19,20 +21,17 @@ Installation
 
 ::
 
-    pip install tesserae
+    pip install .
 
 
 Documentation
 -------------
 
-For more information, please see the tesserae documentation_.
-
-.. _documentation: https://tesserae.readthedocs.io/en/latest/index.html
 
 Bugs
 ----
 
-For bugs, please raise a `GitHub issue <https://github.com/winni2k/cortexpy/issues>`_.
+For bugs, please raise a `GitHub issue <https://github.com/castcollab/tesserae2/issues>`_.
 
 Development
 -----------
@@ -48,15 +47,12 @@ Tests
 
 ::
 
-    make test
+    # run all tests
+    tox
+
+    # run only (fast) unit tests
+    tox -- -k unit
 
 Building the docs
 `````````````````
 
-The documentation is automatically built by read-the-docs on push to master.
-To build the documentation manually::
-
-    # install sphinx dependencies
-    pip install -r docs/requirements.txt
-
-    make docs
