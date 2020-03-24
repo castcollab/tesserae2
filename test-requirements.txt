@@ -1,7 +1,6 @@
 pytest
 hypothesis
-bitstring
 pytest-cov
 pytest-pylint
-pytest-flake8
+pytest-black
 coverage >= 4.5

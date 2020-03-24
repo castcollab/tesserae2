@@ -1,5 +1,4 @@
 tox
-cython
 wheel
 bumpversion
 twine
