@@ -8,25 +8,21 @@ from tesserae import Tesserae
 
 
 def random_dna_string(length):
-    str = []
-    for count in range(length):
-        str.append(choice("ACGT"))
-
-    return "".join(str)
+    return "".join([choice("ACGT") for _ in range(length)])
 
 
 def repeat(string_to_expand, length):
-    return (string_to_expand * (int(length / len(string_to_expand)) + 1))[:length]
+    return (string_to_expand * (length // len(string_to_expand) + 1))[:length]
 
 
 @pytest.fixture
 def samples():
-    random.seed(0)
+    random.seed(1)
 
     samples = {}
 
     for total_len in [100, 200, 500]:
-        partial_len = int(total_len / 2)
+        partial_len = total_len // 2
         query = random_dna_string(total_len)
         targets = [
             "".join(query[0:partial_len]) + random_dna_string(partial_len),
@@ -37,8 +33,9 @@ def samples():
 
 
 class TestTesseraeAcceptance:
-    def __assertions__(self, p, targets, total_len):
-        partial_len = int(total_len / 2)
+    @classmethod
+    def __assertions__(cls, p, targets, total_len):
+        partial_len = total_len // 2
 
         assert len(p) == 3
 
