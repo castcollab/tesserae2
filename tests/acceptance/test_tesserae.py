@@ -28,10 +28,13 @@ def samples():
     for total_len in [100, 200, 500]:
         partial_len = int(total_len / 2)
         query = random_dna_string(total_len)
-        targets = ["".join(query[0:partial_len]) + random_dna_string(partial_len),
-                   random_dna_string(partial_len) + "".join(query[partial_len:total_len])]
+        targets = [
+            "".join(query[0:partial_len]) + random_dna_string(partial_len),
+            random_dna_string(partial_len) + "".join(query[partial_len:total_len]),
+        ]
         samples[total_len] = query, targets
     return samples
+
 
 class TestTesseraeAcceptance:
     def __assertions__(self, p, targets, total_len):
@@ -39,12 +42,12 @@ class TestTesseraeAcceptance:
 
         assert len(p) == 3
 
-        assert p[1][0] == 'template0'
+        assert p[1][0] == "template0"
         assert p[1][1] == "".join(targets[0][0:partial_len])
         assert p[1][2] == 0
         assert p[1][3] == partial_len - 1
 
-        assert p[2][0] == 'template1'
+        assert p[2][0] == "template1"
         assert p[2][1] == repeat(" ", partial_len) + targets[1][partial_len:total_len]
         assert p[2][2] == partial_len
         assert p[2][3] == total_len - 1
@@ -59,7 +62,9 @@ class TestTesseraeAcceptance:
             # then
             self.__assertions__(p, targets, total_len)
 
-    def test_mosaic_alignment_on_medium_queries_and_two_templates_reduced_memory_usage(self, samples):
+    def test_mosaic_alignment_on_medium_queries_and_two_templates_reduced_memory_usage(
+        self, samples
+    ):
         # given
         for total_len, (query, targets) in samples.items():
             # when

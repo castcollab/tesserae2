@@ -1,6 +1,5 @@
 pytest
 hypothesis
 pytest-cov
-pytest-pylint
 pytest-black
 coverage >= 4.5
