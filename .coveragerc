@@ -1,9 +1,6 @@
 [run]
-source = cortexpy
+source = tesserae
 branch = True
-omit =
-    cortexpy/__main__.py
-    cortexpy/test/*
 
 [report]
 skip_covered = True

@@ -13,7 +13,8 @@ Free software
 -------------
 
 Tesserae2 is free software; you can redistribute it and/or modify it under the
-terms of the Apache License version 2.0.  Contributions are welcome. Please join us on `GitHub <https://github.com/winni2k/cortexpy>`_.
+terms of the Apache License version 2.0.  Contributions are welcome. Please join us on
+`GitHub <https://github.com/castcollab/tesserae2>`_.
 
 
 Installation
