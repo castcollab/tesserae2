@@ -2,3 +2,4 @@ tox
 wheel
 bumpversion
 twine
+pysam

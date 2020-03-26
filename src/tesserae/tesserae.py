@@ -1,4 +1,15 @@
 import numpy as np
+import pysam
+from collections import OrderedDict
+
+from . import log
+
+################################################################################
+
+logger = log.get_logger(__name__)
+
+################################################################################
+
 
 # constants
 SMALL = -1e32
@@ -84,6 +95,9 @@ class Tesserae(object):
         self.editTrack = []
         self.mem_limit = mem_limit
 
+        self._query = {}
+        self._targets = {}
+
     def __initialize(self, query, targets):
         self.nseq = len(targets)
         self.maxl = max_length(query, targets)
@@ -163,17 +177,162 @@ class Tesserae(object):
 
         self.path = []
 
+    @property
+    def query(self):
+        """Get the query dictionary for this tesserae object.
+
+        query_name -> query_sequence
+        """
+        return self._query
+
+    @property
+    def targets(self):
+        """Get the target dictionary for this tesserae object.
+
+        target_name -> target_sequence
+        """
+        return self._targets
+
+    @staticmethod
+    def _validate_nucleic_acid_sequence(sequence, name=""):
+        """Asserts that if the given sequence is a string it contains only bases we expect from a nucleic acid
+        sequence."""
+        if isinstance(sequence, str):
+            if len(name) != 0:
+                name = "(" + name + ")"
+            for i in range(0, len(sequence)):
+                base = sequence[i]
+                if base not in convert:
+                    raise ValueError(
+                        "Given sequence "
+                        + name
+                        + " contains unexpected base at position "
+                        + str(i)
+                        + ": "
+                        + base
+                    )
+
+    @staticmethod
+    def _dump_seq_map(seq_map, name="Reads"):
+        """Dumps the given sequence map to the log as a DEBUG message."""
+        if logger.isEnabledFor(log.DEBUG):
+            logger.debug("%s:", name)
+            for e in seq_map.items():
+                logger.debug("    %s -> %s", e[0], e[1])
+
+    @staticmethod
+    def _ingest_fastx_file(fastx_file_name):
+        """Ingests the given fastx (fasta or fastq) file and returns a dictionary mapping the sequence names to the
+        sequences themselves."""
+
+        logger.info("Ingesting reads from %s ...", fastx_file_name)
+
+        _read_to_sequence_dict = OrderedDict()
+        with pysam.FastxFile(fastx_file_name) as fh:
+            for _entry in fh:
+                _read_to_sequence_dict[_entry.name] = _entry.sequence
+
+        logger.info("Ingested %d reads.", len(_read_to_sequence_dict))
+
+        return _read_to_sequence_dict
+
+    def align_from_fastx(self, query_fastx, target_fastx):
+        """Align all target sequences to the query sequence in the given FASTX (FASTA / FASTQ) files.
+
+        NOTE: Assumes `query_fastx` contains only one sequence.
+              If `query_fastx` contains more than one sequence, only the first will be considered."""
+
+        # TODO: Should we make this method loop over all sequences in the query, or should we make another method?
+
+        query_dict = self._ingest_fastx_file(query_fastx)
+        target_dict = self._ingest_fastx_file(target_fastx)
+
+        queries = list(query_dict.items())
+        targets = []
+
+        panel = {queries[0][0]: queries[0][1]}
+        for item in target_dict.items():
+            panel[item[0]] = item[1]
+            targets.append(item[1])
+
+        # Initialize with a single query and our target values:
+        self.__initialize(queries[0][1], targets)
+
+        return self.__align_all(panel, targets)
+
     def align(self, query, targets):
+        """Align all sequences in `targets` to the given query sequence."""
+
+        # Check for input types so we can get the names right:
+        query_name = "query"
+        if isinstance(query, dict):
+            query_item = query.popitem()
+            query_name = query_item[0]
+            query = query_item[1]
+
+        target_names = None
+        if isinstance(targets, dict):
+            target_names = []
+            tmp_targets = []
+            for item in targets.items():
+                target_names.append(item[0])
+                tmp_targets.append(item[1])
+            targets = tmp_targets
+
+        # Validate the query to make sure it's all bases we expect:
+        self._validate_nucleic_acid_sequence(query, query_name)
+
+        # Initialize our internal data:
         self.__initialize(query, targets)
 
-        panel = {"query": query}
+        panel = {query_name: query}
         for i in range(0, len(targets)):
-            panel[f"template{i}"] = targets[i]
+            name = f"template{i}"
+            if target_names:
+                name = target_names[i]
+
+            # Validate the target here:
+            self._validate_nucleic_acid_sequence(targets[i], name)
+
+            # Add the target to the panel and continue:
+            panel[name] = targets[i]
 
         return self.__align_all(panel, targets)
 
     def __align_all(self, panel, targets):
-        query = panel["query"]
+        """Aligns the sequences in the panel and targets.
+
+
+        Returns a list of tuples of the following structure:
+            target_name
+            aligned_sequence
+            target_start_index
+            target_end_index
+        """
+
+        # Get the query:
+        query_key = "query"
+        try:
+            query = panel[query_key]
+        except KeyError:
+            # OK, no "query" key.
+            # No prob - we just take value of the first entry in `panel`:
+            item = list(panel.items())[0]
+            query_key = item[0]
+            query = item[1]
+
+        # Set our query and target properties:
+        self._query = {query_key: query}
+        self._targets = {}
+        for i in panel.items():
+            if i[0] == query_key:
+                pass
+            else:
+                self._targets[i[0]] = i[1]
+
+        # Log our sequences:
+        Tesserae._dump_seq_map(self._query, "Query")
+        Tesserae._dump_seq_map(self._targets, "Targets")
 
         l1 = self.qlen
         size_l = 0.0
@@ -183,9 +342,12 @@ class Tesserae(object):
         size_l -= self.qlen
         lsize_l = np.log(size_l)
 
+        # Initialize our internal state:
         max_r, pos_max, state_max, who_max = self.__initialization(
             query, targets, lsize_l
         )
+
+        # Go through one cycle manually to initialize our loop variables:
         max_r, pos_max, state_max, who_max = self.__recurrence(
             query,
             targets,
@@ -197,6 +359,7 @@ class Tesserae(object):
             who_max,
             store_states=self.mem_limit,
         )
+
         cp, pos_max, who_max, state_max = self.__termination(
             np.remainder(self.qlen, self.traceback_limit) if self.mem_limit else l1,
             pos_max,
@@ -204,9 +367,13 @@ class Tesserae(object):
             who_max,
             2 * self.maxl,
         )
+
         l2 = self.traceback_limit
+
         if self.mem_limit and self.saved_states:
             self.saved_states.pop()
+
+        # Now loop through until we're satisfied that we have good alignments:
         while self.mem_limit and self.saved_states:
             (
                 max_r,
@@ -215,10 +382,12 @@ class Tesserae(object):
                 who_max_n,
                 pos_target_n,
             ) = self.saved_states.pop()
+
             idx = len(self.saved_states)
             self.vt_m[1 - (idx == 0)] = np.copy(self.saved_vt_m[idx])
             self.vt_i[1 - (idx == 0)] = np.copy(self.saved_vt_i[idx])
             self.vt_d[1 - (idx == 0)] = np.copy(self.saved_vt_d[idx])
+
             self.__recurrence(
                 query,
                 targets,
@@ -235,8 +404,11 @@ class Tesserae(object):
             cp, pos_max, who_max, state_max = self.__termination(
                 l2, pos_max, state_max, who_max, cp
             )
+
+        # Collapse our data into a list of tuples we can report:
         self.__render(cp + 1, panel)
 
+        # Return the list of tuples representing the alignment of the given sequences.
         return self.path
 
     def __render(self, cp, panel):
@@ -260,6 +432,7 @@ class Tesserae(object):
                 sb.append(seqs[0][1][pos_target - 1])
                 pos_target += 1
         self.path.append((seqs[0][0], "".join(sb), pos_start, pos_end))
+
         # Prepare matching track
         sb = []
         pos_target = 1
@@ -280,6 +453,7 @@ class Tesserae(object):
             else:
                 sb.append("~")
         self.editTrack = "".join(sb)
+
         # Prepare copying tracks
         current_track = seqs[self.maxpath_copy[cp] + 1][0]
         sb = []

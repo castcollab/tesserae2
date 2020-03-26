@@ -28,6 +28,14 @@ Installation
 Documentation
 -------------
 
+CLI
+```
+
+After installing Tesserae, the command-line interface can be called by the following command:
+
+::
+
+   tesserae
 
 Bugs
 ----
@@ -41,6 +49,7 @@ Development
 
     python3 -mvenv venv
     . venv/bin/activate
+    pip install -r dev-requirements.txt
     pip install -e .
 
 Tests
