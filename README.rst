@@ -41,6 +41,7 @@ Development
 
     python3 -mvenv venv
     . venv/bin/activate
+    pip install -r dev-requirements.txt
     pip install -e .
 
 Tests
