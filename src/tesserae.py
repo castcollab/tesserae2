@@ -37,6 +37,7 @@ def max_length(query, targets):
     return maxl
 
 
+# A hack to be able to calculate recurrence in parallel
 def unwrap_recurrence_target(arg, **kwarg):
     return Tesserae.recurrence_target(*arg, **kwarg)
 
@@ -96,6 +97,8 @@ class Tesserae(object):
         self.maxl = max_length(query, targets)
         self.qlen = len(query)
 
+        # At this moment, all parallelization are on the individual sequences.
+        # So no meaning to use more threads than sequences.
         self.threads = min(self.threads, self.nseq)
 
         if self.mem_limit:
