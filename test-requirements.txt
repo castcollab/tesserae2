@@ -1,5 +1,6 @@
 pytest
 hypothesis
 pytest-cov
-pytest-black
+black
+flake8
 coverage >= 4.5

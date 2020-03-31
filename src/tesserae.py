@@ -392,7 +392,9 @@ class Tesserae(object):
         cls,
         query,
         target,
-        vt_m, vt_i, vt_d,
+        vt_m,
+        vt_i,
+        vt_d,
         vt_m_base,
         vt_i_base,
         tb_base,
@@ -402,10 +404,16 @@ class Tesserae(object):
         pos_target_trace,
         offset,
         l1,
-        tb_divisor, mem_limit,
-        lsm, lsi,
-        lmm, lgm, ldm, ldel, leps,
-        store_states=False
+        tb_divisor,
+        mem_limit,
+        lsm,
+        lsi,
+        lmm,
+        lgm,
+        ldm,
+        ldel,
+        leps,
+        store_states=False,
     ):
         seq_10 = seq * 10
 
@@ -414,42 +422,45 @@ class Tesserae(object):
         C = np.insert(
             np.array(
                 [
-                    lsm[targ_idx][convert[target[i]]]
-                    if i < len(target) else SMALL
+                    lsm[targ_idx][convert[target[i]]] if i < len(target) else SMALL
                     for i in range(0, len(vt_m) - 1)
                 ],
-                dtype=np.float64
-            ), 0, SMALL)
+                dtype=np.float64,
+            ),
+            0,
+            SMALL,
+        )
         A = np.insert(
             (seq_10 + np.arange(0, len(vt_m) - 1, dtype=np.float64) / tb_divisor),
-            0, tb_base
+            0,
+            tb_base,
         )
-        vt_m_mat = np.c_[
-            np.full(len(vt_m), vt_m_base, dtype=np.float64),
-            np.roll(vt_m, 1) + lmm,
-            np.roll(vt_i, 1) + lgm,
-            np.roll(vt_d, 1) + ldm
-        ] + np.c_[C, C, C, C]
+        vt_m_mat = (
+            np.c_[
+                np.full(len(vt_m), vt_m_base, dtype=np.float64),
+                np.roll(vt_m, 1) + lmm,
+                np.roll(vt_i, 1) + lgm,
+                np.roll(vt_d, 1) + ldm,
+            ]
+            + np.c_[C, C, C, C]
+        )
         tb_m_mat = np.c_[
-            np.full(len(vt_m), tb_base, dtype=np.float64),
-            A + 1, A + 2, A + 3
+            np.full(len(vt_m), tb_base, dtype=np.float64), A + 1, A + 2, A + 3
         ]
 
         tb_m_n = vt_m_mat.argmax(1)
-        index_selector = tb_m_n + np.arange(len(tb_m_n))*4
+        index_selector = tb_m_n + np.arange(len(tb_m_n)) * 4
         vt_mn = vt_m_mat.ravel()[index_selector]
         tb_mn = tb_m_mat.ravel()[index_selector]
 
-        B = (seq_10 + np.arange(len(vt_m), dtype=np.float64) / tb_divisor)
+        B = seq_10 + np.arange(len(vt_m), dtype=np.float64) / tb_divisor
         vt_i_mat = np.c_[
             np.full(len(vt_i), vt_i_base, dtype=np.float64), vt_m + ldel, vt_i + leps
         ] + np.full((len(vt_i), 3), lsi[targ_idx], dtype=np.float64)
-        tb_i_mat = np.c_[
-            np.full(len(vt_i), tb_base, dtype=np.float64), B + 1, B + 2
-        ]
+        tb_i_mat = np.c_[np.full(len(vt_i), tb_base, dtype=np.float64), B + 1, B + 2]
 
         tb_i_n = vt_i_mat.argmax(1)
-        index_selector = tb_i_n + np.arange(len(tb_i_n))*3
+        index_selector = tb_i_n + np.arange(len(tb_i_n)) * 3
         vt_in = vt_i_mat.ravel()[index_selector]
         tb_in = tb_i_mat.ravel()[index_selector]
 
@@ -479,11 +490,15 @@ class Tesserae(object):
                 tb_d_next[pos_seq] = 3
 
         vt_dn = np.array(vt_d_next)
-        tb_dn = (seq_10 + np.arange(0, len(vt_m), dtype=np.float64) / tb_divisor) \
-            + tb_d_next
+        tb_dn = (
+            seq_10 + np.arange(0, len(vt_m), dtype=np.float64) / tb_divisor
+        ) + tb_d_next
 
-        return (max_rn, who_max_n, state_max_n, pos_max_n), \
-            (vt_mn, vt_in, vt_dn), (tb_mn, tb_in, tb_dn)
+        return (
+            (max_rn, who_max_n, state_max_n, pos_max_n),
+            (vt_mn, vt_in, vt_dn),
+            (tb_mn, tb_in, tb_dn),
+        )
 
     def __recurrence(
         self,
@@ -514,16 +529,30 @@ class Tesserae(object):
             for target in targets:
                 argvec.append(
                     (
-                        query, target,
+                        query,
+                        target,
                         self.vt_m[pos_target % 2][seq],
                         self.vt_i[pos_target % 2][seq],
                         self.vt_d[pos_target % 2][seq],
-                        vt_m_base, vt_i_base,
-                        tb_base, max_rn, seq, pos_target, pos_target_trace, offset, l1,
-                        self.tb_divisor, self.mem_limit,
-                        self.lsm, self.lsi,
-                        self.lmm, self.lgm, self.ldm, self.ldel, self.leps,
-                        store_states
+                        vt_m_base,
+                        vt_i_base,
+                        tb_base,
+                        max_rn,
+                        seq,
+                        pos_target,
+                        pos_target_trace,
+                        offset,
+                        l1,
+                        self.tb_divisor,
+                        self.mem_limit,
+                        self.lsm,
+                        self.lsi,
+                        self.lmm,
+                        self.lgm,
+                        self.ldm,
+                        self.ldel,
+                        self.leps,
+                        store_states,
                     )
                 )
                 seq += 1
@@ -531,8 +560,7 @@ class Tesserae(object):
             rvec = []
             with Pool(self.threads) as p:
                 rvec = p.map(unwrap_recurrence_target, argvec)
-            (max_r, who_max, state_max, pos_max), _, _ = \
-                max(rvec, key=lambda x: x[0])
+            (max_r, who_max, state_max, pos_max), _, _ = max(rvec, key=lambda x: x[0])
             seq = 0
             for _, (vt_m_n, vt_i_n, vt_d_n), (tb_m_n, tb_i_n, tb_d_n) in rvec:
                 self.vt_m[1 - pos_target % 2][seq] = vt_m_n

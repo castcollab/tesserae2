@@ -2,7 +2,7 @@ from glob import glob
 from io import open
 from os.path import splitext, basename
 
-from setuptools import setup, find_packages, Extension
+from setuptools import setup, find_packages
 
 # following src dir layout according to
 # https://blog.ionelmc.ro/2014/05/25/python-packaging/#the-structure
