@@ -1,6 +1,6 @@
-name: tesserae
+name: Test package
 
-on: [push]
+on: [push, pull_request]
 
 jobs:
   build:
@@ -11,7 +11,7 @@ jobs:
         python-version: [3.6, 3.7, 3.8]
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v1
       with:
@@ -20,6 +20,6 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install tox tox-gh-actions
-        pip install -r test-requirements
+        pip install -r test-requirements.txt
     - name: Test with tox
       run: tox
