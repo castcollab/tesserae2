@@ -408,87 +408,82 @@ class Tesserae(object):
         store_states=False
     ):
         seq_10 = seq * 10
-        vt_m_next = np.full_like(vt_m, vt_m_base)
-        vt_i_next = np.full_like(vt_i, vt_i_base)
-        vt_d_next = np.full_like(vt_d, SMALL)
-        tb_m_next = np.full_like(vt_m, tb_base)
-        tb_i_next = np.full_like(vt_i, tb_base)
-        tb_d_next = np.empty_like(vt_d)
 
-        for pos_seq in range(1, len(target) + 1):
-            # Match
-            vt_m_n, tb_m_n = max(
+        targ_idx = convert[query[pos_target + offset - 1]]
+
+        C = np.insert(
+            np.array(
                 [
-                    (vt_m[pos_seq - 1] + lmm, 1),
-                    (vt_i[pos_seq - 1] + lgm, 2),
-                    (vt_d[pos_seq - 1] + ldm, 3),
+                    lsm[targ_idx][convert[target[i]]]
+                    if i < len(target) else SMALL
+                    for i in range(0, len(vt_m) - 1)
                 ],
-                key=lambda x: x[0],
-            )
+                dtype=np.float64
+            ), 0, SMALL)
+        A = np.insert(
+            (seq_10 + np.arange(0, len(vt_m) - 1, dtype=np.float64) / tb_divisor),
+            0, tb_base
+        )
+        vt_m_mat = np.c_[
+            np.full(len(vt_m), vt_m_base, dtype=np.float64),
+            np.roll(vt_m, 1) + lmm,
+            np.roll(vt_i, 1) + lgm,
+            np.roll(vt_d, 1) + ldm
+        ] + np.c_[C, C, C, C]
+        tb_m_mat = np.c_[
+            np.full(len(vt_m), tb_base, dtype=np.float64),
+            A + 1, A + 2, A + 3
+        ]
 
-            if vt_m_n > vt_m_next[pos_seq]:
-                vt_m_next[pos_seq] = vt_m_n
-                tb_m_next[pos_seq] = (
-                    seq_10 + tb_m_n + (pos_seq - 1) / tb_divisor
-                )
+        tb_m_n = vt_m_mat.argmax(1)
+        index_selector = tb_m_n + np.arange(len(tb_m_n))*4
+        vt_mn = vt_m_mat.ravel()[index_selector]
+        tb_mn = tb_m_mat.ravel()[index_selector]
 
-            # Add in state match
-            vt_m_next[pos_seq] += lsm[
-                convert[query[pos_target + offset - 1]]
-            ][convert[target[pos_seq - 1]]]
+        B = (seq_10 + np.arange(len(vt_m), dtype=np.float64) / tb_divisor)
+        vt_i_mat = np.c_[
+            np.full(len(vt_i), vt_i_base, dtype=np.float64), vt_m + ldel, vt_i + leps
+        ] + np.full((len(vt_i), 3), lsi[targ_idx], dtype=np.float64)
+        tb_i_mat = np.c_[
+            np.full(len(vt_i), tb_base, dtype=np.float64), B + 1, B + 2
+        ]
 
-            # Insert
-            vt_i_n, tb_i_n = max(
-                [
-                    (vt_m[pos_seq] + ldel, 1),
-                    (vt_i[pos_seq] + leps, 2),
-                ],
-                key=lambda x: x[0],
-            )
+        tb_i_n = vt_i_mat.argmax(1)
+        index_selector = tb_i_n + np.arange(len(tb_i_n))*3
+        vt_in = vt_i_mat.ravel()[index_selector]
+        tb_in = tb_i_mat.ravel()[index_selector]
 
-            if vt_i_n > vt_i_next[pos_seq]:
-                vt_i_next[pos_seq] = vt_i_n
-                tb_i_next[pos_seq] = (
-                    seq_10 + tb_i_n + pos_seq / tb_divisor
-                )
+        idx_m = vt_mn.argmax()
+        idx_i = vt_in.argmax()
 
-            # Add in state insert
-            vt_i_next[pos_seq] += lsi[
-                convert[query[pos_target + offset - 1]]
-            ]
+        if vt_mn[idx_m] > max_rn:
+            max_rn = vt_mn[idx_m]
+            who_max_n = seq
+            state_max_n = 1
+            pos_max_n = idx_m
 
-            # Delete
-            if (
-                pos_target < l1 or (mem_limit and not store_states)
-            ) and pos_seq > 1:
-                vt_d_n, tb_d_n = max(
-                    [
-                        (vt_m_next[pos_seq - 1] + ldel, 1),
-                        (vt_d_next[pos_seq - 1] + leps, 3),
-                    ],
-                    key=lambda x: x[0],
-                )
+        if vt_in[idx_i] > max_rn:
+            max_rn = vt_in[idx_i]
+            who_max_n = seq
+            state_max_n = 2
+            pos_max_n = idx_i
 
+        # Use traditional python-list instead of numpy for
+        # the delete-vector in order to exploit the best of two worlds
+        vt_d_next = list(np.roll(vt_mn, 1) + ldel)
+        tb_d_next = [1] * len(vt_mn)
+        for pos_seq in range(2, len(target) + 1):
+            vt_d_n = vt_d_next[pos_seq - 1] + leps
+            if vt_d_next[pos_seq] < vt_d_n:
                 vt_d_next[pos_seq] = vt_d_n
-                tb_d_next[pos_seq] = (
-                    seq_10 + tb_d_n + (pos_seq - 1) / tb_divisor
-                )
+                tb_d_next[pos_seq] = 3
 
-            if vt_m_next[pos_seq] > max_rn:
-                max_rn = vt_m_next[pos_seq]
-                who_max_n = seq
-                state_max_n = 1
-                pos_max_n = pos_seq
-
-            if vt_i_next[pos_seq] > max_rn:
-                max_rn = vt_i_next[pos_seq]
-                who_max_n = seq
-                state_max_n = 2
-                pos_max_n = pos_seq
+        vt_dn = np.array(vt_d_next)
+        tb_dn = (seq_10 + np.arange(0, len(vt_m), dtype=np.float64) / tb_divisor) \
+            + tb_d_next
 
         return (max_rn, who_max_n, state_max_n, pos_max_n), \
-            (vt_m_next, vt_i_next, vt_d_next), \
-            (tb_m_next, tb_i_next, tb_d_next)
+            (vt_mn, vt_in, vt_dn), (tb_mn, tb_in, tb_dn)
 
     def __recurrence(
         self,
