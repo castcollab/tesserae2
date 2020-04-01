@@ -1,4 +1,6 @@
-![Tests](https://github.com/castcollab/tesserae2/workflows/Test%20package/badge.svg)
+.. image:: https://github.com/castcollab/tesserae2/workflows/Test%20package/badge.svg
+    :target: Tests
+    :alt: Tests
 
 Overview of Tesserae2
 =====================
