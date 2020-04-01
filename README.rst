@@ -55,12 +55,16 @@ Linting files
     # check pep8 against all files in src and tests
     flake8 src tests
 
+    # lint python code for common errors and codestyle issues
+    pylint src
+
 Tests
 `````
 
 ::
 
     # run all tests
+    # right now that includes pep8, black, and pylint
     tox
 
     # run only (fast) unit tests
