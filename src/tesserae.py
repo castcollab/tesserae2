@@ -1,7 +1,5 @@
 import numpy as np
 import sys
-if sys.version_info >= (3, 8):
-    from multiprocessing.pool import ThreadPool as Pool
 
 # constants
 SMALL = -1e32
@@ -99,16 +97,14 @@ class Tesserae(object):
         self.maxl = max_length(query, targets)
         self.qlen = len(query)
 
+        if sys.version_info < (3, 8) and self.threads > 1:
+            raise NotImplementedError(
+                "Threading is only supported with python3.8 and above!"
+            )
+
         # At this moment, all parallelization are on the individual sequences.
         # So no meaning to use more threads than sequences.
-        self.threads = min(self.threads, self.nseq)
-
-        if sys.version_info < (3, 8) and self.threads > 1:
-            print(
-                "WARNING! Lower python version than 3.8 run! "
-                "Will not use multiprocessing!",
-                file=sys.stderr
-            )
+        self.effective_threads = min(self.threads, self.nseq)
 
         if self.mem_limit:
             qlen_sqrt = np.sqrt(self.qlen)
@@ -567,8 +563,10 @@ class Tesserae(object):
                 seq += 1
 
             rvec = []
-            if sys.version_info >= (3, 8) and self.threads > 1:
-                with Pool(self.threads) as p:
+            if self.effective_threads > 1:
+                from multiprocessing.pool import ThreadPool as Pool
+
+                with Pool(self.effective_threads) as p:
                     rvec = p.map(unwrap_recurrence_target, argvec)
             else:
                 rvec = [unwrap_recurrence_target(args) for args in argvec]
