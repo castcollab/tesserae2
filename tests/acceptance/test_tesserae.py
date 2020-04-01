@@ -20,7 +20,6 @@ def samples():
     random.seed(1)
 
     samples = {}
-
     for total_len in [100, 200, 500]:
         partial_len = total_len // 2
         query = random_dna_string(total_len)
@@ -34,7 +33,7 @@ def samples():
 
 class TestTesseraeAcceptance:
     @classmethod
-    def __assertions__(cls, p, targets, total_len):
+    def assertions(cls, p, targets, total_len):
         partial_len = total_len // 2
 
         assert len(p) == 3
@@ -57,7 +56,7 @@ class TestTesseraeAcceptance:
             p = t.align(query, targets)
 
             # then
-            self.__assertions__(p, targets, total_len)
+            self.assertions(p, targets, total_len)
 
     def test_mosaic_alignment_on_medium_queries_and_two_templates_reduced_memory_usage(
         self, samples
@@ -71,6 +70,6 @@ class TestTesseraeAcceptance:
             max_mem_limit = sqrt(total_len) + 2
 
             # then
-            self.__assertions__(p, targets, total_len)
+            self.assertions(p, targets, total_len)
             assert t.traceback_limit <= max_mem_limit
             assert t.states_to_save <= max_mem_limit
