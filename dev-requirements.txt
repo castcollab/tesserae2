@@ -2,3 +2,5 @@ tox
 wheel
 bumpversion
 twine
+black
+flake8
