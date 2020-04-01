@@ -1,3 +1,5 @@
+![Tests](https://github.com/castcollab/tesserae2/workflows/Test%20package/badge.svg)
+
 Overview of Tesserae2
 =====================
 
