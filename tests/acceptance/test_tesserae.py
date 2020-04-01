@@ -31,23 +31,23 @@ def samples():
     return samples
 
 
-class TestTesseraeAcceptance:
-    @classmethod
-    def assertions(cls, p, targets, total_len):
-        partial_len = total_len // 2
+def tesserae_assertions(p, targets, total_len):
+    partial_len = total_len // 2
 
-        assert len(p) == 3
+    assert len(p) == 3
 
-        assert p[1][0] == "template0"
-        assert p[1][1] == "".join(targets[0][0:partial_len])
-        assert p[1][2] == 0
-        assert p[1][3] == partial_len - 1
+    assert p[1][0] == "template0"
+    assert p[1][1] == "".join(targets[0][0:partial_len])
+    assert p[1][2] == 0
+    assert p[1][3] == partial_len - 1
 
-        assert p[2][0] == "template1"
-        assert p[2][1] == repeat(" ", partial_len) + targets[1][partial_len:total_len]
-        assert p[2][2] == partial_len
-        assert p[2][3] == total_len - 1
+    assert p[2][0] == "template1"
+    assert p[2][1] == repeat(" ", partial_len) + targets[1][partial_len:total_len]
+    assert p[2][2] == partial_len
+    assert p[2][3] == total_len - 1
 
+
+class TestTesserae:
     def test_mosaic_alignment_on_medium_queries_and_two_templates(self, samples):
         # given
         for total_len, (query, targets) in samples.items():
@@ -56,7 +56,7 @@ class TestTesseraeAcceptance:
             p = t.align(query, targets)
 
             # then
-            self.assertions(p, targets, total_len)
+            tesserae_assertions(p, targets, total_len)
 
     def test_mosaic_alignment_on_medium_queries_and_two_templates_reduced_memory_usage(
         self, samples
@@ -70,6 +70,6 @@ class TestTesseraeAcceptance:
             max_mem_limit = sqrt(total_len) + 2
 
             # then
-            self.assertions(p, targets, total_len)
+            tesserae_assertions(p, targets, total_len)
             assert t.traceback_limit <= max_mem_limit
             assert t.states_to_save <= max_mem_limit
