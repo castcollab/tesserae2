@@ -1,5 +1,7 @@
 import numpy as np
-from multiprocessing.pool import ThreadPool as Pool
+import sys
+if sys.version_info >= (3, 8):
+    from multiprocessing.pool import ThreadPool as Pool
 
 # constants
 SMALL = -1e32
@@ -55,7 +57,7 @@ class Tesserae(object):
         peps=DEFAULT_EPS,
         prho=DEFAULT_REC,
         pterm=DEFAULT_TERM,
-        threads=2,
+        threads=1,
     ):
         self.pdel = pdel
         self.peps = peps
@@ -100,6 +102,13 @@ class Tesserae(object):
         # At this moment, all parallelization are on the individual sequences.
         # So no meaning to use more threads than sequences.
         self.threads = min(self.threads, self.nseq)
+
+        if sys.version_info < (3, 8) and self.threads > 1:
+            print(
+                "WARNING! Lower python version than 3.8 run! "
+                "Will not use multiprocessing!",
+                file=sys.stderr
+            )
 
         if self.mem_limit:
             qlen_sqrt = np.sqrt(self.qlen)
@@ -558,8 +567,11 @@ class Tesserae(object):
                 seq += 1
 
             rvec = []
-            with Pool(self.threads) as p:
-                rvec = p.map(unwrap_recurrence_target, argvec)
+            if sys.version_info >= (3, 8) and self.threads > 1:
+                with Pool(self.threads) as p:
+                    rvec = p.map(unwrap_recurrence_target, argvec)
+            else:
+                rvec = [unwrap_recurrence_target(args) for args in argvec]
             (max_r, who_max, state_max, pos_max), _, _ = max(rvec, key=lambda x: x[0])
             seq = 0
             for _, (vt_m_n, vt_i_n, vt_d_n), (tb_m_n, tb_i_n, tb_d_n) in rvec:
