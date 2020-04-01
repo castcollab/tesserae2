@@ -44,6 +44,17 @@ Development
     pip install -r dev-requirements.txt
     pip install -e .
 
+Linting files
+`````````````
+
+::
+
+    # reformat all files in src and tests
+    black src tests
+
+    # check pep8 against all files in src and tests
+    flake8 src tests
+
 Tests
 `````
 
