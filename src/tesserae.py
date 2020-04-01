@@ -1,4 +1,5 @@
 import numpy as np
+from multiprocessing.pool import ThreadPool as Pool
 
 # constants
 SMALL = -1e32
@@ -36,6 +37,11 @@ def max_length(query, targets):
     return maxl
 
 
+# A hack to be able to calculate recurrence in parallel
+def unwrap_recurrence_target(arg, **kwarg):
+    return Tesserae.recurrence_target(*arg, **kwarg)
+
+
 class Tesserae(object):
     pdel = DEFAULT_DEL
     peps = DEFAULT_EPS
@@ -49,6 +55,7 @@ class Tesserae(object):
         peps=DEFAULT_EPS,
         prho=DEFAULT_REC,
         pterm=DEFAULT_TERM,
+        threads=2,
     ):
         self.pdel = pdel
         self.peps = peps
@@ -83,11 +90,16 @@ class Tesserae(object):
 
         self.editTrack = []
         self.mem_limit = mem_limit
+        self.threads = threads
 
     def __initialize(self, query, targets):
         self.nseq = len(targets)
         self.maxl = max_length(query, targets)
         self.qlen = len(query)
+
+        # At this moment, all parallelization are on the individual sequences.
+        # So no meaning to use more threads than sequences.
+        self.threads = min(self.threads, self.nseq)
 
         if self.mem_limit:
             qlen_sqrt = np.sqrt(self.qlen)
@@ -144,6 +156,7 @@ class Tesserae(object):
         self.tmp = int(np.log(self.maxl) + 1)
         self.tb_divisor = np.power(10.0, self.tmp)
 
+        self.llk = 0.0
         self.combined_llk = 0.0
 
         self.sm = np.zeros([STATES, STATES], dtype=np.float64)
@@ -374,6 +387,119 @@ class Tesserae(object):
                 pos_target -= 1
         return cp, pos_max, who_max, state_max
 
+    @classmethod
+    def recurrence_target(
+        cls,
+        query,
+        target,
+        vt_m,
+        vt_i,
+        vt_d,
+        vt_m_base,
+        vt_i_base,
+        tb_base,
+        max_rn,
+        seq,
+        pos_target,
+        pos_target_trace,
+        offset,
+        l1,
+        tb_divisor,
+        mem_limit,
+        lsm,
+        lsi,
+        lmm,
+        lgm,
+        ldm,
+        ldel,
+        leps,
+        store_states=False,
+    ):
+        seq_10 = seq * 10
+
+        targ_idx = convert[query[pos_target + offset - 1]]
+
+        C = np.insert(
+            np.array(
+                [
+                    lsm[targ_idx][convert[target[i]]] if i < len(target) else SMALL
+                    for i in range(0, len(vt_m) - 1)
+                ],
+                dtype=np.float64,
+            ),
+            0,
+            SMALL,
+        )
+        A = np.insert(
+            (seq_10 + np.arange(0, len(vt_m) - 1, dtype=np.float64) / tb_divisor),
+            0,
+            tb_base,
+        )
+        vt_m_mat = (
+            np.c_[
+                np.full(len(vt_m), vt_m_base, dtype=np.float64),
+                np.roll(vt_m, 1) + lmm,
+                np.roll(vt_i, 1) + lgm,
+                np.roll(vt_d, 1) + ldm,
+            ]
+            + np.c_[C, C, C, C]
+        )
+        tb_m_mat = np.c_[
+            np.full(len(vt_m), tb_base, dtype=np.float64), A + 1, A + 2, A + 3
+        ]
+
+        tb_m_n = vt_m_mat.argmax(1)
+        index_selector = tb_m_n + np.arange(len(tb_m_n)) * 4
+        vt_mn = vt_m_mat.ravel()[index_selector]
+        tb_mn = tb_m_mat.ravel()[index_selector]
+
+        B = seq_10 + np.arange(len(vt_m), dtype=np.float64) / tb_divisor
+        vt_i_mat = np.c_[
+            np.full(len(vt_i), vt_i_base, dtype=np.float64), vt_m + ldel, vt_i + leps
+        ] + np.full((len(vt_i), 3), lsi[targ_idx], dtype=np.float64)
+        tb_i_mat = np.c_[np.full(len(vt_i), tb_base, dtype=np.float64), B + 1, B + 2]
+
+        tb_i_n = vt_i_mat.argmax(1)
+        index_selector = tb_i_n + np.arange(len(tb_i_n)) * 3
+        vt_in = vt_i_mat.ravel()[index_selector]
+        tb_in = tb_i_mat.ravel()[index_selector]
+
+        idx_m = vt_mn.argmax()
+        idx_i = vt_in.argmax()
+
+        if vt_mn[idx_m] > max_rn:
+            max_rn = vt_mn[idx_m]
+            who_max_n = seq
+            state_max_n = 1
+            pos_max_n = idx_m
+
+        if vt_in[idx_i] > max_rn:
+            max_rn = vt_in[idx_i]
+            who_max_n = seq
+            state_max_n = 2
+            pos_max_n = idx_i
+
+        # Use traditional python-list instead of numpy for
+        # the delete-vector in order to exploit the best of two worlds
+        vt_d_next = list(np.roll(vt_mn, 1) + ldel)
+        tb_d_next = [1] * len(vt_mn)
+        for pos_seq in range(2, len(target) + 1):
+            vt_d_n = vt_d_next[pos_seq - 1] + leps
+            if vt_d_next[pos_seq] < vt_d_n:
+                vt_d_next[pos_seq] = vt_d_n
+                tb_d_next[pos_seq] = 3
+
+        vt_dn = np.array(vt_d_next)
+        tb_dn = (
+            seq_10 + np.arange(0, len(vt_m), dtype=np.float64) / tb_divisor
+        ) + tb_d_next
+
+        return (
+            (max_rn, who_max_n, state_max_n, pos_max_n),
+            (vt_mn, vt_in, vt_dn),
+            (tb_mn, tb_in, tb_dn),
+        )
+
     def __recurrence(
         self,
         query,
@@ -388,114 +514,64 @@ class Tesserae(object):
         l0=2,
         store_states=False,
     ):
-        who_max_n = 0
-        state_max_n = 0
-        pos_max_n = 0
-
         for pos_target in range(l0, l1 + 1):
             max_rn = SMALL + max_r
             seq = 0
-            seq_10 = 0
             pos_target_trace = pos_target
             if self.mem_limit and store_states:
                 pos_target_trace = pos_target % self.traceback_limit
 
+            vt_m_base = max_r + self.lrho + self.lpiM - lsize_l
+            vt_i_base = max_r + self.lrho + self.lpiI - lsize_l
+            tb_base = who_max * 10 + state_max + pos_max / self.tb_divisor
+
+            argvec = []
             for target in targets:
-                vt_m_base = max_r + self.lrho + self.lpiM - lsize_l
-                vt_i_base = max_r + self.lrho + self.lpiI - lsize_l
-                tb_base = who_max * 10 + state_max + pos_max / self.tb_divisor
-                for pos_seq in range(1, len(target) + 1):
-                    # Match
-                    self.vt_m[1 - pos_target % 2][seq][pos_seq] = vt_m_base
-                    self.tb_m[pos_target_trace][seq][pos_seq] = tb_base
-
-                    vt_m_n, tb_m_n = max(
-                        [
-                            (self.vt_m[pos_target % 2][seq][pos_seq - 1] + self.lmm, 1),
-                            (self.vt_i[pos_target % 2][seq][pos_seq - 1] + self.lgm, 2),
-                            (self.vt_d[pos_target % 2][seq][pos_seq - 1] + self.ldm, 3),
-                        ],
-                        key=lambda x: x[0],
+                argvec.append(
+                    (
+                        query,
+                        target,
+                        self.vt_m[pos_target % 2][seq],
+                        self.vt_i[pos_target % 2][seq],
+                        self.vt_d[pos_target % 2][seq],
+                        vt_m_base,
+                        vt_i_base,
+                        tb_base,
+                        max_rn,
+                        seq,
+                        pos_target,
+                        pos_target_trace,
+                        offset,
+                        l1,
+                        self.tb_divisor,
+                        self.mem_limit,
+                        self.lsm,
+                        self.lsi,
+                        self.lmm,
+                        self.lgm,
+                        self.ldm,
+                        self.ldel,
+                        self.leps,
+                        store_states,
                     )
+                )
+                seq += 1
 
-                    if vt_m_n > self.vt_m[1 - pos_target % 2][seq][pos_seq]:
-                        self.vt_m[1 - pos_target % 2][seq][pos_seq] = vt_m_n
-                        self.tb_m[pos_target_trace][seq][pos_seq] = (
-                            seq_10 + tb_m_n + (pos_seq - 1) / self.tb_divisor
-                        )
-
-                    # Add in state match
-                    self.vt_m[1 - pos_target % 2][seq][pos_seq] += self.lsm[
-                        convert[query[pos_target + offset - 1]]
-                    ][convert[target[pos_seq - 1]]]
-
-                    # Insert
-                    self.vt_i[1 - pos_target % 2][seq][pos_seq] = vt_i_base
-                    self.tb_i[pos_target_trace][seq][pos_seq] = tb_base
-
-                    vt_i_n, tb_i_n = max(
-                        [
-                            (self.vt_m[pos_target % 2][seq][pos_seq] + self.ldel, 1),
-                            (self.vt_i[pos_target % 2][seq][pos_seq] + self.leps, 2),
-                        ],
-                        key=lambda x: x[0],
-                    )
-
-                    if vt_i_n > self.vt_i[1 - pos_target % 2][seq][pos_seq]:
-                        self.vt_i[1 - pos_target % 2][seq][pos_seq] = vt_i_n
-                        self.tb_i[pos_target_trace][seq][pos_seq] = (
-                            seq_10 + tb_i_n + pos_seq / self.tb_divisor
-                        )
-
-                    # Add in state insert
-                    self.vt_i[1 - pos_target % 2][seq][pos_seq] += self.lsi[
-                        convert[query[pos_target + offset - 1]]
-                    ]
-
-                    # Delete
-                    if (
-                        pos_target < l1 or (self.mem_limit and not store_states)
-                    ) and pos_seq > 1:
-                        vt_d_n, tb_d_n = max(
-                            [
-                                (
-                                    self.vt_m[1 - pos_target % 2][seq][pos_seq - 1]
-                                    + self.ldel,
-                                    1,
-                                ),
-                                (
-                                    self.vt_d[1 - pos_target % 2][seq][pos_seq - 1]
-                                    + self.leps,
-                                    3,
-                                ),
-                            ],
-                            key=lambda x: x[0],
-                        )
-
-                        self.vt_d[1 - pos_target % 2][seq][pos_seq] = vt_d_n
-                        self.tb_d[pos_target_trace][seq][pos_seq] = (
-                            seq_10 + tb_d_n + (pos_seq - 1) / self.tb_divisor
-                        )
-
-                    if self.vt_m[1 - pos_target % 2][seq][pos_seq] > max_rn:
-                        max_rn = self.vt_m[1 - pos_target % 2][seq][pos_seq]
-                        who_max_n = seq
-                        state_max_n = 1
-                        pos_max_n = pos_seq
-
-                    if self.vt_i[1 - pos_target % 2][seq][pos_seq] > max_rn:
-                        max_rn = self.vt_i[1 - pos_target % 2][seq][pos_seq]
-                        who_max_n = seq
-                        state_max_n = 2
-                        pos_max_n = pos_seq
+            rvec = []
+            with Pool(self.threads) as p:
+                rvec = p.map(unwrap_recurrence_target, argvec)
+            (max_r, who_max, state_max, pos_max), _, _ = max(rvec, key=lambda x: x[0])
+            seq = 0
+            for _, (vt_m_n, vt_i_n, vt_d_n), (tb_m_n, tb_i_n, tb_d_n) in rvec:
+                self.vt_m[1 - pos_target % 2][seq] = vt_m_n
+                self.vt_i[1 - pos_target % 2][seq] = vt_i_n
+                self.vt_d[1 - pos_target % 2][seq] = vt_d_n
+                self.tb_m[pos_target_trace][seq] = tb_m_n
+                self.tb_i[pos_target_trace][seq] = tb_i_n
+                self.tb_d[pos_target_trace][seq] = tb_d_n
 
                 seq += 1
-                seq_10 += 10
 
-            max_r = max_rn
-            who_max = who_max_n
-            state_max = state_max_n
-            pos_max = pos_max_n
             if store_states and pos_target_trace == 0:
                 idx = len(self.saved_states)
                 self.saved_states.append(
