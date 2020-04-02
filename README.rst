@@ -84,3 +84,13 @@ increments (`bumpversion minor`) for feature additions **and** incompatible API 
 Building the docs
 `````````````````
 
+Changes
+-------
+
+v1.1.0
+``````
+- tesserae now uses numpy vectorization to speed up the recurrence calculation
+  -- @karljohanw
+- tesserae now uses multithreading to parallelize the recurrence calculation across
+  targets if you are running python v3.8 -- @karljohanw
+
