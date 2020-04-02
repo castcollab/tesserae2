@@ -1,7 +1,5 @@
 pytest
 hypothesis
 pytest-cov
-black
-flake8
 coverage >= 4.5
 pylint
