@@ -102,10 +102,6 @@ class Tesserae(object):
                 "Threading is only supported with python3.8 and above!"
             )
 
-        # At this moment, all parallelization are on the individual sequences.
-        # So no meaning to use more threads than sequences.
-        self.effective_threads = min(self.threads, self.nseq)
-
         if self.mem_limit:
             qlen_sqrt = np.sqrt(self.qlen)
             qsq_down = int(np.floor(qlen_sqrt))
@@ -519,6 +515,10 @@ class Tesserae(object):
         l0=2,
         store_states=False,
     ):
+        # Use no more threads than sequences, since all
+        # parallelizations are on the individual sequences.
+        recurrence_threads = min(self.threads, self.nseq)
+
         for pos_target in range(l0, l1 + 1):
             max_rn = SMALL + max_r
             seq = 0
@@ -563,10 +563,10 @@ class Tesserae(object):
                 seq += 1
 
             rvec = []
-            if self.effective_threads > 1:
+            if recurrence_threads > 1:
                 from multiprocessing.pool import ThreadPool as Pool
 
-                with Pool(self.effective_threads) as p:
+                with Pool(recurrence_threads) as p:
                     rvec = p.map(unwrap_recurrence_target, argvec)
             else:
                 rvec = [unwrap_recurrence_target(args) for args in argvec]
