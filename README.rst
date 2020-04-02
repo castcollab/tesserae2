@@ -72,7 +72,10 @@ Tests
     tox
 
     # run only (fast) unit tests
-    tox -- -k unit
+    tox -e unit
+
+    # run only linting
+    tox -e lint
 
 Bumping versions
 ````````````````
