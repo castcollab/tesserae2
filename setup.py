@@ -6,7 +6,7 @@ from setuptools import setup, find_packages
 
 # following src dir layout according to
 # https://blog.ionelmc.ro/2014/05/25/python-packaging/#the-structure
-version = "1.0.0"
+version = "1.1.0"
 setup(
     name="tesserae",
     version=version,
