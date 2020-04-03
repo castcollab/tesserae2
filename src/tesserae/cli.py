@@ -1,6 +1,3 @@
-import sys
-
-
 def add_universal_options(arg_parser):
     """Add options common to all command-line tools to the given argument parser."""
     arg_parser.add_argument(
@@ -8,7 +5,7 @@ def add_universal_options(arg_parser):
     )
 
 
-def main(argv=sys.argv):
+def main(argv):
     import importlib
     import argparse
     from . import __version__
@@ -41,4 +38,6 @@ def main(argv=sys.argv):
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+
+    main(sys.argv)

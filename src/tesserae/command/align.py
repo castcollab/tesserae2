@@ -12,12 +12,13 @@ from collections import OrderedDict
 from collections import namedtuple
 
 from .. import tesserae
-from .. import log
+
+# from .. import log
 from .. import cli
 
 ################################################################################
 
-logger = log.get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 ################################################################################
 
@@ -454,8 +455,8 @@ def main(raw_args):
     args = parser.parse_args(args=raw_args)
 
     # Set logging level:
-    if args.verbose:
-        log.set_level(logging.DEBUG)
+    # if args.verbose:
+    # logging.set_level(logging.DEBUG)
 
     # Print logo:
     print_logo()

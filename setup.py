@@ -1,6 +1,4 @@
-from glob import glob
 from io import open
-from os.path import splitext, basename
 
 from setuptools import setup, find_packages
 
