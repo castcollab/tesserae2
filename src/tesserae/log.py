@@ -24,10 +24,9 @@ def get_logging_format_string(package):
     nicely format log messages from all modules.
     """
     module_names = get_dot_separated_submodule_names(package)
-    module_name_lengths = [len(name) for name in module_names]
+    max_module_name_length = max(len(name) for name in module_names)
     format_string = (
-        f"%(asctime)s %(name)-{max(module_name_lengths)}s "
-        "%(levelname)-8s %(message)s"
+        f"%(asctime)s %(name)-{max_module_name_length}s %(levelname)-8s %(message)s"
     )
     return format_string
 
