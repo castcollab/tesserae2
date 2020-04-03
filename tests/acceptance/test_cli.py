@@ -6,7 +6,6 @@ from tesserae import cli
 
 TEST_RESOURCES_FOLDER = Path(__file__).absolute().parent.parent / "resources"
 
-EXPECTED_TEST_RESULTS = TEST_RESOURCES_FOLDER / "integration_test_expected_output.bam"
 
 EXPECTED_SAM = """
 @HD VN:1.0
@@ -18,6 +17,8 @@ EXPECTED_SAM = re.sub(r" +", "\t", EXPECTED_SAM)
 
 
 class SamFileRepr:
+    """Provide a string representation of a SAM file"""
+
     def __init__(self, header, reads):
         self.header = header
         self.reads = reads
@@ -44,7 +45,7 @@ def read_to_str(read, samfile):
 
 
 def load_bam(bam_file):
-
+    """Load a bam file into memory and return a SamFileRepr"""
     samfile = pysam.AlignmentFile(bam_file, "rb")
     header = str(samfile.header).rstrip().split("\n")
     reads = []
