@@ -24,6 +24,7 @@ def main(argv):
     parser.add_argument(
         "--version", action="version", version=f"%(prog)s version {__version__}"
     )
+    parser.add_argument("--verbose", "-v", action="store_true")
     parser.add_argument(
         "subcommand",
         choices=sorted(subcommands.keys()),
@@ -31,6 +32,10 @@ def main(argv):
     )
     parser.add_argument("args", nargs=argparse.REMAINDER, help="sub-command arguments")
     args = parser.parse_args(argv[1:])
+
+    from . import log
+
+    log.configure_logging(verbose=args.verbose)
 
     package_string, method_string = subcommands[args.subcommand].rsplit(".", 1)
     module = importlib.import_module(package_string)

@@ -419,7 +419,6 @@ def align(args):
 
 
 def main(raw_args):
-
     # Get our start time:
     overall_start = time.time()
 
