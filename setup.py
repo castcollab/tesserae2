@@ -1,6 +1,4 @@
-from glob import glob
 from io import open
-from os.path import splitext, basename
 
 from setuptools import setup, find_packages
 
@@ -17,6 +15,7 @@ setup(
     long_description=open("README.rst").read(),
     install_requires="""
     numpy
+    pysam
     """.split(
         "\n"
     ),
@@ -24,7 +23,6 @@ setup(
     python_requires=">=3.6",
     packages=find_packages("src"),
     package_dir={"": "src"},
-    py_modules=[splitext(basename(path))[0] for path in glob("src/*.py")],
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Science/Research",
@@ -36,8 +34,6 @@ setup(
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: Implementation :: CPython",
     ],
-    # entry_points={
-    #     'console_scripts': ['cortexpy=cortexpy.__main__:main'],
-    # },
+    entry_points={"console_scripts": ["tesserae=tesserae.__main__:main"]},
     include_package_data=True,
 )

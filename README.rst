@@ -32,6 +32,14 @@ Installation
 Documentation
 -------------
 
+CLI
+```
+
+After installing Tesserae, the command-line interface can be called by the following command:
+
+::
+
+   tesserae
 
 Bugs
 ----

@@ -5,6 +5,7 @@ import pytest
 from numpy import sqrt
 
 from tesserae import Tesserae
+from tesserae.sequence import Sequence
 
 
 def random_dna_string(length):
@@ -22,41 +23,53 @@ def samples():
     samples = {}
     for total_len in [100, 200, 500]:
         partial_len = total_len // 2
-        query = random_dna_string(total_len)
+        query = Sequence("query", random_dna_string(total_len))
         targets = [
-            "".join(query[0:partial_len]) + random_dna_string(partial_len),
-            random_dna_string(partial_len) + "".join(query[partial_len:total_len]),
+            Sequence(
+                "target0",
+                "".join(query.sequence[0:partial_len]) + random_dna_string(partial_len),
+            ),
+            Sequence(
+                "target1",
+                random_dna_string(partial_len)
+                + "".join(query.sequence[partial_len:total_len]),
+            ),
         ]
         samples[total_len] = query, targets
     return samples
 
 
-def tesserae_assertions(p, targets, total_len):
-    partial_len = total_len // 2
+class TestTesseraeAcceptance:
+    @classmethod
+    def __assertions__(cls, results, targets, total_len):
+        partial_len = total_len // 2
 
-    assert len(p) == 3
+        assert len(results) == 3
 
-    assert p[1][0] == "template0"
-    assert p[1][1] == "".join(targets[0][0:partial_len])
-    assert p[1][2] == 0
-    assert p[1][3] == partial_len - 1
+        assert results[1].seq_name == "target0"
+        assert results[1].alignment_string == "".join(
+            targets[0].sequence[0:partial_len]
+        )
+        assert results[1].target_start_index == 0
+        assert results[1].target_end_index == partial_len - 1
 
-    assert p[2][0] == "template1"
-    assert p[2][1] == repeat(" ", partial_len) + targets[1][partial_len:total_len]
-    assert p[2][2] == partial_len
-    assert p[2][3] == total_len - 1
+        assert results[2].seq_name == "target1"
+        assert (
+            results[2].alignment_string
+            == repeat(" ", partial_len) + targets[1].sequence[partial_len:total_len]
+        )
+        assert results[2].target_start_index == partial_len
+        assert results[2].target_end_index == total_len - 1
 
-
-class TestTesserae:
     def test_mosaic_alignment_on_medium_queries_and_two_templates(self, samples):
         # given
         for total_len, (query, targets) in samples.items():
             # when
             t = Tesserae(mem_limit=False)
-            p = t.align(query, targets)
+            alignment_results = t.align(query, targets)
 
             # then
-            tesserae_assertions(p, targets, total_len)
+            self.__assertions__(alignment_results, targets, total_len)
 
     def test_mosaic_alignment_on_medium_queries_and_two_templates_reduced_memory_usage(
         self, samples
@@ -65,11 +78,11 @@ class TestTesserae:
         for total_len, (query, targets) in samples.items():
             # when
             t = Tesserae(mem_limit=True)
-            p = t.align(query, targets)
+            target_alignment_results = t.align(query, targets)
 
             max_mem_limit = sqrt(total_len) + 2
 
             # then
-            tesserae_assertions(p, targets, total_len)
+            self.__assertions__(target_alignment_results, targets, total_len)
             assert t.traceback_limit <= max_mem_limit
             assert t.states_to_save <= max_mem_limit

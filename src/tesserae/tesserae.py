@@ -1,5 +1,18 @@
-import numpy as np
 import sys
+import logging
+from collections import namedtuple
+
+import pysam
+import numpy as np
+
+from .sequence import Sequence
+
+################################################################################
+
+LOGGER = logging.getLogger(__name__)
+
+################################################################################
+
 
 # constants
 SMALL = -1e32
@@ -14,7 +27,7 @@ DEFAULT_TERM = 0.001
 
 # Nucleotide to index conversion
 # fmt: off
-convert = {
+CONVERT = {
     'G': 4, 'g': 4,
     'A': 3, 'a': 3,
     'C': 2, 'c': 2,
@@ -22,6 +35,11 @@ convert = {
     'N': 0, 'n': 0,
 }
 # fmt: on
+
+TesseraeAlignmentResult = namedtuple(
+    "TesseraeAlignmentResult",
+    ["seq_name", "alignment_string", "target_start_index", "target_end_index"],
+)
 
 
 def repeat(string_to_expand, length):
@@ -42,7 +60,44 @@ def unwrap_recurrence_target(arg, **kwarg):
     return Tesserae.recurrence_target(*arg, **kwarg)
 
 
-class Tesserae(object):
+def dump_query_and_targets_to_log(query, targets):
+    """Dump the Sequence objects in query and targets to the log as a DEBUG message."""
+
+    # Log our sequences:
+    if LOGGER.isEnabledFor(logging.DEBUG):
+        LOGGER.debug("Query Sequence:")
+        dump_sequence_to_log(query)
+        LOGGER.debug("Query Sequence:")
+        for target in targets:
+            dump_sequence_to_log(target)
+
+
+def dump_sequence_to_log(seq, spacing="    "):
+    """Dump the given Sequence to the log as a DEBUG message."""
+    if LOGGER.isEnabledFor(logging.DEBUG):
+        LOGGER.debug("%s%s -> %s", spacing, seq.name, seq.sequence)
+
+
+def ingest_fastx_file(fastx_file_name):
+    """Ingest the given fastx (fasta or fastq) file and returns a
+    list of Sequence objects."""
+
+    LOGGER.info("Ingesting reads from %s ...", fastx_file_name)
+
+    sequence_list = list()
+    with pysam.FastxFile(fastx_file_name) as fh:
+        for entry in fh:
+            sequence_list.append(Sequence(entry.name, entry.sequence))
+
+    LOGGER.info("Ingested %d reads.", len(sequence_list))
+
+    return sequence_list
+
+
+class Tesserae:
+    """Object to perform graph-based mosaic alignments between nucleic acid
+    sequences."""
+
     pdel = DEFAULT_DEL
     peps = DEFAULT_EPS
     prho = DEFAULT_REC
@@ -88,9 +143,47 @@ class Tesserae(object):
             [0.2, 0.025, 0.025, 0.05, 0.9],
         ]
 
+        # Initialize the host of variables used elsewhere in Tesserae:
+        self.nseq = None
+        self.maxl = None
+        self.qlen = None
+        self.states_to_save = None
+        self.states_to_save = None
+        self.traceback_limit = None
+        self.traceback_limit = None
+        self.traceback_limit = None
+        self.vt_m = None
+        self.vt_i = None
+        self.vt_d = None
+        self.tb_m = None
+        self.tb_i = None
+        self.tb_d = None
+        self.saved_vt_m = None
+        self.saved_vt_i = None
+        self.saved_vt_d = None
+        self.saved_states = None
+        self.maxpath_copy = None
+        self.maxpath_state = None
+        self.maxpath_pos = None
+        self.tmp = None
+        self.tb_divisor = None
+        self.llk = None
+        self.llk = None
+        self.combined_llk = None
+        self.sm = None
+        self.lsm = None
+        self.si = None
+        self.lsi = None
+        self.path = None
+
         self.editTrack = []
         self.mem_limit = mem_limit
         self.threads = threads
+
+        self.query = {}
+        self.targets = {}
+
+        self._target_name_index_dict = dict()
 
     def __initialize(self, query, targets):
         self.nseq = len(targets)
@@ -177,17 +270,66 @@ class Tesserae(object):
 
         self.path = []
 
-    def align(self, query, targets):
+    def get_target(self, name):
+        """Get the target object with the given name if it exists in our data.
+        Otherwise returns None."""
+
+        try:
+            return self.targets[self._target_name_index_dict[name]]
+        except KeyError:
+            return None
+
+    def align_from_fastx(self, query_fastx, target_fastx):
+        """Align all target sequences to the query sequence in the given FASTX
+        (FASTA / FASTQ) files.
+
+        NOTE: Assumes `query_fastx` contains only one sequence.
+              If `query_fastx` contains more than one sequence, only the first
+              will be considered.
+
+        Returns a list of TesseraeAlignmentResult objects representing all alignments
+        resulting from the given input panel and targets.
+        """
+
+        queries = ingest_fastx_file(query_fastx)
+        targets = ingest_fastx_file(target_fastx)
+
+        # For now we enforce using only one query (the first one in the file):
+        query = queries[0]
+
         self.__initialize(query, targets)
 
-        panel = {"query": query}
-        for i in range(0, len(targets)):
-            panel[f"template{i}"] = targets[i]
+        return self.__align_all(query, targets)
 
-        return self.__align_all(panel, targets)
+    def align(self, query, targets):
+        """Align all sequences in `targets` to the given query sequence.
 
-    def __align_all(self, panel, targets):
-        query = panel["query"]
+        Returns a list of TesseraeAlignmentResult objects representing all alignments
+        resulting from the given input panel and targets.
+        """
+
+        self.__initialize(query, targets)
+        return self.__align_all(query, targets)
+
+    def __align_all(self, query, targets):
+        """Align the sequences in the panel and targets.
+
+        Returns a list of TesseraeAlignmentResult objects representing all alignments
+        resulting from the given input panel and targets.
+        """
+
+        # Set our query and target properties:
+        self.query = query
+        self.targets = targets
+        for i, target in enumerate(targets):
+            self._target_name_index_dict[target.name] = i
+
+        dump_query_and_targets_to_log(self.query, self.targets)
+
+        # Create our panel here:
+        panel = {query.name: query.sequence}
+        for target in targets:
+            panel[target.name] = target.sequence
 
         l1 = self.qlen
         size_l = 0.0
@@ -197,9 +339,11 @@ class Tesserae(object):
         size_l -= self.qlen
         lsize_l = np.log(size_l)
 
+        # Initialize our internal state:
         max_r, pos_max, state_max, who_max = self.__initialization(
             query, targets, lsize_l
         )
+
         max_r, pos_max, state_max, who_max = self.__recurrence(
             query,
             targets,
@@ -211,6 +355,7 @@ class Tesserae(object):
             who_max,
             store_states=self.mem_limit,
         )
+
         cp, pos_max, who_max, state_max = self.__termination(
             np.remainder(self.qlen, self.traceback_limit) if self.mem_limit else l1,
             pos_max,
@@ -218,9 +363,12 @@ class Tesserae(object):
             who_max,
             2 * self.maxl,
         )
+
         l2 = self.traceback_limit
+
         if self.mem_limit and self.saved_states:
             self.saved_states.pop()
+
         while self.mem_limit and self.saved_states:
             (
                 max_r,
@@ -229,10 +377,12 @@ class Tesserae(object):
                 who_max_n,
                 pos_target_n,
             ) = self.saved_states.pop()
+
             idx = len(self.saved_states)
             self.vt_m[1 - (idx == 0)] = np.copy(self.saved_vt_m[idx])
             self.vt_i[1 - (idx == 0)] = np.copy(self.saved_vt_i[idx])
             self.vt_d[1 - (idx == 0)] = np.copy(self.saved_vt_d[idx])
+
             self.__recurrence(
                 query,
                 targets,
@@ -249,15 +399,25 @@ class Tesserae(object):
             cp, pos_max, who_max, state_max = self.__termination(
                 l2, pos_max, state_max, who_max, cp
             )
+
+        # Collapse our data into a list of tuples we can report:
         self.__render(cp + 1, panel)
 
+        # Return the list of tuples representing the alignment of the given
+        # sequences.
         return self.path
 
     def __render(self, cp, panel):
+        """Trace back paths in the graph to create results.
+
+        Returns a list of TesseraeAlignmentResult objects representing all alignments
+        in the graph.
+        """
+
         # Prepare target sequence
         seqs = []
-        for seqName in panel.keys():
-            seqs.append((seqName, panel[seqName]))
+        for seq_name in panel.keys():
+            seqs.append((seq_name, panel[seq_name]))
         sb = []
         pos_start = -1
         pos_end = -1
@@ -273,7 +433,10 @@ class Tesserae(object):
 
                 sb.append(seqs[0][1][pos_target - 1])
                 pos_target += 1
-        self.path.append((seqs[0][0], "".join(sb), pos_start, pos_end))
+        self.path.append(
+            TesseraeAlignmentResult(seqs[0][0], "".join(sb), pos_start, pos_end)
+        )
+
         # Prepare matching track
         sb = []
         pos_target = 1
@@ -294,6 +457,7 @@ class Tesserae(object):
             else:
                 sb.append("~")
         self.editTrack = "".join(sb)
+
         # Prepare copying tracks
         current_track = seqs[self.maxpath_copy[cp] + 1][0]
         sb = []
@@ -308,7 +472,11 @@ class Tesserae(object):
                 and np.abs(self.maxpath_pos[i] - self.maxpath_pos[i - 1]) > 1
                 or self.maxpath_pos[i] == last_known_pos + 1
             ):
-                self.path.append((current_track, "".join(sb), pos_start, pos_end))
+                self.path.append(
+                    TesseraeAlignmentResult(
+                        current_track, "".join(sb), pos_start, pos_end
+                    )
+                )
                 uppercase = not uppercase
                 last_known_pos = self.maxpath_pos[i - 1]
 
@@ -320,7 +488,11 @@ class Tesserae(object):
                 sb = [repeat(" ", i - cp)]
 
             if i > cp and self.maxpath_copy[i] != self.maxpath_copy[i - 1]:
-                self.path.append((current_track, "".join(sb), pos_start, pos_end))
+                self.path.append(
+                    TesseraeAlignmentResult(
+                        current_track, "".join(sb), pos_start, pos_end
+                    )
+                )
                 uppercase = True
 
                 if pos_start != pos_end:
@@ -342,7 +514,9 @@ class Tesserae(object):
                 pos_end = self.maxpath_pos[i] - 1
 
                 sb.append(c)
-        self.path.append((current_track, "".join(sb), pos_start, pos_end))
+        self.path.append(
+            TesseraeAlignmentResult(current_track, "".join(sb), pos_start, pos_end)
+        )
 
     def __to_traceback_indices(self, index):
         who = int(index / 10)
@@ -418,12 +592,14 @@ class Tesserae(object):
     ):
         seq_10 = seq * 10
 
-        targ_idx = convert[query[pos_target + offset - 1]]
+        targ_idx = CONVERT[query.sequence[pos_target + offset - 1]]
 
         C = np.insert(
             np.array(
                 [
-                    lsm[targ_idx][convert[target[i]]] if i < len(target) else SMALL
+                    lsm[targ_idx][CONVERT[target.sequence[i]]]
+                    if i < len(target)
+                    else SMALL
                     for i in range(0, len(vt_m) - 1)
                 ],
                 dtype=np.float64,
@@ -562,7 +738,6 @@ class Tesserae(object):
                 )
                 seq += 1
 
-            rvec = []
             if recurrence_threads > 1:
                 from multiprocessing.pool import ThreadPool as Pool
 
@@ -609,10 +784,12 @@ class Tesserae(object):
                 self.vt_m[0][seq][pos_seq] = (
                     self.lpiM
                     - lsize_l
-                    + self.lsm[convert[query[0]]][convert[target[pos_seq - 1]]]
+                    + self.lsm[CONVERT[query.sequence[0]]][
+                        CONVERT[target.sequence[pos_seq - 1]]
+                    ]
                 )
                 self.vt_i[0][seq][pos_seq] = (
-                    self.lpiI - lsize_l + self.lsi[convert[query[0]]]
+                    self.lpiI - lsize_l + self.lsi[CONVERT[query.sequence[0]]]
                 )
 
                 if pos_seq > 0:
