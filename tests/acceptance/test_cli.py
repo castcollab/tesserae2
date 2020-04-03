@@ -1,6 +1,8 @@
 import re
+import subprocess
 from pathlib import Path
 import pysam
+import pytest
 
 from tesserae import cli
 
@@ -55,7 +57,8 @@ def load_bam(bam_file):
 
 
 class TestCli:
-    def test_align_creates_expected_bam_file(self, tmpdir, capsys):
+    @pytest.mark.parametrize("use_shell", (True, False))
+    def test_align_creates_expected_bam_file(self, tmpdir, capsys, use_shell):
         # given
         out_file = Path(tmpdir) / "test_tesserae_alignment_with_cli.bam"
         args = [
@@ -71,7 +74,10 @@ class TestCli:
         ]
 
         # when
-        cli.main(args)
+        if use_shell:
+            subprocess.run(args)
+        else:
+            cli.main(args)
 
         # then
         actual = load_bam(out_file)
