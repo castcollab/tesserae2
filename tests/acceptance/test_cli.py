@@ -1,4 +1,3 @@
-import os
 import pathlib
 import pysam
 import pytest
@@ -23,10 +22,12 @@ def assert_sam_files_are_equal(samfile1, samfile2):
         f1_iter = f1.fetch(until_eof=True)
         f2_iter = f2.fetch(until_eof=True)
 
-        for actual, expected in zip(f1_iter, f2_iter):
-            assert actual == expected
+        for i, (actual, expected) in enumerate(zip(f1_iter, f2_iter)):
+            assert actual == expected, f"Entry {i} is not equal in the two SAM files!"
 
-        # Make sure both iterators are empty:
+        # Make sure both iterators are empty
+        # (files have the same number of reads):
+        # TODO: More elegant logging to indicate differing number of records:
         with pytest.raises(StopIteration):
             _ = next(f1_iter)
         with pytest.raises(StopIteration):
@@ -34,40 +35,39 @@ def assert_sam_files_are_equal(samfile1, samfile2):
 
 
 class TestCli:
-    def test_tesserae_alignment_with_cli(self, tmpdir, capsys):
-        temp_file_path = os.path.join(tmpdir, "test_tesserae_alignment_with_cli.bam")
+    def test_tesserae_alignment_with_cli(self, tmpdir, capfd):
+        out_file_path = pathlib.Path(tmpdir) / "test_tesserae_alignment_with_cli.bam"
 
         args = [
             "tesserae",
-            "align",
             "-v",
+            "align",
             "-r",
-            os.path.join(TEST_RESOURCES_FOLDER, "query_sequence.fasta"),
+            str(TEST_RESOURCES_FOLDER / "query_sequence.fasta"),
             "-s",
-            os.path.join(TEST_RESOURCES_FOLDER, "target_sequences.fasta"),
+            str(TEST_RESOURCES_FOLDER / "target_sequences.fasta"),
             "-o",
-            temp_file_path,
+            str(out_file_path),
         ]
         cli.main(args)
 
         # Now that we've run our data, let's do some basic checks:
-        out_file_path = pathlib.Path(temp_file_path)
         assert out_file_path.exists()
         assert out_file_path.is_file()
 
         # Check the contents of our output file:
-        assert_sam_files_are_equal(temp_file_path, EXPECTED_TEST_RESULTS)
+        assert_sam_files_are_equal(out_file_path, EXPECTED_TEST_RESULTS)
 
-        # # TODO: Figure out why capsys fixture isn't working.
-        # # Check the contents of stdout:
-        # out, err = capsys.readouterr()
-        #
-        # # Create a sam file on disk for the stdout contents:
-        # tmp_stdout_file_path = os.path.join(
-        #     tmpdir, "test_tesserae_alignment_with_cli_stdout.sam"
-        # )
-        # with open(tmp_stdout_file_path, "w") as f:
-        #     f.write(out)
-        #
-        # # Verify contents of our expected out and our sam file from stdout:
-        # assert_sam_files_are_equal(tmp_stdout_file_path, EXPECTED_TEST_RESULTS)
+        # Check the contents of stdout:
+        out, _ = capfd.readouterr()
+
+        # Create a sam file on disk for the stdout contents:
+        tmp_stdout_file_path = (
+            pathlib.Path(tmpdir) / "test_tesserae_alignment_with_cli_stdout.sam"
+        )
+
+        with open(tmp_stdout_file_path, "w") as f:
+            f.write(out)
+
+        # Verify contents of our expected out and our sam file from stdout:
+        assert_sam_files_are_equal(tmp_stdout_file_path, EXPECTED_TEST_RESULTS)

@@ -1,22 +1,4 @@
-import sys
-
-
-def add_universal_options(arg_parser):
-    """Add options common to all command-line tools to the given argument parser."""
-
-    verbosity_group = arg_parser.add_mutually_exclusive_group()
-    verbosity_group.add_argument(
-        "-q", "--quiet", help="silence logging except errors", action="store_true"
-    )
-    verbosity_group.add_argument(
-        "-v", "--verbose", help="increase output verbosity", action="store_true"
-    )
-    verbosity_group.add_argument(
-        "-vv", "--veryverbose", help="maximal output verbosity", action="store_true"
-    )
-
-
-def main(argv=sys.argv):  # noqa: W0102
+def main(argv):  # noqa: W0102
     import importlib  # noqa: C0415
     import argparse  # noqa: C0415
     from . import __version__  # noqa: C0415
@@ -35,6 +17,18 @@ def main(argv=sys.argv):  # noqa: W0102
     parser.add_argument(
         "--version", action="version", version=f"%(prog)s version {__version__}"
     )
+
+    verbosity_group = parser.add_mutually_exclusive_group()
+    verbosity_group.add_argument(
+        "-q", "--quiet", help="silence logging except errors", action="store_true"
+    )
+    verbosity_group.add_argument(
+        "-v", "--verbose", help="increase output verbosity", action="store_true"
+    )
+    verbosity_group.add_argument(
+        "-vv", "--veryverbose", help="maximal output verbosity", action="store_true"
+    )
+
     parser.add_argument(
         "subcommand",
         choices=sorted(subcommands.keys()),
@@ -43,10 +37,16 @@ def main(argv=sys.argv):  # noqa: W0102
     parser.add_argument("args", nargs=argparse.REMAINDER, help="sub-command arguments")
     args = parser.parse_args(argv[1:])
 
+    from . import log
+
+    log.configure_logging(args)
+
     package_string, method_string = subcommands[args.subcommand].rsplit(".", 1)
     module = importlib.import_module(package_string)
     return getattr(module, method_string)(args.args)
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+
+    main(sys.argv)

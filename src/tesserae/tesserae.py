@@ -6,11 +6,10 @@ import pysam
 import numpy as np
 
 from .sequence import Sequence
-from . import log
 
 ################################################################################
 
-LOGGER = log.get_logger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 ################################################################################
 

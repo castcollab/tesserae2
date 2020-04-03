@@ -12,12 +12,10 @@ from collections import namedtuple
 import pysam
 
 from .. import tesserae
-from .. import log
-from .. import cli
 
 ################################################################################
 
-LOGGER = log.get_logger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 ################################################################################
 
@@ -428,8 +426,6 @@ def main(raw_args):
         usage="align query and target sequences",
     )
 
-    cli.add_universal_options(parser)
-
     align_required_args = parser.add_argument_group("Required Arguments")
     align_required_args.add_argument(
         "-r", "--reads", help="Reads FASTA filename.", required=True
@@ -450,23 +446,12 @@ def main(raw_args):
     # Parse args
     args = parser.parse_args(args=raw_args)
 
-    # Set logging level:
-    log_level = logging.INFO
-    if args.quiet:
-        log_level = logging.CRITICAL
-    elif args.verbose:
-        log_level = logging.DEBUG
-    elif args.veryverbose:
-        log_level = logging.NOTSET
-
-    log.set_level(log_level)
-
     # Print logo:
     print_logo()
 
     # Log our command-line and log level so we can have it in the log file:
     LOGGER.info("Invoked by: %s", " ".join(sys.argv))
-    LOGGER.info("Log level set to: %s", logging.getLevelName(log_level))
+    LOGGER.info("Log level set to: %s", logging.getLevelName(LOGGER.level))
 
     # Call our sub-command:
     align(args)
