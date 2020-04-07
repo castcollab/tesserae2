@@ -49,6 +49,11 @@ For bugs, please raise a `GitHub issue <https://github.com/castcollab/tesserae2/
 Development
 -----------
 
+To do development in this codebase, the python3 development package must be installed.
+
+After installation the Tesserae2 development environment can be set up by the
+following commands:
+
 ::
 
     python3 -mvenv venv

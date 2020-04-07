@@ -34,6 +34,6 @@ setup(
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: Implementation :: CPython",
     ],
-    entry_points={"console_scripts": ["tesserae=tesserae.__main__:main"]},
+    entry_points={"console_scripts": ["tesserae=tesserae.__main__:main_entry"]},
     include_package_data=True,
 )

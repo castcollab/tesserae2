@@ -8,7 +8,13 @@ Why does this file exist, and why __main__? For more info, read:
 
 from .cli import main
 
-if __name__ == "__main__":
+
+def main_entry():
+    """Main entry point into tesserae"""
     import sys
 
     main(sys.argv)
+
+
+if __name__ == "__main__":
+    main_entry()

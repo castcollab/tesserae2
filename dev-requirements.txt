@@ -5,3 +5,4 @@ twine
 black
 flake8
 pylint
+cython
