@@ -1,4 +1,5 @@
 import pathlib
+import subprocess
 import pysam
 import pytest
 
@@ -35,7 +36,8 @@ def assert_sam_files_are_equal(samfile1, samfile2):
 
 
 class TestCli:
-    def test_tesserae_alignment_with_cli(self, tmpdir, capfd):
+    @pytest.mark.parametrize("use_shell", (True, False))
+    def test_tesserae_alignment_with_cli(self, tmpdir, capfd, use_shell):
         out_file_path = pathlib.Path(tmpdir) / "test_tesserae_alignment_with_cli.bam"
 
         args = [
@@ -49,7 +51,12 @@ class TestCli:
             "-o",
             str(out_file_path),
         ]
-        cli.main(args)
+
+        # when
+        if use_shell:
+            subprocess.run(args)
+        else:
+            cli.main(args)
 
         # Now that we've run our data, let's do some basic checks:
         assert out_file_path.exists()
