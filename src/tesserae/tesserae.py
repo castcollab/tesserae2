@@ -594,7 +594,7 @@ class Tesserae:
 
         targ_idx = CONVERT[query.sequence[pos_target + offset - 1]]
 
-        C = np.insert(
+        em_m = np.insert(
             np.array(
                 [
                     lsm[targ_idx][CONVERT[target.sequence[i]]]
@@ -607,7 +607,7 @@ class Tesserae:
             0,
             SMALL,
         )
-        A = np.insert(
+        em_m_tb = np.insert(
             (seq_10 + np.arange(0, len(vt_m) - 1, dtype=np.float64) / tb_divisor),
             0,
             tb_base,
@@ -619,10 +619,13 @@ class Tesserae:
                 np.roll(vt_i, 1) + lgm,
                 np.roll(vt_d, 1) + ldm,
             ]
-            + np.c_[C, C, C, C]
+            + np.c_[em_m, em_m, em_m, em_m]
         )
         tb_m_mat = np.c_[
-            np.full(len(vt_m), tb_base, dtype=np.float64), A + 1, A + 2, A + 3
+            np.full(len(vt_m), tb_base, dtype=np.float64),
+            em_m_tb + 1,
+            em_m_tb + 2,
+            em_m_tb + 3,
         ]
 
         tb_m_n = vt_m_mat.argmax(1)
@@ -630,11 +633,11 @@ class Tesserae:
         vt_mn = vt_m_mat.ravel()[index_selector]
         tb_mn = tb_m_mat.ravel()[index_selector]
 
-        B = seq_10 + np.arange(len(vt_m), dtype=np.float64) / tb_divisor
+        em_i_tb = seq_10 + np.arange(len(vt_m), dtype=np.float64) / tb_divisor
         vt_i_mat = np.c_[
             np.full(len(vt_i), vt_i_base, dtype=np.float64), vt_m + ldel, vt_i + leps
         ] + np.full((len(vt_i), 3), lsi[targ_idx], dtype=np.float64)
-        tb_i_mat = np.c_[np.full(len(vt_i), tb_base, dtype=np.float64), B + 1, B + 2]
+        tb_i_mat = np.c_[np.full(len(vt_i), tb_base, dtype=np.float64), em_i_tb + 1, em_i_tb + 2]
 
         tb_i_n = vt_i_mat.argmax(1)
         index_selector = tb_i_n + np.arange(len(tb_i_n)) * 3
@@ -667,7 +670,7 @@ class Tesserae:
                 tb_d_next[pos_seq] = 3
 
         vt_dn = np.array(vt_d_next)
-        tb_dn = A + tb_d_next
+        tb_dn = em_m_tb + tb_d_next
 
         return (
             (max_rn, who_max_n, state_max_n, pos_max_n),
