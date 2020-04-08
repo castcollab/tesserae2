@@ -633,15 +633,20 @@ class Tesserae:
         vt_mn = vt_m_mat.ravel()[index_selector]
         tb_mn = tb_m_mat.ravel()[index_selector]
 
-        em_i = np.insert(np.full(len(vt_i) - 1, lsi[targ_idx], dtype=np.float64), 0, SMALL)
+        em_i = np.insert(
+            np.full(len(vt_i) - 1, lsi[targ_idx], dtype=np.float64), 0, SMALL
+        )
         em_i_tb = seq_10 + np.arange(len(vt_m), dtype=np.float64) / tb_divisor
-        vt_i_mat = np.c_[
-            np.full(len(vt_i), vt_i_base, dtype=np.float64), vt_m + ldel, vt_i + leps
-        ] + np.c_[em_i, em_i, em_i]
+        vt_i_mat = (
+            np.c_[
+                np.full(len(vt_i), vt_i_base, dtype=np.float64),
+                vt_m + ldel,
+                vt_i + leps,
+            ]
+            + np.c_[em_i, em_i, em_i]
+        )
         tb_i_mat = np.c_[
-            np.full(len(vt_i), tb_base, dtype=np.float64),
-            em_i_tb + 1,
-            em_i_tb + 2
+            np.full(len(vt_i), tb_base, dtype=np.float64), em_i_tb + 1, em_i_tb + 2,
         ]
 
         tb_i_n = vt_i_mat.argmax(1)
