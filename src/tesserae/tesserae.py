@@ -667,9 +667,7 @@ class Tesserae:
                 tb_d_next[pos_seq] = 3
 
         vt_dn = np.array(vt_d_next)
-        tb_dn = (
-            seq_10 + np.arange(0, len(vt_m), dtype=np.float64) / tb_divisor
-        ) + tb_d_next
+        tb_dn = A + tb_d_next
 
         return (
             (max_rn, who_max_n, state_max_n, pos_max_n),
