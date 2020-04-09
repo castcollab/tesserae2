@@ -160,8 +160,8 @@ def compute_detailed_alignment_info(
     else:
         qual_pl = -10 * math.log10(num_errors / target_length)
     if qual_pl < 0:
-        # assume quality isn't available to not get a negative value
-        qual_pl = 255
+        # quality cannot take a negative value
+        qual_pl = 0
 
     # Return our detailed info.
     return DetailedAlignmentInfo(start_index, template_length, cigar, qual_pl)
