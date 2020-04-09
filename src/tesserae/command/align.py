@@ -451,7 +451,7 @@ def main(raw_args):
 
     # Log our command-line and log level so we can have it in the log file:
     LOGGER.info("Invoked by: %s", " ".join(sys.argv))
-    LOGGER.info("Log level set to: %s", logging.getLevelName(LOGGER.level))
+    LOGGER.info("Log level set to: %s", logging.getLevelName(logging.getLogger().level))
 
     # Call our sub-command:
     align(args)
