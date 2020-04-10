@@ -67,7 +67,7 @@ def dump_query_and_targets_to_log(query, targets):
     if LOGGER.isEnabledFor(logging.DEBUG):
         LOGGER.debug("Query Sequence:")
         dump_sequence_to_log(query)
-        LOGGER.debug("Query Sequence:")
+        LOGGER.debug("Target Sequences:")
         for target in targets:
             dump_sequence_to_log(target)
 
