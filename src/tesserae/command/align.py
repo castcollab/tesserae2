@@ -159,6 +159,9 @@ def compute_detailed_alignment_info(
         qual_pl = MAX_ALIGNMENT_PL
     else:
         qual_pl = -10 * math.log10(num_errors / target_length)
+    if qual_pl < 0:
+        # quality cannot take a negative value
+        qual_pl = 0
 
     # Return our detailed info.
     return DetailedAlignmentInfo(start_index, template_length, cigar, qual_pl)
