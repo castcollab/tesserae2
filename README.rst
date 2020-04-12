@@ -32,8 +32,11 @@ Installation
 Documentation
 -------------
 
+The documentation is not currently hosted anywhere, but instead needs
+to be built from source. See `Building the docs`_.
+
 CLI
-```
+---
 
 After installing Tesserae, the command-line interface can be called by the following command:
 
@@ -93,15 +96,26 @@ Tests
     # run only (fast) unit tests
     tox -e unit
 
+    # run only linting
+    tox -e lint
+
+Building the docs
+`````````````````
+
+::
+
+    make -C docs clean
+    make -C docs html
+    # generates documentation in docs/_build/
+    # the documentation can be accessed by pointing a browser to
+    # docs/_build/html/index.html
+
 Bumping versions
 ````````````````
 
 When making code changes, please bump the version using ``bumpversion``. Please make
 patch version increments (``bumpversion patch``) for bug fixes, and minor version
 increments (``bumpversion minor``) for feature additions **and** incompatible API changes.
-
-Building the docs
-`````````````````
 
 Changes
 -------

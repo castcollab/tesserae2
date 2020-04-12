@@ -9,7 +9,7 @@ from collections import OrderedDict, namedtuple
 
 import pysam
 
-from .. import tesserae
+from .. import model
 
 ################################################################################
 
@@ -74,19 +74,19 @@ def compute_detailed_alignment_info(
     Alignment details are based off the differences between the alignment
     strings.
     This method returns a tuple containing:
-        - The Start Position in the reference of the alignment.
-        - The Template Length of this alignment.
-        - The Cigar representing this alignment.
-        - The Phred-Scaled quality score of this alignment.
+    - The Start Position in the reference of the alignment.
+    - The Template Length of this alignment.
+    - The Cigar representing this alignment.
+    - The Phred-Scaled quality score of this alignment.
     Where:
-        - The Start Position is the 1-based, inclusive position in the reference
-          at which this alignment begins.
-        - The Template Length is the number of bases accounted by this alignment
-          with respect to the reference.
-        - The Cigar is a list of tuples: (CIGAR_ELEMENT, COUNT) where each
-          CIGAR_ELEMENT is defined in pysam.
-        - The Phred-Scaled quality score is defined by the following formula:
-            -10 log_10((# mismatches + # insertions + # deletions)/target_length)
+    - The Start Position is the 1-based, inclusive position in the reference
+    at which this alignment begins.
+    - The Template Length is the number of bases accounted by this alignment
+    with respect to the reference.
+    - The Cigar is a list of tuples: (CIGAR_ELEMENT, COUNT) where each
+    CIGAR_ELEMENT is defined in pysam.
+    - The Phred-Scaled quality score is defined by the following formula:
+    -10 log_10((# mismatches + # insertions + # deletions)/target_length)
     """
 
     start_index = get_start_index_from_alignment_start_string(target_alignment_string)
@@ -365,7 +365,7 @@ def prepare_output_file(bamfile):
 def align(args):
     """Main CLI call for the 'align' sub-command."""
 
-    aligner = tesserae.Tesserae()
+    aligner = model.Tesserae()
     LOGGER.info("Aligning with Tesserae...")
     start_time = time.time()
     target_alignment_results = aligner.align_from_fastx(args.reads, args.segments)
