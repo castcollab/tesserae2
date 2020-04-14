@@ -3,6 +3,7 @@ from numpy import sqrt
 import pytest
 from tesserae import Tesserae
 from tesserae.sequence import Sequence
+from tesserae.tesserae import TesseraeAlignmentResult
 
 from ..util import TEST_RESOURCES_FOLDER
 
@@ -136,3 +137,35 @@ class TestTesserae:
 
         assert t.traceback_limit <= max_mem_limit
         assert t.states_to_save <= max_mem_limit
+
+    def test_real_world_examples(self):
+
+        t = Tesserae()
+        a = t.align_from_fastx(
+            TEST_RESOURCES_FOLDER / "degron_test_read.fasta",
+            TEST_RESOURCES_FOLDER / "degron_test_target.fasta",
+        )
+
+        assert len(a) == 2
+
+        assert a[0] == TesseraeAlignmentResult(
+            "Degron16_c60_as_read",
+            "TTCAATGTCTTAATGGTTCATAAGCGAAGCCATACTGGT"
+            "GAACGCCCACTGCAGTGCGAGATCTGCGGCTACCAGTGC"
+            "AGAAGAAAGGATATAATGAGCTACCACGTGAGAAGCCAC"
+            "ACAGGGGAAAAAACCTTTTAAGTGTCACCTCTGCAACTA"
+            "TGCATGCCAAAGAAGAGATGCGCTC",
+            0,
+            180,
+        )
+
+        assert a[1] == TesseraeAlignmentResult(
+            "Degron16_c60",
+            "TTCAATGTCTTAATGGTTCATAAGCGAAGCCATACTGGT"
+            "GAACGCCCACTGCAGTGCGAGATCTGCGGCTACCAGTGC"
+            "AGAAGAAAGGATAGAATGAGCTACCACGTGAGAAGCCAC"
+            "ACAGGGG-AAAAACCTTTTAAGTGTCACCTCTGCAACTA"
+            "TGCATGCCAAAGAAGAGATGCGCTC",
+            0,
+            179,
+        )

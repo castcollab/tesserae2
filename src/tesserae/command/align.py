@@ -148,7 +148,7 @@ def compute_detailed_alignment_info(
     # Add the last remaining cigar element to our list:
     cigar.append((current_cigar_element, current_cigar_element_count))
 
-    # Our template length is the number of bases accounted by this alignment
+    # Our template length is the number of bases accounted for by this alignment
     # with respect to the reference:
     template_length = len(target_alignment_string) - start_index
 
@@ -213,6 +213,48 @@ def dump_results_to_log(results_tuple_list):
             LOGGER.debug("    %s", str(result))
 
 
+def is_valid_result_set(
+    target,
+    ref_start_pos,
+    template_length,
+    cigar,
+    alignment_qual_pl,
+    target_start_index,
+    target_end_index,
+):
+    """
+    Checks whether all the given arguments constitute a valid result.
+
+    :param target: A Sequence object.
+    :param ref_start_pos: Position in the reference/query sequence where the alignment
+    starts.
+    :param template_length: number of bases accounted for by this alignment
+    # with respect to the reference
+    :param cigar: List of tuples: (CIGAR_ELEMENT, COUNT) where each CIGAR_ELEMENT is
+    defined in pysam.  This list of tuples represents the alignment at a high level.
+    :param alignment_qual_pl: Phred-scaled quality score of this alignment.
+    :param target_start_index: Start position in the target sequence where the
+    alignment starts.  (0-based, inclusive)
+    :param target_end_index: End position in the target sequence where the alignment
+    ends.  (0-based inclusive)
+    :return: True iff the given parameters are all valid together as an alignment
+    result.  False otherwise.
+    """
+
+    cigar_is_valid = all([op is not None for op, count in cigar])
+
+    return (
+        len(target.sequence) > 0
+        and len(target.name) > 0
+        and ref_start_pos >= 0
+        and template_length > 0
+        and cigar_is_valid
+        and 0 <= alignment_qual_pl <= MAX_ALIGNMENT_PL
+        and target_start_index >= 0
+        and target_end_index <= (len(target.sequence) - 1)
+    )
+
+
 def write_results(query, list_of_result_tuples, bamfile=None):
     """Write the alignment results in the given `list_of_result_tuples` to the
     stdout and to the given `bamfile` (if present).
@@ -270,38 +312,55 @@ def write_results(query, list_of_result_tuples, bamfile=None):
                 target_end_index,
             ) = result
 
-            # Create our segment:
-            aligned_segment = pysam.AlignedSegment()
+            # Do some sanity checks here to make sure the alignments are valid:
+            # TODO: I (jonn) believe this is likely the byproduct of a bug somewhere:
+            if is_valid_result_set(
+                target,
+                ref_start_pos,
+                template_length,
+                cigar,
+                alignment_qual_pl,
+                target_start_index,
+                target_end_index,
+            ):
+                # Create our segment:
+                aligned_segment = pysam.AlignedSegment()
 
-            # Populate the name:
-            aligned_segment.query_name = (
-                f"{target.name}_{target_start_index}_{target_end_index}"
-            )
+                # Populate the name:
+                aligned_segment.query_name = (
+                    f"{target.name}_{target_start_index}_{target_end_index}"
+                )
 
-            # We have only one reference, so use it:
-            aligned_segment.reference_id = 0
+                # We have only one reference, so use it:
+                aligned_segment.reference_id = 0
 
-            # Set our sequence being aligned:
-            # NOTE: The nomenclature here is overloaded. Query in this case
-            # means the sequence being aligned
-            #       to the reference.
-            aligned_segment.query_sequence = target.sequence[
-                target_start_index : target_end_index + 1
-            ]
+                # Set our sequence being aligned:
+                # NOTE: The nomenclature here is overloaded. Query in this case
+                # means the sequence being aligned
+                #       to the reference.
+                aligned_segment.query_sequence = target.sequence[
+                    target_start_index : target_end_index + 1
+                ]
 
-            aligned_segment.reference_start = ref_start_pos
-            aligned_segment.template_length = template_length
-            aligned_segment.cigar = cigar
-            aligned_segment.mapping_quality = alignment_qual_pl
+                aligned_segment.reference_start = ref_start_pos
+                aligned_segment.template_length = template_length
+                aligned_segment.cigar = cigar
+                aligned_segment.mapping_quality = alignment_qual_pl
 
-            aligned_segment.query_qualities = pysam.qualitystring_to_array(
-                DEFAULT_BASE_QUALITY_CHAR * len(aligned_segment.query_sequence)
-            )
+                aligned_segment.query_qualities = pysam.qualitystring_to_array(
+                    DEFAULT_BASE_QUALITY_CHAR * len(aligned_segment.query_sequence)
+                )
 
-            if bam_output_file is not None:
-                bam_output_file.write(aligned_segment)
+                if bam_output_file is not None:
+                    bam_output_file.write(aligned_segment)
 
-            sam_stdout.write(aligned_segment)
+                sam_stdout.write(aligned_segment)
+
+            else:
+                LOGGER.warning(
+                    "Result is not valid and cannot be written: %s",
+                    "".join([str(x) for x in result]),
+                )
 
     finally:
         if bam_output_file is not None:
@@ -452,6 +511,9 @@ def main(raw_args):
 
     # Log our command-line and log level so we can have it in the log file:
     LOGGER.info("Invoked by: %s", " ".join(sys.argv))
+    LOGGER.info("Complete runtime configuration settings:")
+    for name, val in vars(args).items():
+        LOGGER.info("    %s = %s", name, val)
     LOGGER.info("Log level set to: %s", logging.getLevelName(logging.getLogger().level))
 
     # Call our sub-command:
