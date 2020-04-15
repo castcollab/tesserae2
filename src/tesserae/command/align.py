@@ -27,7 +27,8 @@ MAX_ALIGNMENT_PL = 60
 
 # Named tuple to store alignment information:
 DetailedAlignmentInfo = namedtuple(
-    "DetailedAlignmentInfo", ["start_pos", "template_length", "cigar", "qual_pl"]
+    "DetailedAlignmentInfo",
+    ["start_pos", "end_pos", "template_length", "cigar", "qual_pl"],
 )
 
 ################################################################################
@@ -66,8 +67,110 @@ def print_logo():
     LOGGER.info("")
 
 
+# def compute_detailed_alignment_info(
+#     query_alignment_string, target_alignment_string, target_length
+# ):
+#     """Compute detailed alignment information from the given information.
+#
+#     Alignment details are based off the differences between the alignment
+#     strings.
+#     This method returns a tuple containing:
+#         - The Start Position in the reference of the alignment.
+#         - The Template Length of this alignment.
+#         - The Cigar representing this alignment.
+#         - The Phred-Scaled quality score of this alignment.
+#     Where:
+#         - The Start Position is the 1-based, inclusive position in the reference
+#           at which this alignment begins.
+#         - The Template Length is the number of bases accounted by this alignment
+#           with respect to the reference.
+#         - The Cigar is a list of tuples: (CIGAR_ELEMENT, COUNT) where each
+#           CIGAR_ELEMENT is defined in pysam.
+#         - The Phred-Scaled quality score is defined by the following formula:
+#             -10 log_10((# mismatches + # insertions + # deletions)/target_length)
+#     """
+#
+#     start_index = get_start_index_from_alignment_start_string(target_alignment_string)
+#
+#     # Now that we know where in the reference this target begins, we can start
+#     # to loop through both alignment strings at the same time.
+#     # In this loop we will:
+#     #     construct a cigar string
+#     #     determine counts for alignment quality score
+#     #     determine template length
+#
+#     num_errors = 0
+#
+#     cigar = []
+#     current_cigar_element = None
+#     current_cigar_element_count = 0
+#
+#     for query_base, target_base in zip(
+#         query_alignment_string[start_index:], target_alignment_string[start_index:]
+#     ):
+#
+#         # The Tesserae2 / Mosaic Alignment algorithm can only produce "-" or
+#         # <BASE> for any position (other than blanks / spaces).  Therefore we
+#         # only have to check the following 4 cases:
+#         if query_base == "-":
+#             # We have an insertion relative to the reference:
+#             num_errors += 1
+#             cigar_element = pysam.CINS
+#
+#         elif query_base == target_base:
+#             # Bases match:
+#             # We use CMATCH here because that cigar operator accounts for
+#             # BOTH matches and mismatches.
+#             cigar_element = pysam.CMATCH
+#
+#         elif target_base == "-":
+#             # We have a deletion relative to the reference:
+#             num_errors += 1
+#             cigar_element = pysam.CDEL
+#
+#         else:
+#             # We have a mismatch relative to the reference:
+#             num_errors += 1
+#             # We use CMATCH here because that cigar operator accounts for
+#             # BOTH matches and mismatches.
+#             cigar_element = pysam.CMATCH
+#
+#         # Accumulate our cigar elements:
+#         if cigar_element != current_cigar_element:
+#             if current_cigar_element is not None:
+#                 cigar.append((current_cigar_element, current_cigar_element_count))
+#
+#             current_cigar_element = cigar_element
+#             current_cigar_element_count = 1
+#
+#         else:
+#             current_cigar_element_count += 1
+#
+#     # Add the last remaining cigar element to our list:
+#     cigar.append((current_cigar_element, current_cigar_element_count))
+#
+#     # Our template length is the number of bases accounted for by this alignment
+#     # with respect to the reference:
+#     template_length = len(target_alignment_string) - start_index
+#
+#     # Compute PL score:
+#     if num_errors == 0:
+#         qual_pl = MAX_ALIGNMENT_PL
+#     else:
+#         qual_pl = -10 * math.log10(num_errors / target_length)
+#         if qual_pl < 0:
+#             # quality cannot take a negative value
+#             qual_pl = 0
+#
+#     # Return our detailed info.
+#     return DetailedAlignmentInfo(start_index, template_length, cigar, qual_pl)
+
+
 def compute_detailed_alignment_info(
-    query_alignment_string, target_alignment_string, target_length
+    query_alignment_string,
+    target_alignment_string,
+    target_start_index,
+    target_end_index,
 ):
     """Compute detailed alignment information from the given information.
 
@@ -79,15 +182,24 @@ def compute_detailed_alignment_info(
         - The Cigar representing this alignment.
         - The Phred-Scaled quality score of this alignment.
     Where:
-        - The Start Position is the 1-based, inclusive position in the reference
+        - The Start Position is the 0-based, inclusive position in the reference
           at which this alignment begins.
+        - The End Position is the 0-based, inclusive position in the reference
+          at which this alignment ends.
         - The Template Length is the number of bases accounted by this alignment
           with respect to the reference.
         - The Cigar is a list of tuples: (CIGAR_ELEMENT, COUNT) where each
           CIGAR_ELEMENT is defined in pysam.
         - The Phred-Scaled quality score is defined by the following formula:
             -10 log_10((# mismatches + # insertions + # deletions)/target_length)
+            However, because of how Tesserae works, we ignore leading and trailing deletions.
     """
+
+    no_alignment = DetailedAlignmentInfo(-1, -1, 0, (), -math.inf)
+
+    # Do some basic checks here:
+    if len(query_alignment_string) == 0:
+        return no_alignment
 
     start_index = get_start_index_from_alignment_start_string(target_alignment_string)
 
@@ -104,8 +216,16 @@ def compute_detailed_alignment_info(
     current_cigar_element = None
     current_cigar_element_count = 0
 
+    num_leading_deletions = 0
+    num_trailing_deletions = 0
+
+    num_query_bases_used = 0
+
+    have_only_seen_deletions = True
+
     for query_base, target_base in zip(
-        query_alignment_string[start_index:], target_alignment_string[start_index:]
+        query_alignment_string[start_index:].upper(),
+        target_alignment_string[start_index:].upper(),
     ):
 
         # The Tesserae2 / Mosaic Alignment algorithm can only produce "-" or
@@ -115,17 +235,26 @@ def compute_detailed_alignment_info(
             # We have an insertion relative to the reference:
             num_errors += 1
             cigar_element = pysam.CINS
+            have_only_seen_deletions = False
+            num_trailing_deletions = 0
 
         elif query_base == target_base:
             # Bases match:
             # We use CMATCH here because that cigar operator accounts for
             # BOTH matches and mismatches.
-            cigar_element = pysam.CMATCH
+            cigar_element = pysam.CEQUAL
+            have_only_seen_deletions = False
+            num_trailing_deletions = 0
+            num_query_bases_used += 1
 
         elif target_base == "-":
             # We have a deletion relative to the reference:
             num_errors += 1
             cigar_element = pysam.CDEL
+            if have_only_seen_deletions:
+                num_leading_deletions += 1
+            num_trailing_deletions += 1
+            num_query_bases_used += 1
 
         else:
             # We have a mismatch relative to the reference:
@@ -133,6 +262,9 @@ def compute_detailed_alignment_info(
             # We use CMATCH here because that cigar operator accounts for
             # BOTH matches and mismatches.
             cigar_element = pysam.CMATCH
+            have_only_seen_deletions = False
+            num_trailing_deletions = 0
+            num_query_bases_used += 1
 
         # Accumulate our cigar elements:
         if cigar_element != current_cigar_element:
@@ -148,21 +280,43 @@ def compute_detailed_alignment_info(
     # Add the last remaining cigar element to our list:
     cigar.append((current_cigar_element, current_cigar_element_count))
 
-    # Our template length is the number of bases accounted for by this alignment
-    # with respect to the reference:
-    template_length = len(target_alignment_string) - start_index
+    # Adjust cigar for leading / trailing deletions:
+    if num_leading_deletions != 0:
+        cigar = cigar[1:]
+    if num_trailing_deletions != 0:
+        cigar = cigar[:-1]
+
+    # Our template length is the number of bases accounted by this alignment
+    # with respect to the reference.
+    # We add one because the end index is inclusive.
+    template_length = target_end_index - target_start_index + 1
+
+    # Make sure we have something to work with:
+    if num_trailing_deletions + num_leading_deletions >= template_length:
+        return no_alignment
+
+    num_errors -= num_leading_deletions
+    num_errors -= num_trailing_deletions
 
     # Compute PL score:
     if num_errors == 0:
-        qual_pl = MAX_ALIGNMENT_PL
+        aligned_qual_pl = MAX_ALIGNMENT_PL
     else:
-        qual_pl = -10 * math.log10(num_errors / target_length)
-    if qual_pl < 0:
-        # quality cannot take a negative value
-        qual_pl = 0
+        aligned_qual_pl = -10 * math.log10(num_errors / template_length)
+
+    # Compute end index (subtract 1 because of inclusive coordinates):
+    end_index = (
+        start_index
+        + num_query_bases_used
+        - num_leading_deletions
+        - num_trailing_deletions
+        - 1
+    )
 
     # Return our detailed info.
-    return DetailedAlignmentInfo(start_index, template_length, cigar, qual_pl)
+    return DetailedAlignmentInfo(
+        start_index, end_index, template_length, cigar, aligned_qual_pl
+    )
 
 
 def get_start_index_from_alignment_start_string(target_alignment_string):
@@ -441,7 +595,10 @@ def align(args):
         # Get our detailed alignment info:
         target = aligner.get_target(result.seq_name)
         detailed_alignment_info = compute_detailed_alignment_info(
-            query_alignment_string, result.alignment_string, len(target)
+            query_alignment_string,
+            result.alignment_string,
+            result.target_start_index,
+            result.target_end_index,
         )
 
         # Create our clean results for this alignment:
@@ -473,6 +630,11 @@ def align(args):
 
 
 def main(raw_args):
+    """
+    Main entry point into the alignment functionality of Tesserae.
+    :param raw_args: Arguments from the command-line for the alignment.
+    :return: None
+    """
 
     # Get our start time:
     overall_start = time.time()

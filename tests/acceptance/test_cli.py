@@ -24,7 +24,10 @@ def assert_sam_files_are_equal(samfile1, samfile2):
         f2_iter = f2.fetch(until_eof=True)
 
         for i, (actual, expected) in enumerate(zip(f1_iter, f2_iter)):
-            assert actual == expected, f"Entry {i} is not equal in the two SAM files!"
+            assert actual == expected, (
+                f"Entry {i} is not equal in the two SAM files! [{str(actual)}] != "
+                f"[{str(expected)}]"
+            )
 
         # Make sure both iterators are empty
         # (files have the same number of reads):
