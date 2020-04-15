@@ -6,12 +6,13 @@ Why does this file exist, and why __main__? For more info, read:
 - https://docs.python.org/3/using/cmdline.html#cmdoption-m
 """
 
+import sys
+
 from .cli import main
 
 
 def main_entry():
     """Main entry point into tesserae"""
-    import sys
 
     main(sys.argv)
 

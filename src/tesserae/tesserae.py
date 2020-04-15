@@ -1,9 +1,9 @@
-import sys
 import logging
+import sys
 from collections import namedtuple
 
-import pysam
 import numpy as np
+import pysam
 
 from .sequence import Sequence
 

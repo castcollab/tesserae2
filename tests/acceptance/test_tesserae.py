@@ -1,9 +1,9 @@
 import random
 from random import choice
 
-import pytest
 from numpy import sqrt
 
+import pytest
 from tesserae import Tesserae
 from tesserae.sequence import Sequence
 

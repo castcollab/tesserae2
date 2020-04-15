@@ -1,7 +1,7 @@
-def main(argv):  # noqa: W0102
-    import importlib  # noqa: C0415
-    import argparse  # noqa: C0415
-    from . import __version__  # noqa: C0415
+def main(argv):
+    import importlib  # pylint: disable=C0415
+    import argparse  # pylint: disable=C0415
+    from . import __version__  # pylint: disable=C0415
 
     prog_name = "tesserae"
 
@@ -37,7 +37,7 @@ def main(argv):  # noqa: W0102
     parser.add_argument("args", nargs=argparse.REMAINDER, help="sub-command arguments")
     args = parser.parse_args(argv[1:])
 
-    from . import log
+    from . import log  # pylint: disable=C0415
 
     log.configure_logging(args)
 

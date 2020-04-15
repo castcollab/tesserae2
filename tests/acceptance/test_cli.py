@@ -1,12 +1,12 @@
 import pathlib
 import subprocess
+
 import pysam
+
 import pytest
-
-from ..util import TEST_RESOURCES_FOLDER
-from ..util import EXPECTED_TEST_RESULTS
-
 from tesserae import cli
+
+from ..util import EXPECTED_TEST_RESULTS, TEST_RESOURCES_FOLDER
 
 
 def assert_sam_files_are_equal(samfile1, samfile2):

@@ -1,8 +1,9 @@
-from tesserae import Tesserae
 from numpy import sqrt
-import pytest
 
+import pytest
+from tesserae import Tesserae
 from tesserae.sequence import Sequence
+
 from ..util import TEST_RESOURCES_FOLDER
 
 TEST_QUERY = Sequence("THE_QUERY", "GTAGGCGAGATGACGCCAT")

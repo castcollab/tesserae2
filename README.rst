@@ -66,14 +66,21 @@ Linting files
 
 ::
 
-    # reformat all files in src and tests
-    black src tests
+    # run all linting commands
+    tox -e lint
 
-    # check pep8 against all files in src and tests
-    flake8 src tests
+    # reformat all project files
+    black src tests setup.py
+
+    # sort imports in project files
+    isort -rc src tests setup.py
+
+    # check pep8 against all project files
+    flake8 src tests setup.py
 
     # lint python code for common errors and codestyle issues
     pylint src
+
 
 Tests
 `````
@@ -86,9 +93,6 @@ Tests
 
     # run only (fast) unit tests
     tox -e unit
-
-    # run only linting
-    tox -e lint
 
 Bumping versions
 ````````````````

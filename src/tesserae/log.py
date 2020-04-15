@@ -6,7 +6,7 @@ from pathlib import Path
 def configure_logging(args):
     """Set up logging for the tesserae module"""
 
-    import tesserae
+    import tesserae  # pylint: disable=C0415
 
     format_string = get_logging_format_string(tesserae)
 

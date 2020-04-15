@@ -1,13 +1,11 @@
-import time
 import argparse
-import math
 import logging
+import math
 import os
-import sys
 import pathlib
-
-from collections import OrderedDict
-from collections import namedtuple
+import sys
+import time
+from collections import OrderedDict, namedtuple
 
 import pysam
 
