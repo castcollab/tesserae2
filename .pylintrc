@@ -4,3 +4,10 @@
 # system, and so shouldn't trigger E1101 when accessed. Python regular
 # expressions are accepted.
 generated-members=pysam*
+
+[MASTER]
+disable=
+    C0330,
+    C0114,
+    C0116,
+    C0415,
