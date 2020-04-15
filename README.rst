@@ -87,8 +87,7 @@ Tests
 
 ::
 
-    # run all tests
-    # right now that includes pep8, black, and pylint
+    # run all linting and test
     tox
 
     # run only (fast) unit tests
