@@ -2,14 +2,14 @@ from numpy import sqrt
 
 import pytest
 from tesserae import Tesserae
-from tesserae.sequence import Sequence
+from tesserae.nucleotide_sequence import NucleotideSequence
 
 from ..util import TEST_RESOURCES_FOLDER
 
-TEST_QUERY = Sequence("THE_QUERY", "GTAGGCGAGATGACGCCAT")
+TEST_QUERY = NucleotideSequence("THE_QUERY", "GTAGGCGAGATGACGCCAT")
 TEST_TARGETS = [
-    Sequence("THE_FIRST_TARGET", "GTAGGCGAGTCCCGTTTATA"),
-    Sequence("THE_SECOND_TARGET", "CCACAGAAGATGACGCCATT"),
+    NucleotideSequence("THE_FIRST_TARGET", "GTAGGCGAGTCCCGTTTATA"),
+    NucleotideSequence("THE_SECOND_TARGET", "CCACAGAAGATGACGCCATT"),
 ]
 
 
@@ -57,7 +57,7 @@ class TestTesserae:
                 id="query Sequence target Sequence",
             ),
             pytest.param(
-                Sequence("query", TEST_QUERY.sequence),
+                NucleotideSequence("query", TEST_QUERY.sequence),
                 TEST_TARGETS,
                 "query",
                 [t.name for t in TEST_TARGETS],
@@ -66,8 +66,8 @@ class TestTesserae:
             pytest.param(
                 TEST_QUERY,
                 [
-                    Sequence("sequence0", TEST_TARGETS[0].sequence),
-                    Sequence("sequence1", TEST_TARGETS[1].sequence),
+                    NucleotideSequence("sequence0", TEST_TARGETS[0].sequence),
+                    NucleotideSequence("sequence1", TEST_TARGETS[1].sequence),
                 ],
                 TEST_QUERY.name,
                 ["sequence0", "sequence1"],

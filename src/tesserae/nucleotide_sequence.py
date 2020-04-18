@@ -1,10 +1,9 @@
 VALID_BASES = ("A", "a", "T", "t", "U", "u", "G", "g", "C", "c", "N", "n")
 
 
-def validate_nucleic_acid_sequence(sequence, name=""):
+def validate_nucleic_acid_sequence(sequence: str, name: str = "") -> None:
     """Assert that if the given sequence is a string it contains only bases
     we expect from a nucleic acid sequence."""
-    assert isinstance(sequence, str), "Given sequence is not a string!"
     if len(name) != 0:
         name = "(" + name + ")"
     for i, base in enumerate(sequence):
@@ -15,24 +14,24 @@ def validate_nucleic_acid_sequence(sequence, name=""):
             )
 
 
-class Sequence:
+class NucleotideSequence:
     """A named sequence of nucleotides."""
 
-    def __init__(self, name, sequence):
+    def __init__(self, name: str, sequence: str) -> None:
         self._name = name
         self._sequence = sequence
 
         validate_nucleic_acid_sequence(self._sequence, self._name)
 
-    def __eq__(self, other):
-        if isinstance(other, Sequence):
+    def __eq__(self, other) -> bool:
+        if isinstance(other, NucleotideSequence):
             return (self.name == other.name) and (self.sequence == other.sequence)
         return False
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.sequence)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "{" + f"{self.name}: {self.sequence}" + "}"
 
     @property

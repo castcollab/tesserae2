@@ -2,13 +2,13 @@ import itertools
 import logging
 import math
 import sys
-from collections import namedtuple
 from dataclasses import dataclass
+from typing import List
 
 import numpy as np
 import pysam
 
-from .sequence import Sequence
+from .nucleotide_sequence import NucleotideSequence
 
 ################################################################################
 
@@ -39,10 +39,17 @@ CONVERT = {
 }
 # fmt: on
 
-TesseraeAlignmentResult = namedtuple(
-    "TesseraeAlignmentResult",
-    ["seq_name", "alignment_string", "target_start_index", "target_end_index"],
-)
+
+@dataclass
+class TesseraeAlignmentResult:
+    """
+    Representation of the results of a Tesserae alignment
+    """
+
+    seq_name: str
+    alignment_string: str
+    target_start_index: int
+    target_end_index: int
 
 
 def repeat(string_to_expand, length):
@@ -72,16 +79,16 @@ def dump_sequence_to_log(seq, spacing="    "):
         LOGGER.debug("%s%s -> %s", spacing, seq.name, seq.sequence)
 
 
-def ingest_fastx_file(fastx_file_name):
+def ingest_fastx_file(fastx_file_name: str) -> List[NucleotideSequence]:
     """Ingest the given fastx (fasta or fastq) file and returns a
     list of Sequence objects."""
 
     LOGGER.info("Ingesting reads from %s ...", fastx_file_name)
 
-    sequence_list = list()
+    sequence_list = []
     with pysam.FastxFile(fastx_file_name) as fh:
         for entry in fh:
-            sequence_list.append(Sequence(entry.name, entry.sequence))
+            sequence_list.append(NucleotideSequence(entry.name, entry.sequence))
 
     LOGGER.info("Ingested %d reads.", len(sequence_list))
 
@@ -281,25 +288,22 @@ class Tesserae:
 
         self.tb_divisor = np.power(10.0, int(math.log(self.maxl) + 1))
 
-    def get_target(self, name):
+    def get_target(self, name) -> str:
         """Get the target object with the given name if it exists in our data.
-        Otherwise returns None."""
 
-        try:
-            return self.targets[self._target_name_index_dict[name]]
-        except KeyError:
-            return None
+        Raises key error otherwise."""
 
-    def align_from_fastx(self, query_fastx, target_fastx):
+        return self.targets[self._target_name_index_dict[name]]
+
+    def align_from_fastx(
+        self, query_fastx, target_fastx
+    ) -> List[TesseraeAlignmentResult]:
         """Align all target sequences to the query sequence in the given FASTX
         (FASTA / FASTQ) files.
 
         NOTE: Assumes `query_fastx` contains only one sequence.
               If `query_fastx` contains more than one sequence, only the first
               will be considered.
-
-        Returns a list of TesseraeAlignmentResult objects representing all alignments
-        resulting from the given input panel and targets.
         """
 
         queries = ingest_fastx_file(query_fastx)
@@ -310,12 +314,8 @@ class Tesserae:
 
         return self.align(query, targets)
 
-    def align(self, query, targets):
-        """Align all sequences in `targets` to the given query sequence.
-
-        Returns a list of TesseraeAlignmentResult objects representing all alignments
-        resulting from the given input panel and targets.
-        """
+    def align(self, query, targets) -> List[TesseraeAlignmentResult]:
+        """Align all sequences in `targets` to the given query sequence."""
 
         # Set our query and target properties:
         self._query_and_target_dependent_setup(query, targets)
@@ -385,8 +385,8 @@ class Tesserae:
     def __render(self, cp, panel) -> None:
         """Trace back paths in the graph to create results.
 
-        Returns a list of TesseraeAlignmentResult objects representing all alignments
-        in the graph.
+        # todo: refactor this to return results with return statement
+        Results are stored in self.path
         """
 
         # Prepare target sequence
