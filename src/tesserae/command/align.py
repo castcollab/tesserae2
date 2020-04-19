@@ -1,4 +1,5 @@
 import argparse
+import contextlib
 import logging
 import math
 import os
@@ -251,11 +252,14 @@ def write_results(query, list_of_result_tuples, bamfile=None):
     }
 
     # Output the sam results to stdout and to a file if the user specified it.
-    bam_output_file = None
     sam_stdout = pysam.AlignmentFile("-", "w", header=header)
-    try:
-        if bamfile is not None:
+    with contextlib.ExitStack() as stack:
+        stack.enter_context(contextlib.closing(sam_stdout))
+
+        bam_output_file = None
+        if bamfile:
             bam_output_file = pysam.AlignmentFile(bamfile, "wb", header=header)
+            stack.enter_context(contextlib.closing(bam_output_file))
 
         for result in list_of_result_tuples:
 
@@ -298,15 +302,10 @@ def write_results(query, list_of_result_tuples, bamfile=None):
                 DEFAULT_BASE_QUALITY_CHAR * len(aligned_segment.query_sequence)
             )
 
-            if bam_output_file is not None:
+            if bam_output_file:
                 bam_output_file.write(aligned_segment)
 
             sam_stdout.write(aligned_segment)
-
-    finally:
-        if bam_output_file is not None:
-            bam_output_file.close()
-        sam_stdout.close()
 
 
 def prepare_output_file(bamfile):
