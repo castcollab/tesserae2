@@ -61,28 +61,19 @@ class TestTesseraeAcceptance:
         assert results[2].target_start_index == partial_len
         assert results[2].target_end_index == total_len - 1
 
-    def test_mosaic_alignment_on_medium_queries_and_two_templates(self, samples):
-        # given
-        for total_len, (query, targets) in samples.items():
-            # when
-            t = Tesserae(mem_limit=False)
-            alignment_results = t.align(query, targets)
-
-            # then
-            self.__assertions__(alignment_results, targets, total_len)
-
-    def test_mosaic_alignment_on_medium_queries_and_two_templates_reduced_memory_usage(
-        self, samples
+    @pytest.mark.parametrize("reduce_mem", [True, False])
+    def test_mosaic_alignment_on_medium_queries_and_two_templates(
+        self, samples, reduce_mem
     ):
         # given
         for total_len, (query, targets) in samples.items():
             # when
-            t = Tesserae(mem_limit=True)
+            t = Tesserae(mem_limit=reduce_mem)
             target_alignment_results = t.align(query, targets)
-
-            max_mem_limit = sqrt(total_len) + 2
 
             # then
             self.__assertions__(target_alignment_results, targets, total_len)
-            assert t.traceback_limit <= max_mem_limit
-            assert t.states_to_save <= max_mem_limit
+            if reduce_mem:
+                max_mem_limit = sqrt(total_len) + 2
+                assert t.traceback_limit <= max_mem_limit
+                assert t.states_to_save <= max_mem_limit
