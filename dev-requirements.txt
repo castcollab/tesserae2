@@ -7,3 +7,5 @@ flake8
 pylint
 cython
 isort
+sphinx
+sphinx-rtd-theme
