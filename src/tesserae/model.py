@@ -170,9 +170,7 @@ class Tesserae:
         self.llk = None
         self.llk = None
         self.combined_llk = None
-        self.sm = None
         self.lsm = None
-        self.si = None
         self.lsi = None
         self.path = None
 
@@ -253,20 +251,8 @@ class Tesserae:
         self.llk = 0.0
         self.combined_llk = 0.0
 
-        self.sm = np.zeros([STATES, STATES], dtype=np.float64)
-        self.lsm = np.zeros([STATES, STATES], dtype=np.float64)
-
-        for i in range(0, STATES):
-            for j in range(0, STATES):
-                self.sm[i][j] = self.emiss_match_nt[i][j]
-                self.lsm[i][j] = np.log(self.emiss_match_nt[i][j])
-
-        self.si = np.zeros([STATES], dtype=np.float64)
-        self.lsi = np.zeros([STATES], dtype=np.float64)
-
-        for i in range(0, STATES):
-            self.si[i] = self.emiss_gap_nt[i]
-            self.lsi[i] = np.log(self.emiss_gap_nt[i])
+        self.lsm = np.log(np.array(self.emiss_match_nt))
+        self.lsi = np.log(np.array(self.emiss_gap_nt))
 
         self.path = []
 
