@@ -16,6 +16,7 @@ setup(
     install_requires="""
     numpy
     pysam
+    dataclasses
     """.split(
         "\n"
     ),
