@@ -44,9 +44,3 @@ def main(argv):
     package_string, method_string = subcommands[args.subcommand].rsplit(".", 1)
     module = importlib.import_module(package_string)
     return getattr(module, method_string)(args.args)
-
-
-if __name__ == "__main__":
-    import sys
-
-    main(sys.argv)
