@@ -1,6 +1,7 @@
 import logging
 import sys
 from collections import namedtuple
+from dataclasses import dataclass
 
 import numpy as np
 import pysam
@@ -94,54 +95,84 @@ def ingest_fastx_file(fastx_file_name):
     return sequence_list
 
 
+@dataclass
+class TesseraeParameters:
+    """A class for storing Tesserae model paramaters.
+
+    An 'l' prefix indicates a log value.
+    'lsm': emiss_match_nt
+    'lsi': emiss_gap_nt
+    """
+
+    ldel: float
+    leps: float
+    lrho: float
+    lterm: float
+    lpiM: float
+    lpiI: float
+    lmm: float
+    lgm: float
+    ldm: float
+    lsm: np.ndarray
+    lsi: np.ndarray
+
+    @classmethod
+    def from_default_parms(cls):
+        pdel = DEFAULT_DEL
+        peps = DEFAULT_EPS
+        prho = DEFAULT_REC
+        pterm = DEFAULT_TERM
+        piM = 0.75
+        return cls.from_params(
+            pdel=pdel,
+            peps=peps,
+            prho=prho,
+            pterm=pterm,
+            piM=piM,
+            piI=1 - piM,
+            mm=1 - 2 * pdel - prho - pterm,
+            gm=1 - peps - prho - pterm,
+            dm=1 - peps,
+            emiss_gap_nt=np.array([0.2, 0.2, 0.2, 0.2, 0.2]),
+            emiss_match_nt=np.array(
+                [
+                    [0.2, 0.2, 0.2, 0.2, 0.2],
+                    [0.2, 0.9, 0.05, 0.025, 0.025],
+                    [0.2, 0.05, 0.9, 0.025, 0.025],
+                    [0.2, 0.025, 0.025, 0.9, 0.05],
+                    [0.2, 0.025, 0.025, 0.05, 0.9],
+                ]
+            ),
+        )
+
+    @classmethod
+    def from_params(
+        cls, pdel, peps, prho, pterm, piM, piI, mm, gm, dm, emiss_gap_nt, emiss_match_nt
+    ):
+        """Builds a Tesserae model from regular-space (i.e. not log-space) parameters"""
+        return cls(
+            ldel=np.log(pdel),
+            leps=np.log(peps),
+            lrho=np.log(prho),
+            lterm=np.log(pterm),
+            lpiM=np.log(piM),
+            lpiI=np.log(piI),
+            lmm=np.log(mm),
+            lgm=np.log(gm),
+            ldm=np.log(dm),
+            lsm=np.log(emiss_match_nt),
+            lsi=np.log(emiss_gap_nt),
+        )
+
+
 class Tesserae:
     """Object to perform graph-based mosaic alignments between nucleic acid
     sequences."""
 
-    pdel = DEFAULT_DEL
-    peps = DEFAULT_EPS
-    prho = DEFAULT_REC
-    pterm = DEFAULT_TERM
-
     def __init__(
-        self,
-        mem_limit=False,
-        pdel=DEFAULT_DEL,
-        peps=DEFAULT_EPS,
-        prho=DEFAULT_REC,
-        pterm=DEFAULT_TERM,
-        threads=1,
+        self, params: TesseraeParameters = None, mem_limit=False, threads=1,
     ):
-        self.pdel = pdel
-        self.peps = peps
-        self.prho = prho
-        self.pterm = pterm
-
-        self.ldel = np.log(self.pdel)
-        self.leps = np.log(self.peps)
-        self.lrho = np.log(self.prho)
-        self.lterm = np.log(self.pterm)
-
-        self.piM = 0.75
-        self.piI = 1 - self.piM
-        self.mm = 1 - 2 * self.pdel - self.prho - self.pterm
-        self.gm = 1 - self.peps - self.prho - self.pterm
-        self.dm = 1 - self.peps
-
-        self.lpiM = np.log(self.piM)
-        self.lpiI = np.log(self.piI)
-        self.lmm = np.log(self.mm)
-        self.lgm = np.log(self.gm)
-        self.ldm = np.log(self.dm)
-
-        self.emiss_gap_nt = [0.2, 0.2, 0.2, 0.2, 0.2]
-        self.emiss_match_nt = [
-            [0.2, 0.2, 0.2, 0.2, 0.2],
-            [0.2, 0.9, 0.05, 0.025, 0.025],
-            [0.2, 0.05, 0.9, 0.025, 0.025],
-            [0.2, 0.025, 0.025, 0.9, 0.05],
-            [0.2, 0.025, 0.025, 0.05, 0.9],
-        ]
+        self.params = params or TesseraeParameters.from_default_parms()
 
         # Initialize the host of variables used elsewhere in Tesserae:
         self.nseq = None
@@ -170,8 +201,6 @@ class Tesserae:
         self.llk = None
         self.llk = None
         self.combined_llk = None
-        self.lsm = None
-        self.lsi = None
         self.path = None
 
         self.editTrack = []
@@ -197,6 +226,7 @@ class Tesserae:
             qlen_sqrt = np.sqrt(self.qlen)
             qsq_down = int(np.floor(qlen_sqrt))
             qsq_up = int(np.ceil(qlen_sqrt))
+
             # The traceback limit must be even!
             if qsq_up % 2 == 0:
                 self.states_to_save = qsq_down
@@ -250,9 +280,6 @@ class Tesserae:
 
         self.llk = 0.0
         self.combined_llk = 0.0
-
-        self.lsm = np.log(np.array(self.emiss_match_nt))
-        self.lsi = np.log(np.array(self.emiss_gap_nt))
 
         self.path = []
 
@@ -548,9 +575,8 @@ class Tesserae:
                 pos_target -= 1
         return cp, pos_max, who_max, state_max
 
-    @classmethod
+    @staticmethod
     def recurrence_target(
-        cls,
         query,
         target,
         vt_m,
@@ -567,13 +593,7 @@ class Tesserae:
         l1,
         tb_divisor,
         mem_limit,
-        lsm,
-        lsi,
-        lmm,
-        lgm,
-        ldm,
-        ldel,
-        leps,
+        params: TesseraeParameters,
         store_states=False,
     ):
         seq_10 = seq * 10
@@ -583,7 +603,7 @@ class Tesserae:
         em_m = np.insert(
             np.array(
                 [
-                    lsm[targ_idx][CONVERT[target.sequence[i]]]
+                    params.lsm[targ_idx][CONVERT[target.sequence[i]]]
                     if i < len(target)
                     else SMALL
                     for i in range(0, len(vt_m) - 1)
@@ -601,9 +621,9 @@ class Tesserae:
         vt_m_mat = (
             np.c_[
                 np.full(len(vt_m), vt_m_base, dtype=np.float64),
-                np.roll(vt_m, 1) + lmm,
-                np.roll(vt_i, 1) + lgm,
-                np.roll(vt_d, 1) + ldm,
+                np.roll(vt_m, 1) + params.lmm,
+                np.roll(vt_i, 1) + params.lgm,
+                np.roll(vt_d, 1) + params.ldm,
             ]
             + np.c_[em_m, em_m, em_m, em_m]
         )
@@ -620,14 +640,14 @@ class Tesserae:
         tb_mn = tb_m_mat.ravel()[index_selector]
 
         em_i = np.insert(
-            np.full(len(vt_i) - 1, lsi[targ_idx], dtype=np.float64), 0, SMALL
+            np.full(len(vt_i) - 1, params.lsi[targ_idx], dtype=np.float64), 0, SMALL
         )
         em_i_tb = seq_10 + np.arange(len(vt_m), dtype=np.float64) / tb_divisor
         vt_i_mat = (
             np.c_[
                 np.full(len(vt_i), vt_i_base, dtype=np.float64),
-                vt_m + ldel,
-                vt_i + leps,
+                vt_m + params.ldel,
+                vt_i + params.leps,
             ]
             + np.c_[em_i, em_i, em_i]
         )
@@ -657,10 +677,10 @@ class Tesserae:
 
         # Use traditional python-list instead of numpy for
         # the delete-vector in order to exploit the best of two worlds
-        vt_d_next = list(np.roll(vt_mn, 1) + ldel)
+        vt_d_next = list(np.roll(vt_mn, 1) + params.ldel)
         tb_d_next = [1] * len(vt_mn)
         for pos_seq in range(2, len(target) + 1):
-            vt_d_n = vt_d_next[pos_seq - 1] + leps
+            vt_d_n = vt_d_next[pos_seq - 1] + params.leps
             if vt_d_next[pos_seq] < vt_d_n:
                 vt_d_next[pos_seq] = vt_d_n
                 tb_d_next[pos_seq] = 3
@@ -699,8 +719,8 @@ class Tesserae:
             if self.mem_limit and store_states:
                 pos_target_trace = pos_target % self.traceback_limit
 
-            vt_m_base = max_r + self.lrho + self.lpiM - lsize_l
-            vt_i_base = max_r + self.lrho + self.lpiI - lsize_l
+            vt_m_base = max_r + self.params.lrho + self.params.lpiM - lsize_l
+            vt_i_base = max_r + self.params.lrho + self.params.lpiI - lsize_l
             tb_base = who_max * 10 + state_max + pos_max / self.tb_divisor
 
             argvec = []
@@ -723,13 +743,7 @@ class Tesserae:
                         l1,
                         self.tb_divisor,
                         self.mem_limit,
-                        self.lsm,
-                        self.lsi,
-                        self.lmm,
-                        self.lgm,
-                        self.ldm,
-                        self.ldel,
-                        self.leps,
+                        self.params,
                         store_states,
                     )
                 )
@@ -764,8 +778,8 @@ class Tesserae:
                 self.saved_vt_d[idx] = np.copy(self.vt_d[1])
 
         if (self.mem_limit and store_states) or not self.mem_limit:
-            self.llk = max_r + self.lterm
-            self.combined_llk += max_r + self.lterm
+            self.llk = max_r + self.params.lterm
+            self.combined_llk += max_r + self.params.lterm
 
         return max_r, pos_max, state_max, who_max
 
@@ -779,21 +793,23 @@ class Tesserae:
         for target in targets:
             for pos_seq in range(1, len(target) + 1):
                 self.vt_m[0][seq][pos_seq] = (
-                    self.lpiM
+                    self.params.lpiM
                     - lsize_l
-                    + self.lsm[CONVERT[query.sequence[0]]][
+                    + self.params.lsm[CONVERT[query.sequence[0]]][
                         CONVERT[target.sequence[pos_seq - 1]]
                     ]
                 )
                 self.vt_i[0][seq][pos_seq] = (
-                    self.lpiI - lsize_l + self.lsi[CONVERT[query.sequence[0]]]
+                    self.params.lpiI
+                    - lsize_l
+                    + self.params.lsi[CONVERT[query.sequence[0]]]
                 )
 
                 if pos_seq > 0:
                     vt_d_1, tb_d_1 = max(
                         [
-                            (self.vt_m[0][seq][pos_seq - 1] + self.ldel, 1),
-                            (self.vt_d[0][seq][pos_seq - 1] + self.leps, 3),
+                            (self.vt_m[0][seq][pos_seq - 1] + self.params.ldel, 1),
+                            (self.vt_d[0][seq][pos_seq - 1] + self.params.leps, 3),
                         ],
                         key=lambda x: x[0],
                     )
