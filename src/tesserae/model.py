@@ -1,6 +1,4 @@
-import itertools
 import logging
-import math
 import sys
 from collections import namedtuple
 from dataclasses import dataclass
@@ -49,6 +47,15 @@ def repeat(string_to_expand, length):
     return (string_to_expand * (int(length / len(string_to_expand)) + 1))[:length]
 
 
+def max_length(query, targets):
+    maxl = len(query)
+
+    for target in targets:
+        maxl = max(maxl, len(target))
+
+    return maxl
+
+
 # A hack to be able to calculate recurrence in parallel
 def unwrap_recurrence_target(arg, **kwarg):
     return Tesserae.recurrence_target(*arg, **kwarg)
@@ -86,14 +93,6 @@ def ingest_fastx_file(fastx_file_name):
     LOGGER.info("Ingested %d reads.", len(sequence_list))
 
     return sequence_list
-
-
-@dataclass
-class HMMIterationInfo:
-    max_r: int
-    pos_max: int
-    state_max: int
-    who_max: float
 
 
 @dataclass
@@ -152,15 +151,15 @@ class TesseraeParameters:
     ):
         """Builds a Tesserae model from regular-space (i.e. not log-space) parameters"""
         return cls(
-            ldel=math.log(pdel),
-            leps=math.log(peps),
-            lrho=math.log(prho),
-            lterm=math.log(pterm),
-            lpiM=math.log(piM),
-            lpiI=math.log(piI),
-            lmm=math.log(mm),
-            lgm=math.log(gm),
-            ldm=math.log(dm),
+            ldel=np.log(pdel),
+            leps=np.log(peps),
+            lrho=np.log(prho),
+            lterm=np.log(pterm),
+            lpiM=np.log(piM),
+            lpiI=np.log(piI),
+            lmm=np.log(mm),
+            lgm=np.log(gm),
+            ldm=np.log(dm),
             lsm=np.log(emiss_match_nt),
             lsi=np.log(emiss_gap_nt),
         )
@@ -168,12 +167,7 @@ class TesseraeParameters:
 
 class Tesserae:
     """Object to perform graph-based mosaic alignments between nucleic acid
-    sequences.
-
-    All parameters except for query and targets (at the moment) need to be
-    specified at initialization time. In other words, all attributes should
-    be considered read-only! Anything else may be madness.
-    """
+    sequences."""
 
     def __init__(
         self, params: TesseraeParameters = None, mem_limit=False, threads=1,
@@ -181,7 +175,13 @@ class Tesserae:
         self.params = params or TesseraeParameters.from_default_parms()
 
         # Initialize the host of variables used elsewhere in Tesserae:
+        self.nseq = None
+        self.maxl = None
+        self.qlen = None
         self.states_to_save = None
+        self.states_to_save = None
+        self.traceback_limit = None
+        self.traceback_limit = None
         self.traceback_limit = None
         self.vt_m = None
         self.vt_i = None
@@ -196,40 +196,36 @@ class Tesserae:
         self.maxpath_copy = None
         self.maxpath_state = None
         self.maxpath_pos = None
+        self.tmp = None
         self.tb_divisor = None
-        self.llk = 0.0
-        self.combined_llk = 0.0
+        self.llk = None
+        self.llk = None
+        self.combined_llk = None
+        self.path = None
 
-        self.path = []
         self.editTrack = []
         self.mem_limit = mem_limit
-
-        if sys.version_info < (3, 8) and threads > 1:
-            raise NotImplementedError(
-                "Threading is only supported with python3.8 and above!"
-            )
         self.threads = threads
 
         self.query = {}
         self.targets = {}
-        self.qlen = None
-        self.maxl = None
-        self.nseq = None
+
         self._target_name_index_dict = dict()
 
-    def _query_and_target_dependent_setup(self, query, targets):
-        """Perform all initialization that depends on the query or targets."""
-        self.query = query
-        self.targets = targets
+    def __initialize(self, query, targets):
+        self.nseq = len(targets)
+        self.maxl = max_length(query, targets)
+        self.qlen = len(query)
 
-        self.qlen = len(self.query)
-        self.maxl = max(len(s) for s in itertools.chain([self.query], self.targets))
-        self.nseq = len(self.targets)
+        if sys.version_info < (3, 8) and self.threads > 1:
+            raise NotImplementedError(
+                "Threading is only supported with python3.8 and above!"
+            )
 
         if self.mem_limit:
-            qlen_sqrt = math.sqrt(self.qlen)
-            qsq_down = math.floor(qlen_sqrt)
-            qsq_up = math.ceil(qlen_sqrt)
+            qlen_sqrt = np.sqrt(self.qlen)
+            qsq_down = int(np.floor(qlen_sqrt))
+            qsq_up = int(np.ceil(qlen_sqrt))
 
             # The traceback limit must be even!
             if qsq_up % 2 == 0:
@@ -279,7 +275,13 @@ class Tesserae:
         self.maxpath_state = np.zeros([2 * self.maxl + 1], dtype=np.uint8)
         self.maxpath_pos = np.zeros([2 * self.maxl + 1], dtype=np.int64)
 
-        self.tb_divisor = np.power(10.0, int(math.log(self.maxl) + 1))
+        self.tmp = int(np.log(self.maxl) + 1)
+        self.tb_divisor = np.power(10.0, self.tmp)
+
+        self.llk = 0.0
+        self.combined_llk = 0.0
+
+        self.path = []
 
     def get_target(self, name):
         """Get the target object with the given name if it exists in our data.
@@ -308,7 +310,9 @@ class Tesserae:
         # For now we enforce using only one query (the first one in the file):
         query = queries[0]
 
-        return self.align(query, targets)
+        self.__initialize(query, targets)
+
+        return self.__align_all(query, targets)
 
     def align(self, query, targets):
         """Align all sequences in `targets` to the given query sequence.
@@ -317,37 +321,60 @@ class Tesserae:
         resulting from the given input panel and targets.
         """
 
+        self.__initialize(query, targets)
+        return self.__align_all(query, targets)
+
+    def __align_all(self, query, targets):
+        """Align the sequences in the panel and targets.
+
+        Returns a list of TesseraeAlignmentResult objects representing all alignments
+        resulting from the given input panel and targets.
+        """
+
         # Set our query and target properties:
-        self._query_and_target_dependent_setup(query, targets)
-        for i, target in enumerate(self.targets):
+        self.query = query
+        self.targets = targets
+        for i, target in enumerate(targets):
             self._target_name_index_dict[target.name] = i
 
         dump_query_and_targets_to_log(self.query, self.targets)
 
         # Create our panel here:
-        panel = {self.query.name: self.query.sequence}
-        for target in self.targets:
+        panel = {query.name: query.sequence}
+        for target in targets:
             panel[target.name] = target.sequence
 
         l1 = self.qlen
-        size_l = 0
+        size_l = 0.0
         for target in panel.values():
             size_l += len(target)
 
         size_l -= self.qlen
-        lsize_l = math.log(size_l)
+        lsize_l = np.log(size_l)
 
-        iter_info = self.__initialization(lsize_l)
-        iter_info = self.__recurrence(
-            lsize_l, l1, iter_info=iter_info, store_states=self.mem_limit,
+        # Initialize our internal state:
+        max_r, pos_max, state_max, who_max = self.__initialization(
+            query, targets, lsize_l
+        )
+
+        max_r, pos_max, state_max, who_max = self.__recurrence(
+            query,
+            targets,
+            lsize_l,
+            l1,
+            max_r,
+            pos_max,
+            state_max,
+            who_max,
+            store_states=self.mem_limit,
         )
 
         cp, pos_max, who_max, state_max = self.__termination(
             np.remainder(self.qlen, self.traceback_limit) if self.mem_limit else l1,
-            pos_max=iter_info.pos_max,
-            state_max=iter_info.state_max,
-            who_max=iter_info.who_max,
-            cp=2 * self.maxl,
+            pos_max,
+            state_max,
+            who_max,
+            2 * self.maxl,
         )
 
         l2 = self.traceback_limit
@@ -356,7 +383,13 @@ class Tesserae:
             self.saved_states.pop()
 
         while self.mem_limit and self.saved_states:
-            iter_info, pos_target_n = self.saved_states.pop()
+            (
+                max_r,
+                pos_max_n,
+                state_max_n,
+                who_max_n,
+                pos_target_n,
+            ) = self.saved_states.pop()
 
             idx = len(self.saved_states)
             self.vt_m[1 - (idx == 0)] = np.copy(self.saved_vt_m[idx])
@@ -364,9 +397,14 @@ class Tesserae:
             self.vt_d[1 - (idx == 0)] = np.copy(self.saved_vt_d[idx])
 
             self.__recurrence(
+                query,
+                targets,
                 lsize_l,
                 l2,
-                iter_info,
+                max_r,
+                pos_max_n,
+                state_max_n,
+                who_max_n,
                 offset=pos_target_n,
                 l0=1 + (idx == 0),
                 store_states=False,
@@ -382,7 +420,7 @@ class Tesserae:
         # sequences.
         return self.path
 
-    def __render(self, cp, panel) -> None:
+    def __render(self, cp, panel):
         """Trace back paths in the graph to create results.
 
         Returns a list of TesseraeAlignmentResult objects representing all alignments
@@ -658,9 +696,14 @@ class Tesserae:
 
     def __recurrence(
         self,
+        query,
+        targets,
         lsize_l,
         l1,
-        iter_info: HMMIterationInfo,
+        max_r,
+        pos_max,
+        state_max,
+        who_max,
         offset=0,
         l0=2,
         store_states=False,
@@ -668,11 +711,6 @@ class Tesserae:
         # Use no more threads than sequences, since all
         # parallelizations are on the individual sequences.
         recurrence_threads = min(self.threads, self.nseq)
-
-        max_r = iter_info.max_r
-        pos_max = iter_info.pos_max
-        state_max = iter_info.state_max
-        who_max = iter_info.who_max
 
         for pos_target in range(l0, l1 + 1):
             max_rn = SMALL + max_r
@@ -686,10 +724,10 @@ class Tesserae:
             tb_base = who_max * 10 + state_max + pos_max / self.tb_divisor
 
             argvec = []
-            for target in self.targets:
+            for target in targets:
                 argvec.append(
                     (
-                        self.query,
+                        query,
                         target,
                         self.vt_m[pos_target % 2][seq],
                         self.vt_i[pos_target % 2][seq],
@@ -733,7 +771,7 @@ class Tesserae:
             if store_states and pos_target_trace == 0:
                 idx = len(self.saved_states)
                 self.saved_states.append(
-                    (HMMIterationInfo(max_r, pos_max, state_max, who_max), pos_target)
+                    (max_r, pos_max, state_max, who_max, pos_target)
                 )
                 self.saved_vt_m[idx] = np.copy(self.vt_m[1])
                 self.saved_vt_i[idx] = np.copy(self.vt_i[1])
@@ -743,28 +781,28 @@ class Tesserae:
             self.llk = max_r + self.params.lterm
             self.combined_llk += max_r + self.params.lterm
 
-        return HMMIterationInfo(max_r, pos_max, state_max, who_max)
+        return max_r, pos_max, state_max, who_max
 
-    def __initialization(self, lsize_l):
+    def __initialization(self, query, targets, lsize_l):
         who_max = 0
         state_max = 0
         pos_max = 0
         max_r = SMALL
 
         seq = 0
-        for target in self.targets:
+        for target in targets:
             for pos_seq in range(1, len(target) + 1):
                 self.vt_m[0][seq][pos_seq] = (
                     self.params.lpiM
                     - lsize_l
-                    + self.params.lsm[CONVERT[self.query.sequence[0]]][
+                    + self.params.lsm[CONVERT[query.sequence[0]]][
                         CONVERT[target.sequence[pos_seq - 1]]
                     ]
                 )
                 self.vt_i[0][seq][pos_seq] = (
                     self.params.lpiI
                     - lsize_l
-                    + self.params.lsi[CONVERT[self.query.sequence[0]]]
+                    + self.params.lsi[CONVERT[query.sequence[0]]]
                 )
 
                 if pos_seq > 0:
@@ -795,14 +833,12 @@ class Tesserae:
             seq += 1
 
         if self.mem_limit:
-            self.saved_states.append(
-                (HMMIterationInfo(max_r, pos_max, state_max, who_max), 0)
-            )
+            self.saved_states.append((max_r, pos_max, state_max, who_max, 0))
             self.saved_vt_m[0] = np.copy(self.vt_m[0])
             self.saved_vt_i[0] = np.copy(self.vt_i[0])
             self.saved_vt_d[0] = np.copy(self.vt_d[0])
 
-        return HMMIterationInfo(max_r, pos_max, state_max, who_max)
+        return max_r, pos_max, state_max, who_max
 
     def __str__(self):
         max_name_length = 0
