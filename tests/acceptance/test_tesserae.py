@@ -76,4 +76,4 @@ class TestTesseraeAcceptance:
             if reduce_mem:
                 max_mem_limit = sqrt(total_len) + 2
                 assert t.traceback_limit <= max_mem_limit
-                assert t.states_to_save <= max_mem_limit
+                assert t.num_states_to_save <= max_mem_limit

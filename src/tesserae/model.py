@@ -3,7 +3,7 @@ import logging
 import math
 import sys
 from dataclasses import dataclass
-from typing import List
+from typing import Dict, List, Sequence
 
 import numpy as np
 import pysam
@@ -188,41 +188,41 @@ class Tesserae:
         self.params = params or TesseraeParameters.from_default_parms()
 
         # Initialize the host of variables used elsewhere in Tesserae:
-        self.states_to_save = None
-        self.traceback_limit = None
-        self.vt_m = None
-        self.vt_i = None
-        self.vt_d = None
-        self.tb_m = None
-        self.tb_i = None
-        self.tb_d = None
-        self.saved_vt_m = None
-        self.saved_vt_i = None
-        self.saved_vt_d = None
-        self.saved_states = None
-        self.maxpath_copy = None
-        self.maxpath_state = None
-        self.maxpath_pos = None
-        self.tb_divisor = None
+        self.num_states_to_save: int
+        self.traceback_limit: int
+        self.vt_m: np.ndarray[float]
+        self.vt_i: np.ndarray[float]
+        self.vt_d: np.ndarray[float]
+        self.tb_m: np.ndarray[float]
+        self.tb_i: np.ndarray[float]
+        self.tb_d: np.ndarray[float]
+        self.saved_vt_m: np.ndarray[float]
+        self.saved_vt_i: np.ndarray[float]
+        self.saved_vt_d: np.ndarray[float]
+        self.saved_states: np.ndarray[float]
+        self.maxpath_copy: np.ndarray[int]
+        self.maxpath_state: np.ndarray[int]
+        self.maxpath_pos: np.ndarray[int]
+        self.tb_divisor: float
         self.llk = 0.0
         self.combined_llk = 0.0
 
-        self.path = []
-        self.editTrack = []
-        self.mem_limit = mem_limit
+        self.path: List[TesseraeAlignmentResult] = []
+        self.editTrack: str = ""
+        self.mem_limit: bool = mem_limit
 
         if sys.version_info < (3, 8) and threads > 1:
             raise NotImplementedError(
                 "Threading is only supported with python3.8 and above!"
             )
-        self.threads = threads
+        self.threads: int = threads
 
-        self.query = {}
-        self.targets = {}
-        self.qlen = None
-        self.maxl = None
-        self.nseq = None
-        self._target_name_index_dict = dict()
+        self.query: NucleotideSequence
+        self.targets: Sequence[NucleotideSequence]
+        self.qlen: int
+        self.maxl: int
+        self.nseq: int
+        self._target_name_index_dict: Dict[str, int] = {}
 
     def _query_and_target_dependent_setup(self, query, targets):
         """Perform all initialization that depends on the query or targets."""
@@ -240,13 +240,13 @@ class Tesserae:
 
             # The traceback limit must be even!
             if qsq_up % 2 == 0:
-                self.states_to_save = qsq_down
+                self.num_states_to_save = qsq_down
                 self.traceback_limit = qsq_up
             else:
-                self.states_to_save = qsq_up
+                self.num_states_to_save = qsq_up
                 self.traceback_limit = qsq_down
-            while self.states_to_save * self.traceback_limit < self.qlen:
-                self.states_to_save += 1
+            while self.num_states_to_save * self.traceback_limit < self.qlen:
+                self.num_states_to_save += 1
         else:
             self.traceback_limit = self.qlen
 
@@ -266,17 +266,17 @@ class Tesserae:
 
         if self.mem_limit:
             self.saved_vt_m = np.full(
-                [self.states_to_save + 1, self.nseq, self.maxl + 1],
+                [self.num_states_to_save + 1, self.nseq, self.maxl + 1],
                 SMALL,
                 dtype=np.float64,
             )
             self.saved_vt_i = np.full(
-                [self.states_to_save + 1, self.nseq, self.maxl + 1],
+                [self.num_states_to_save + 1, self.nseq, self.maxl + 1],
                 SMALL,
                 dtype=np.float64,
             )
             self.saved_vt_d = np.full(
-                [self.states_to_save + 1, self.nseq, self.maxl + 1],
+                [self.num_states_to_save + 1, self.nseq, self.maxl + 1],
                 SMALL,
                 dtype=np.float64,
             )
@@ -288,7 +288,7 @@ class Tesserae:
 
         self.tb_divisor = np.power(10.0, int(math.log(self.maxl) + 1))
 
-    def get_target(self, name) -> str:
+    def get_target(self, name) -> NucleotideSequence:
         """Get the target object with the given name if it exists in our data.
 
         Raises key error otherwise."""
@@ -550,13 +550,9 @@ class Tesserae:
         max_rn,
         seq,
         pos_target,
-        pos_target_trace,
         offset,
-        l1,
         tb_divisor,
-        mem_limit,
         params: TesseraeParameters,
-        store_states=False,
     ):
         seq_10 = seq * 10
 
@@ -700,13 +696,9 @@ class Tesserae:
                         max_rn,
                         seq,
                         pos_target,
-                        pos_target_trace,
                         offset,
-                        l1,
                         self.tb_divisor,
-                        self.mem_limit,
                         self.params,
-                        store_states,
                     )
                 )
                 seq += 1
