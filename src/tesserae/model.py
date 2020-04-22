@@ -1,3 +1,4 @@
+import collections
 import itertools
 import logging
 import math
@@ -41,15 +42,59 @@ CONVERT = {
 
 
 @dataclass
-class TesseraeAlignmentResult:
-    """
-    Representation of the results of a Tesserae alignment
-    """
+class TesseraeAlignedSegment:
+    """A segment of a Tesserae alignment."""
 
     seq_name: str
     alignment_string: str
     target_start_index: int
     target_end_index: int
+
+
+@dataclass
+class TesseraeAlignmentResult(collections.abc.Sequence):
+    """Results of a Tesserae alignment."""
+
+    path: List[TesseraeAlignedSegment]
+    llk: float
+    edit_track: str
+
+    def __len__(self):
+        return len(self.path)
+
+    def __getitem__(self, item):
+        return self.path[item]
+
+    def __str__(self):
+        max_name_length = 0
+
+        for i in range(0, len(self.path)):
+            name = "%s (%d-%d)" % (self.path[i][0], self.path[i][2], self.path[i][3],)
+            max_name_length = max(max_name_length, len(name))
+
+        fmt = f"%{max_name_length}s"
+
+        sb = ["\n"]
+
+        for i in range(0, len(self.path)):
+            name = "%s (%d-%d)" % (self.path[i][0], self.path[i][2], self.path[i][3],)
+
+            sb.append(fmt % name)
+            sb.append(" ")
+            sb.append(f"{self.path[i][1]}")
+            sb.append("\n")
+
+            if i == 0:
+                sb.append(fmt % " ")
+                sb.append(" ")
+                sb.append(self.edit_track)
+                sb.append("\n")
+
+        sb.append("\n")
+        sb.append(f"Mllk: {self.llk}")
+        sb.append("\n")
+
+        return "".join(sb)
 
 
 def repeat(string_to_expand, length):
@@ -207,8 +252,6 @@ class Tesserae:
         self.llk = 0.0
         self.combined_llk = 0.0
 
-        self.path: List[TesseraeAlignmentResult] = []
-        self.editTrack: str = ""
         self.mem_limit: bool = mem_limit
 
         if sys.version_info < (3, 8) and threads > 1:
@@ -295,9 +338,7 @@ class Tesserae:
 
         return self.targets[self._target_name_index_dict[name]]
 
-    def align_from_fastx(
-        self, query_fastx, target_fastx
-    ) -> List[TesseraeAlignmentResult]:
+    def align_from_fastx(self, query_fastx, target_fastx) -> TesseraeAlignmentResult:
         """Align all target sequences to the query sequence in the given FASTX
         (FASTA / FASTQ) files.
 
@@ -314,7 +355,7 @@ class Tesserae:
 
         return self.align(query, targets)
 
-    def align(self, query, targets) -> List[TesseraeAlignmentResult]:
+    def align(self, query, targets) -> TesseraeAlignmentResult:
         """Align all sequences in `targets` to the given query sequence."""
 
         # Set our query and target properties:
@@ -375,24 +416,11 @@ class Tesserae:
                 l2, pos_max, state_max, who_max, cp
             )
 
-        # Collapse our data into a list of tuples we can report:
-        self.__render(cp + 1, panel)
+        return self.__render(cp + 1, panel)
 
-        # Return the list of tuples representing the alignment of the given
-        # sequences.
-        return self.path
-
-    def __render(self, cp, panel) -> None:
-        """Trace back paths in the graph to create results.
-
-        # todo: refactor this to return results with return statement
-        Results are stored in self.path
-        """
-
-        # Prepare target sequence
-        seqs = []
-        for seq_name in panel.keys():
-            seqs.append((seq_name, panel[seq_name]))
+    def __render(self, cp, panel) -> TesseraeAlignmentResult:
+        """Trace back paths in the graph to create results."""
+        seqs = list(panel.items())
         sb = []
         pos_start = -1
         pos_end = -1
@@ -408,9 +436,7 @@ class Tesserae:
 
                 sb.append(seqs[0][1][pos_target - 1])
                 pos_target += 1
-        self.path.append(
-            TesseraeAlignmentResult(seqs[0][0], "".join(sb), pos_start, pos_end)
-        )
+        path = [TesseraeAlignedSegment(seqs[0][0], "".join(sb), pos_start, pos_end)]
 
         # Prepare matching track
         sb = []
@@ -431,7 +457,7 @@ class Tesserae:
                 sb.append("^")
             else:
                 sb.append("~")
-        self.editTrack = "".join(sb)
+        edit_track = "".join(sb)
 
         # Prepare copying tracks
         current_track = seqs[self.maxpath_copy[cp] + 1][0]
@@ -447,8 +473,8 @@ class Tesserae:
                 and np.abs(self.maxpath_pos[i] - self.maxpath_pos[i - 1]) > 1
                 or self.maxpath_pos[i] == last_known_pos + 1
             ):
-                self.path.append(
-                    TesseraeAlignmentResult(
+                path.append(
+                    TesseraeAlignedSegment(
                         current_track, "".join(sb), pos_start, pos_end
                     )
                 )
@@ -463,8 +489,8 @@ class Tesserae:
                 sb = [repeat(" ", i - cp)]
 
             if i > cp and self.maxpath_copy[i] != self.maxpath_copy[i - 1]:
-                self.path.append(
-                    TesseraeAlignmentResult(
+                path.append(
+                    TesseraeAlignedSegment(
                         current_track, "".join(sb), pos_start, pos_end
                     )
                 )
@@ -489,9 +515,10 @@ class Tesserae:
                 pos_end = self.maxpath_pos[i] - 1
 
                 sb.append(c)
-        self.path.append(
-            TesseraeAlignmentResult(current_track, "".join(sb), pos_start, pos_end)
+        path.append(
+            TesseraeAlignedSegment(current_track, "".join(sb), pos_start, pos_end)
         )
+        return TesseraeAlignmentResult(path=path, llk=self.llk, edit_track=edit_track)
 
     def __to_traceback_indices(self, index):
         who = int(index / 10)
@@ -660,7 +687,7 @@ class Tesserae:
         offset=0,
         l0=2,
         store_states=False,
-    ):
+    ) -> HMMIterationInfo:
         # Use no more threads than sequences, since all
         # parallelizations are on the individual sequences.
         recurrence_threads = min(self.threads, self.nseq)
@@ -795,34 +822,3 @@ class Tesserae:
             self.saved_vt_d[0] = np.copy(self.vt_d[0])
 
         return HMMIterationInfo(max_r, pos_max, state_max, who_max)
-
-    def __str__(self):
-        max_name_length = 0
-
-        for i in range(0, len(self.path)):
-            name = "%s (%d-%d)" % (self.path[i][0], self.path[i][2], self.path[i][3])
-            max_name_length = max(max_name_length, len(name))
-
-        fmt = f"%{max_name_length}s"
-
-        sb = ["\n"]
-
-        for i in range(0, len(self.path)):
-            name = "%s (%d-%d)" % (self.path[i][0], self.path[i][2], self.path[i][3])
-
-            sb.append(fmt % name)
-            sb.append(" ")
-            sb.append(f"{self.path[i][1]}")
-            sb.append("\n")
-
-            if i == 0:
-                sb.append(fmt % " ")
-                sb.append(" ")
-                sb.append(self.editTrack)
-                sb.append("\n")
-
-        sb.append("\n")
-        sb.append(f"Mllk: {self.llk}")
-        sb.append("\n")
-
-        return "".join(sb)
