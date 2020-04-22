@@ -101,11 +101,6 @@ def repeat(string_to_expand, length):
     return (string_to_expand * (int(length / len(string_to_expand)) + 1))[:length]
 
 
-# A hack to be able to calculate recurrence in parallel
-def unwrap_recurrence_target(arg, **kwarg):
-    return Tesserae.recurrence_target(*arg, **kwarg)
-
-
 def dump_query_and_targets_to_log(query, targets):
     """Dump the Sequence objects in query and targets to the log as a DEBUG message."""
 
@@ -281,7 +276,6 @@ class Tesserae:
             qsq_down = math.floor(qlen_sqrt)
             qsq_up = math.ceil(qlen_sqrt)
 
-            # The traceback limit must be even!
             if qsq_up % 2 == 0:
                 self.num_states_to_save = qsq_down
                 self.traceback_limit = qsq_up
@@ -733,10 +727,12 @@ class Tesserae:
             if recurrence_threads > 1:
                 from multiprocessing.pool import ThreadPool as Pool
 
-                with Pool(recurrence_threads) as p:
-                    rvec = p.map(unwrap_recurrence_target, argvec)
+                with Pool(recurrence_threads) as pool:
+                    rvec = pool.map(
+                        lambda args: Tesserae.recurrence_target(*args), argvec
+                    )
             else:
-                rvec = [unwrap_recurrence_target(args) for args in argvec]
+                rvec = [Tesserae.recurrence_target(*args) for args in argvec]
             (max_r, who_max, state_max, pos_max), _, _ = max(rvec, key=lambda x: x[0])
             seq = 0
             for _, (vt_m_n, vt_i_n, vt_d_n), (tb_m_n, tb_i_n, tb_d_n) in rvec:
