@@ -350,13 +350,12 @@ class Tesserae:
         self.maxpath_state = np.zeros([2 * self.max_seq_len + 1], dtype=np.uint8)
         self.maxpath_pos = np.zeros([2 * self.max_seq_len + 1], dtype=np.int64)
 
-        self.tb_divisor = np.power(10.0, int(math.log(self.max_seq_len) + 1))
+        self.tb_divisor = math.pow(10.0, int(math.log(self.max_seq_len) + 1))
 
     def get_target(self, name) -> NucleotideSequence:
         """Get the target object with the given name if it exists in our data.
 
         Raises key error otherwise."""
-
         return self.targets[self._target_name_index_dict[name]]
 
     def align_from_fastx(self, query_fastx, target_fastx) -> TesseraeAlignmentResult:
@@ -807,7 +806,7 @@ class AlignmentTrackBuilder:
             if (
                 i > self.copy_position
                 and self.maxpath_copy[i] == self.maxpath_copy[i - 1]
-                and np.abs(self.maxpath_pos[i] - self.maxpath_pos[i - 1]) > 1
+                and abs(self.maxpath_pos[i] - self.maxpath_pos[i - 1]) > 1
                 or self.maxpath_pos[i] == last_known_pos + 1
             ):
                 path.append(
