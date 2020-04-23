@@ -4,7 +4,7 @@ import logging
 import math
 import sys
 from dataclasses import dataclass
-from typing import Dict, List, Sequence
+from typing import Dict, List, Sequence, Tuple
 
 import numpy as np
 import pysam
@@ -255,10 +255,12 @@ class Tesserae:
             )
         self.threads: int = threads
 
+        # attributes specified in align()
         self.query: NucleotideSequence
         self.targets: Sequence[NucleotideSequence]
-        self.qlen: int
-        self.maxl: int
+        self.ltarget_seq_size: float
+        self.query_len: int
+        self.max_seq_len: int
         self.nseq: int
         self._target_name_index_dict: Dict[str, int] = {}
 
@@ -267,12 +269,14 @@ class Tesserae:
         self.query = query
         self.targets = targets
 
-        self.qlen = len(self.query)
-        self.maxl = max(len(s) for s in itertools.chain([self.query], self.targets))
+        self.query_len = len(self.query)
+        self.max_seq_len = max(
+            len(s) for s in itertools.chain([self.query], self.targets)
+        )
         self.nseq = len(self.targets)
 
         if self.mem_limit:
-            qlen_sqrt = math.sqrt(self.qlen)
+            qlen_sqrt = math.sqrt(self.query_len)
             qsq_down = math.floor(qlen_sqrt)
             qsq_up = math.ceil(qlen_sqrt)
 
@@ -282,48 +286,57 @@ class Tesserae:
             else:
                 self.num_states_to_save = qsq_up
                 self.traceback_limit = qsq_down
-            while self.num_states_to_save * self.traceback_limit < self.qlen:
+            while self.num_states_to_save * self.traceback_limit < self.query_len:
                 self.num_states_to_save += 1
         else:
-            self.traceback_limit = self.qlen
+            self.traceback_limit = self.query_len
 
-        self.vt_m = np.full([2, self.nseq, self.maxl + 1], SMALL, dtype=np.float64)
-        self.vt_i = np.full([2, self.nseq, self.maxl + 1], SMALL, dtype=np.float64)
-        self.vt_d = np.full([2, self.nseq, self.maxl + 1], SMALL, dtype=np.float64)
+        self.vt_m = np.full(
+            [2, self.nseq, self.max_seq_len + 1], SMALL, dtype=np.float64
+        )
+        self.vt_i = np.full(
+            [2, self.nseq, self.max_seq_len + 1], SMALL, dtype=np.float64
+        )
+        self.vt_d = np.full(
+            [2, self.nseq, self.max_seq_len + 1], SMALL, dtype=np.float64
+        )
 
         self.tb_m = np.zeros(
-            [self.traceback_limit + 1, self.nseq, self.maxl + 1], dtype=np.float64
+            [self.traceback_limit + 1, self.nseq, self.max_seq_len + 1],
+            dtype=np.float64,
         )
         self.tb_i = np.zeros(
-            [self.traceback_limit + 1, self.nseq, self.maxl + 1], dtype=np.float64
+            [self.traceback_limit + 1, self.nseq, self.max_seq_len + 1],
+            dtype=np.float64,
         )
         self.tb_d = np.zeros(
-            [self.traceback_limit + 1, self.nseq, self.maxl + 1], dtype=np.float64
+            [self.traceback_limit + 1, self.nseq, self.max_seq_len + 1],
+            dtype=np.float64,
         )
 
         if self.mem_limit:
             self.saved_vt_m = np.full(
-                [self.num_states_to_save + 1, self.nseq, self.maxl + 1],
+                [self.num_states_to_save + 1, self.nseq, self.max_seq_len + 1],
                 SMALL,
                 dtype=np.float64,
             )
             self.saved_vt_i = np.full(
-                [self.num_states_to_save + 1, self.nseq, self.maxl + 1],
+                [self.num_states_to_save + 1, self.nseq, self.max_seq_len + 1],
                 SMALL,
                 dtype=np.float64,
             )
             self.saved_vt_d = np.full(
-                [self.num_states_to_save + 1, self.nseq, self.maxl + 1],
+                [self.num_states_to_save + 1, self.nseq, self.max_seq_len + 1],
                 SMALL,
                 dtype=np.float64,
             )
             self.saved_states = []
 
-        self.maxpath_copy = np.zeros([2 * self.maxl + 1], dtype=np.uint8)
-        self.maxpath_state = np.zeros([2 * self.maxl + 1], dtype=np.uint8)
-        self.maxpath_pos = np.zeros([2 * self.maxl + 1], dtype=np.int64)
+        self.maxpath_copy = np.zeros([2 * self.max_seq_len + 1], dtype=np.uint8)
+        self.maxpath_state = np.zeros([2 * self.max_seq_len + 1], dtype=np.uint8)
+        self.maxpath_pos = np.zeros([2 * self.max_seq_len + 1], dtype=np.int64)
 
-        self.tb_divisor = np.power(10.0, int(math.log(self.maxl) + 1))
+        self.tb_divisor = np.power(10.0, int(math.log(self.max_seq_len) + 1))
 
     def get_target(self, name) -> NucleotideSequence:
         """Get the target object with the given name if it exists in our data.
@@ -358,34 +371,22 @@ class Tesserae:
             self._target_name_index_dict[target.name] = i
 
         dump_query_and_targets_to_log(self.query, self.targets)
+        self.ltarget_seq_size = math.log(sum(len(t.sequence) for t in self.targets))
 
-        # Create our panel here:
-        panel = {self.query.name: self.query.sequence}
-        for target in self.targets:
-            panel[target.name] = target.sequence
-
-        l1 = self.qlen
-        size_l = 0
-        for target in panel.values():
-            size_l += len(target)
-
-        size_l -= self.qlen
-        lsize_l = math.log(size_l)
-
-        iter_info = self.__initialization(lsize_l)
+        iter_info = self.__initialization()
         iter_info = self.__recurrence(
-            lsize_l, l1, iter_info=iter_info, store_states=self.mem_limit,
+            l1=self.query_len, iter_info=iter_info, store_states=self.mem_limit,
         )
 
-        cp, pos_max, who_max, state_max = self.__termination(
-            np.remainder(self.qlen, self.traceback_limit) if self.mem_limit else l1,
+        copy_position, pos_max, who_max, state_max = self.__termination(
+            l1=self.query_len % self.traceback_limit
+            if self.mem_limit
+            else self.query_len,
             pos_max=iter_info.pos_max,
             state_max=iter_info.state_max,
             who_max=iter_info.who_max,
-            cp=2 * self.maxl,
+            copy_position=2 * self.max_seq_len,
         )
-
-        l2 = self.traceback_limit
 
         if self.mem_limit and self.saved_states:
             self.saved_states.pop()
@@ -399,119 +400,22 @@ class Tesserae:
             self.vt_d[1 - (idx == 0)] = np.copy(self.saved_vt_d[idx])
 
             self.__recurrence(
-                lsize_l,
-                l2,
-                iter_info,
+                l1=self.traceback_limit,
+                iter_info=iter_info,
                 offset=pos_target_n,
                 l0=1 + (idx == 0),
                 store_states=False,
             )
-            cp, pos_max, who_max, state_max = self.__termination(
-                l2, pos_max, state_max, who_max, cp
+            copy_position, pos_max, who_max, state_max = self.__termination(
+                self.traceback_limit, pos_max, state_max, who_max, copy_position
             )
 
-        return self.__render(cp + 1, panel)
+        return self.__render(copy_position + 1)
 
-    def __render(self, cp, panel) -> TesseraeAlignmentResult:
+    def __render(self, copy_position: int) -> TesseraeAlignmentResult:
         """Trace back paths in the graph to create results."""
-        seqs = list(panel.items())
-        sb = []
-        pos_start = -1
-        pos_end = -1
-        pos_target = 1
-        for i in range(cp, 2 * self.maxl + 1):
-            if self.maxpath_state[i] == 3:
-                sb.append("-")
-            else:
-                if pos_start == -1:
-                    pos_start = pos_target - 1
-
-                pos_end = pos_target - 1
-
-                sb.append(seqs[0][1][pos_target - 1])
-                pos_target += 1
-        path = [TesseraeAlignedSegment(seqs[0][0], "".join(sb), pos_start, pos_end)]
-
-        # Prepare matching track
-        sb = []
-        pos_target = 1
-        for i in range(cp, 2 * self.maxl + 1):
-            if self.maxpath_state[i] == 1:
-                if (
-                    seqs[0][1][pos_target - 1]
-                    == seqs[self.maxpath_copy[i] + 1][1][self.maxpath_pos[i] - 1]
-                ):
-                    sb.append("|")
-                else:
-                    sb.append(" ")
-
-                pos_target += 1
-            elif self.maxpath_state[i] == 2:
-                pos_target += 1
-                sb.append("^")
-            else:
-                sb.append("~")
-        edit_track = "".join(sb)
-
-        # Prepare copying tracks
-        current_track = seqs[self.maxpath_copy[cp] + 1][0]
-        sb = []
-        pos_start = -1
-        pos_end = -1
-        last_known_pos = -1
-        uppercase = True
-        for i in range(cp, 2 * self.maxl + 1):
-            if (
-                i > cp
-                and self.maxpath_copy[i] == self.maxpath_copy[i - 1]
-                and np.abs(self.maxpath_pos[i] - self.maxpath_pos[i - 1]) > 1
-                or self.maxpath_pos[i] == last_known_pos + 1
-            ):
-                path.append(
-                    TesseraeAlignedSegment(
-                        current_track, "".join(sb), pos_start, pos_end
-                    )
-                )
-                uppercase = not uppercase
-                last_known_pos = self.maxpath_pos[i - 1]
-
-                if pos_start != pos_end:
-                    pos_start = self.maxpath_pos[i] - 1
-                    pos_end = self.maxpath_pos[i] - 1
-
-                current_track = seqs[self.maxpath_copy[i] + 1][0]
-                sb = [repeat(" ", i - cp)]
-
-            if i > cp and self.maxpath_copy[i] != self.maxpath_copy[i - 1]:
-                path.append(
-                    TesseraeAlignedSegment(
-                        current_track, "".join(sb), pos_start, pos_end
-                    )
-                )
-                uppercase = True
-
-                if pos_start != pos_end:
-                    pos_start = self.maxpath_pos[i] - 1
-                    pos_end = self.maxpath_pos[i] - 1
-
-                current_track = seqs[self.maxpath_copy[i] + 1][0]
-                sb = [repeat(" ", i - cp)]
-
-            if self.maxpath_state[i] == 2:
-                sb.append("-")
-            else:
-                c = seqs[self.maxpath_copy[i] + 1][1][self.maxpath_pos[i] - 1]
-                c = c.upper() if uppercase else c.lower()
-
-                if pos_start == -1:
-                    pos_start = self.maxpath_pos[i] - 1
-
-                pos_end = self.maxpath_pos[i] - 1
-
-                sb.append(c)
-        path.append(
-            TesseraeAlignedSegment(current_track, "".join(sb), pos_start, pos_end)
-        )
+        builder = AlignmentTrackBuilder.from_tesserae(self, copy_position)
+        path, edit_track = builder.build()
         return TesseraeAlignmentResult(path=path, llk=self.llk, edit_track=edit_track)
 
     def __to_traceback_indices(self, index):
@@ -521,10 +425,10 @@ class Tesserae:
         pos = int((state_float - state) * self.tb_divisor + 1e-6)
         return who, state, pos
 
-    def __termination(self, l1, pos_max, state_max, who_max, cp):
-        self.maxpath_copy[cp] = who_max
-        self.maxpath_state[cp] = state_max
-        self.maxpath_pos[cp] = pos_max
+    def __termination(self, l1, pos_max, state_max, who_max, copy_position):
+        self.maxpath_copy[copy_position] = who_max
+        self.maxpath_state[copy_position] = state_max
+        self.maxpath_pos[copy_position] = pos_max
 
         pos_target = l1
         who_next = 0
@@ -544,19 +448,19 @@ class Tesserae:
                     self.tb_d[pos_target][who_max][pos_max]
                 )
 
-            cp -= 1
+            copy_position -= 1
 
-            self.maxpath_copy[cp] = who_next
-            self.maxpath_state[cp] = state_next
-            self.maxpath_pos[cp] = pos_next
+            self.maxpath_copy[copy_position] = who_next
+            self.maxpath_state[copy_position] = state_next
+            self.maxpath_pos[copy_position] = pos_next
 
             who_max = who_next
             state_max = state_next
             pos_max = pos_next
 
-            if self.maxpath_state[cp + 1] != 3:
+            if self.maxpath_state[copy_position + 1] != 3:
                 pos_target -= 1
-        return cp, pos_max, who_max, state_max
+        return copy_position, pos_max, who_max, state_max
 
     @staticmethod
     def recurrence_target(
@@ -674,13 +578,7 @@ class Tesserae:
         )
 
     def __recurrence(
-        self,
-        lsize_l,
-        l1,
-        iter_info: HMMIterationInfo,
-        offset=0,
-        l0=2,
-        store_states=False,
+        self, l1, iter_info: HMMIterationInfo, offset=0, l0=2, store_states=False,
     ) -> HMMIterationInfo:
         # Use no more threads than sequences, since all
         # parallelizations are on the individual sequences.
@@ -698,8 +596,12 @@ class Tesserae:
             if self.mem_limit and store_states:
                 pos_target_trace = pos_target % self.traceback_limit
 
-            vt_m_base = max_r + self.params.lrho + self.params.lpiM - lsize_l
-            vt_i_base = max_r + self.params.lrho + self.params.lpiI - lsize_l
+            vt_m_base = (
+                max_r + self.params.lrho + self.params.lpiM - self.ltarget_seq_size
+            )
+            vt_i_base = (
+                max_r + self.params.lrho + self.params.lpiI - self.ltarget_seq_size
+            )
             tb_base = who_max * 10 + state_max + pos_max / self.tb_divisor
 
             argvec = []
@@ -724,6 +626,8 @@ class Tesserae:
                 )
                 seq += 1
 
+            # todo: check if the list comprehension and map are a memory hog.
+            #  If so convert to generators and imap
             if recurrence_threads > 1:
                 from multiprocessing.pool import ThreadPool as Pool
 
@@ -760,7 +664,7 @@ class Tesserae:
 
         return HMMIterationInfo(max_r, pos_max, state_max, who_max)
 
-    def __initialization(self, lsize_l):
+    def __initialization(self):
         who_max = 0
         state_max = 0
         pos_max = 0
@@ -771,14 +675,14 @@ class Tesserae:
             for pos_seq in range(1, len(target) + 1):
                 self.vt_m[0][seq][pos_seq] = (
                     self.params.lpiM
-                    - lsize_l
+                    - self.ltarget_seq_size
                     + self.params.lsm[CONVERT[self.query.sequence[0]]][
                         CONVERT[target.sequence[pos_seq - 1]]
                     ]
                 )
                 self.vt_i[0][seq][pos_seq] = (
                     self.params.lpiI
-                    - lsize_l
+                    - self.ltarget_seq_size
                     + self.params.lsi[CONVERT[self.query.sequence[0]]]
                 )
 
@@ -818,3 +722,143 @@ class Tesserae:
             self.saved_vt_d[0] = np.copy(self.vt_d[0])
 
         return HMMIterationInfo(max_r, pos_max, state_max, who_max)
+
+
+@dataclass
+class AlignmentTrackBuilder:
+    seqs: List[Tuple[str, str]]
+    max_seq_len: int
+    maxpath_state: List[int]
+    maxpath_copy: List[int]
+    maxpath_pos: List[int]
+    copy_position: int
+
+    @classmethod
+    def from_tesserae(cls, tr: Tesserae, copy_position):
+        seqs = [(s.name, s.sequence) for s in itertools.chain([tr.query], tr.targets)]
+        return cls(
+            seqs=seqs,
+            max_seq_len=tr.max_seq_len,
+            maxpath_state=tr.maxpath_state,
+            maxpath_copy=tr.maxpath_copy,
+            maxpath_pos=tr.maxpath_pos,
+            copy_position=copy_position,
+        )
+
+    def build(self):
+        first_track = self._build_first_track()
+
+        # Prepare matching track
+        edit_track = self._build_edit_track()
+
+        # Prepare copying tracks
+        path = self._build_copying_tracks()
+        return [first_track] + path, edit_track
+
+    def _build_first_track(self) -> TesseraeAlignedSegment:
+        string_builder = []
+        pos_start = -1
+        pos_end = -1
+        pos_target = 1
+        for i in range(self.copy_position, 2 * self.max_seq_len + 1):
+            if self.maxpath_state[i] == 3:
+                string_builder.append("-")
+            else:
+                if pos_start == -1:
+                    pos_start = pos_target - 1
+
+                pos_end = pos_target - 1
+
+                string_builder.append(self.seqs[0][1][pos_target - 1])
+                pos_target += 1
+        return TesseraeAlignedSegment(
+            self.seqs[0][0], "".join(string_builder), pos_start, pos_end
+        )
+
+    def _build_copying_tracks(self) -> List[TesseraeAlignedSegment]:
+        current_track = self.seqs[self.maxpath_copy[self.copy_position] + 1][0]
+        string_builder: List[str] = []
+        pos_start = -1
+        pos_end = -1
+        last_known_pos = -1
+        uppercase = True
+        path = []
+        for i in range(self.copy_position, 2 * self.max_seq_len + 1):
+            if (
+                i > self.copy_position
+                and self.maxpath_copy[i] == self.maxpath_copy[i - 1]
+                and np.abs(self.maxpath_pos[i] - self.maxpath_pos[i - 1]) > 1
+                or self.maxpath_pos[i] == last_known_pos + 1
+            ):
+                path.append(
+                    TesseraeAlignedSegment(
+                        current_track, "".join(string_builder), pos_start, pos_end
+                    )
+                )
+                uppercase = not uppercase
+                last_known_pos = self.maxpath_pos[i - 1]
+
+                if pos_start != pos_end:
+                    pos_start = self.maxpath_pos[i] - 1
+                    pos_end = self.maxpath_pos[i] - 1
+
+                current_track = self.seqs[self.maxpath_copy[i] + 1][0]
+                string_builder = [repeat(" ", i - self.copy_position)]
+
+            if (
+                i > self.copy_position
+                and self.maxpath_copy[i] != self.maxpath_copy[i - 1]
+            ):
+                path.append(
+                    TesseraeAlignedSegment(
+                        current_track, "".join(string_builder), pos_start, pos_end
+                    )
+                )
+                uppercase = True
+
+                if pos_start != pos_end:
+                    pos_start = self.maxpath_pos[i] - 1
+                    pos_end = self.maxpath_pos[i] - 1
+
+                current_track = self.seqs[self.maxpath_copy[i] + 1][0]
+                string_builder = [repeat(" ", i - self.copy_position)]
+
+            if self.maxpath_state[i] == 2:
+                string_builder.append("-")
+            else:
+                c = self.seqs[self.maxpath_copy[i] + 1][1][self.maxpath_pos[i] - 1]
+                c = c.upper() if uppercase else c.lower()
+
+                if pos_start == -1:
+                    pos_start = self.maxpath_pos[i] - 1
+
+                pos_end = self.maxpath_pos[i] - 1
+
+                string_builder.append(c)
+        path.append(
+            TesseraeAlignedSegment(
+                current_track, "".join(string_builder), pos_start, pos_end
+            )
+        )
+        return path
+
+    def _build_edit_track(self) -> str:
+        string_builder = []
+        pos_target = 1
+        for i in range(self.copy_position, 2 * self.max_seq_len + 1):
+            if self.maxpath_state[i] == 1:
+                if (
+                    self.seqs[0][1][pos_target - 1]
+                    == self.seqs[self.maxpath_copy[i] + 1][1][self.maxpath_pos[i] - 1]
+                ):
+                    string_builder.append("|")
+                else:
+                    string_builder.append(" ")
+
+                pos_target += 1
+            elif self.maxpath_state[i] == 2:
+                pos_target += 1
+                string_builder.append("^")
+            else:
+                string_builder.append("~")
+        return "".join(string_builder)

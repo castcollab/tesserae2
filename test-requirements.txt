@@ -1,3 +1,4 @@
+mypy==0.770
 pytest
 pytest-cov
 coverage >= 4.5
