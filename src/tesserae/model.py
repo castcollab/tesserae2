@@ -137,10 +137,24 @@ def ingest_fastx_file(fastx_file_name: str) -> List[NucleotideSequence]:
 
 @dataclass
 class HMMIterationInfo:
+    """These four values tend to be passed around between functions in the HMM a lot."""
+
     max_r: int
     pos_max: int
     state_max: int
     who_max: float
+
+
+@dataclass
+class RecurrenceTargetReturnVals:
+    """Just something to avoid massive tuples"""
+
+    vt_m_n: int
+    vt_i_n: int
+    vt_d_n: int
+    tb_m_n: int
+    tb_i_n: int
+    tb_d_n: int
 
 
 @dataclass
@@ -268,7 +282,7 @@ class Tesserae:
         """Perform all initialization that depends on the query or targets."""
         self.query = query
         self.targets = targets
-
+        self.ltarget_seq_size = math.log(sum(len(t.sequence) for t in self.targets))
         self.query_len = len(self.query)
         self.max_seq_len = max(
             len(s) for s in itertools.chain([self.query], self.targets)
@@ -371,7 +385,6 @@ class Tesserae:
             self._target_name_index_dict[target.name] = i
 
         dump_query_and_targets_to_log(self.query, self.targets)
-        self.ltarget_seq_size = math.log(sum(len(t.sequence) for t in self.targets))
 
         iter_info = self.__initialization()
         iter_info = self.__recurrence(
@@ -519,8 +532,8 @@ class Tesserae:
 
         tb_m_n = vt_m_mat.argmax(1)
         index_selector = tb_m_n + np.arange(len(tb_m_n)) * 4
-        vt_mn = vt_m_mat.ravel()[index_selector]
-        tb_mn = tb_m_mat.ravel()[index_selector]
+        vt_m_n = vt_m_mat.ravel()[index_selector]
+        tb_m_n = tb_m_mat.ravel()[index_selector]
 
         em_i = np.insert(
             np.full(len(vt_i) - 1, params.lsi[targ_idx], dtype=np.float64), 0, SMALL
@@ -540,41 +553,45 @@ class Tesserae:
 
         tb_i_n = vt_i_mat.argmax(1)
         index_selector = tb_i_n + np.arange(len(tb_i_n)) * 3
-        vt_in = vt_i_mat.ravel()[index_selector]
-        tb_in = tb_i_mat.ravel()[index_selector]
+        vt_i_n = vt_i_mat.ravel()[index_selector]
+        tb_i_n = tb_i_mat.ravel()[index_selector]
 
-        idx_m = vt_mn.argmax()
-        idx_i = vt_in.argmax()
+        idx_m = vt_m_n.argmax()
+        idx_i = vt_i_n.argmax()
 
-        if vt_mn[idx_m] > max_rn:
-            max_rn = vt_mn[idx_m]
+        if vt_m_n[idx_m] > max_rn:
+            max_rn = vt_m_n[idx_m]
             who_max_n = seq
             state_max_n = 1
             pos_max_n = idx_m
 
-        if vt_in[idx_i] > max_rn:
-            max_rn = vt_in[idx_i]
+        if vt_i_n[idx_i] > max_rn:
+            max_rn = vt_i_n[idx_i]
             who_max_n = seq
             state_max_n = 2
             pos_max_n = idx_i
 
         # Use traditional python-list instead of numpy for
         # the delete-vector in order to exploit the best of two worlds
-        vt_d_next = list(np.roll(vt_mn, 1) + params.ldel)
-        tb_d_next = [1] * len(vt_mn)
+        vt_d_next = list(np.roll(vt_m_n, 1) + params.ldel)
+        tb_d_next = [1] * len(vt_m_n)
         for pos_seq in range(2, len(target) + 1):
             vt_d_n = vt_d_next[pos_seq - 1] + params.leps
             if vt_d_next[pos_seq] < vt_d_n:
                 vt_d_next[pos_seq] = vt_d_n
                 tb_d_next[pos_seq] = 3
 
-        vt_dn = np.array(vt_d_next)
-        tb_dn = em_m_tb + tb_d_next
+        vt_d_n = np.array(vt_d_next)
+        tb_d_n = em_m_tb + tb_d_next
 
         return (
-            (max_rn, who_max_n, state_max_n, pos_max_n),
-            (vt_mn, vt_in, vt_dn),
-            (tb_mn, tb_in, tb_dn),
+            HMMIterationInfo(
+                max_r=max_rn,
+                pos_max=pos_max_n,
+                state_max=state_max_n,
+                who_max=who_max_n,
+            ),
+            RecurrenceTargetReturnVals(vt_m_n, vt_i_n, vt_d_n, tb_m_n, tb_i_n, tb_d_n),
         )
 
     def __recurrence(
@@ -584,47 +601,50 @@ class Tesserae:
         # parallelizations are on the individual sequences.
         recurrence_threads = min(self.threads, self.nseq)
 
-        max_r = iter_info.max_r
-        pos_max = iter_info.pos_max
-        state_max = iter_info.state_max
-        who_max = iter_info.who_max
-
         for pos_target in range(l0, l1 + 1):
-            max_rn = SMALL + max_r
-            seq = 0
+            max_rn = SMALL + iter_info.max_r
             pos_target_trace = pos_target
             if self.mem_limit and store_states:
                 pos_target_trace = pos_target % self.traceback_limit
 
             vt_m_base = (
-                max_r + self.params.lrho + self.params.lpiM - self.ltarget_seq_size
+                iter_info.max_r
+                + self.params.lrho
+                + self.params.lpiM
+                - self.ltarget_seq_size
             )
             vt_i_base = (
-                max_r + self.params.lrho + self.params.lpiI - self.ltarget_seq_size
+                iter_info.max_r
+                + self.params.lrho
+                + self.params.lpiI
+                - self.ltarget_seq_size
             )
-            tb_base = who_max * 10 + state_max + pos_max / self.tb_divisor
+            tb_base = (
+                iter_info.who_max * 10
+                + iter_info.state_max
+                + iter_info.pos_max / self.tb_divisor
+            )
 
             argvec = []
-            for target in self.targets:
+            for target_idx, target in enumerate(self.targets):
                 argvec.append(
                     (
                         self.query,
                         target,
-                        self.vt_m[pos_target % 2][seq],
-                        self.vt_i[pos_target % 2][seq],
-                        self.vt_d[pos_target % 2][seq],
+                        self.vt_m[pos_target % 2][target_idx],
+                        self.vt_i[pos_target % 2][target_idx],
+                        self.vt_d[pos_target % 2][target_idx],
                         vt_m_base,
                         vt_i_base,
                         tb_base,
                         max_rn,
-                        seq,
+                        target_idx,
                         pos_target,
                         offset,
                         self.tb_divisor,
                         self.params,
                     )
                 )
-                seq += 1
 
             # todo: check if the list comprehension and map are a memory hog.
             #  If so convert to generators and imap
@@ -637,32 +657,27 @@ class Tesserae:
                     )
             else:
                 rvec = [Tesserae.recurrence_target(*args) for args in argvec]
-            (max_r, who_max, state_max, pos_max), _, _ = max(rvec, key=lambda x: x[0])
-            seq = 0
-            for _, (vt_m_n, vt_i_n, vt_d_n), (tb_m_n, tb_i_n, tb_d_n) in rvec:
-                self.vt_m[1 - pos_target % 2][seq] = vt_m_n
-                self.vt_i[1 - pos_target % 2][seq] = vt_i_n
-                self.vt_d[1 - pos_target % 2][seq] = vt_d_n
-                self.tb_m[pos_target_trace][seq] = tb_m_n
-                self.tb_i[pos_target_trace][seq] = tb_i_n
-                self.tb_d[pos_target_trace][seq] = tb_d_n
-
-                seq += 1
+            iter_info, _ = max(rvec, key=lambda x: x[0].max_r)
+            for target_idx, (_, ret_vals) in enumerate(rvec):
+                self.vt_m[1 - pos_target % 2][target_idx] = ret_vals.vt_m_n
+                self.vt_i[1 - pos_target % 2][target_idx] = ret_vals.vt_i_n
+                self.vt_d[1 - pos_target % 2][target_idx] = ret_vals.vt_d_n
+                self.tb_m[pos_target_trace][target_idx] = ret_vals.tb_m_n
+                self.tb_i[pos_target_trace][target_idx] = ret_vals.tb_i_n
+                self.tb_d[pos_target_trace][target_idx] = ret_vals.tb_d_n
 
             if store_states and pos_target_trace == 0:
                 idx = len(self.saved_states)
-                self.saved_states.append(
-                    (HMMIterationInfo(max_r, pos_max, state_max, who_max), pos_target)
-                )
+                self.saved_states.append((iter_info, pos_target))
                 self.saved_vt_m[idx] = np.copy(self.vt_m[1])
                 self.saved_vt_i[idx] = np.copy(self.vt_i[1])
                 self.saved_vt_d[idx] = np.copy(self.vt_d[1])
 
         if (self.mem_limit and store_states) or not self.mem_limit:
-            self.llk = max_r + self.params.lterm
-            self.combined_llk += max_r + self.params.lterm
+            self.llk = iter_info.max_r + self.params.lterm
+            self.combined_llk += iter_info.max_r + self.params.lterm
 
-        return HMMIterationInfo(max_r, pos_max, state_max, who_max)
+        return iter_info
 
     def __initialization(self):
         who_max = 0
@@ -670,48 +685,53 @@ class Tesserae:
         pos_max = 0
         max_r = SMALL
 
-        seq = 0
-        for target in self.targets:
-            for pos_seq in range(1, len(target) + 1):
-                self.vt_m[0][seq][pos_seq] = (
+        for target_idx, target in enumerate(self.targets):
+            for target_pos in range(1, len(target) + 1):
+                self.vt_m[0][target_idx][target_pos] = (
                     self.params.lpiM
                     - self.ltarget_seq_size
                     + self.params.lsm[CONVERT[self.query.sequence[0]]][
-                        CONVERT[target.sequence[pos_seq - 1]]
+                        CONVERT[target.sequence[target_pos - 1]]
                     ]
                 )
-                self.vt_i[0][seq][pos_seq] = (
+                self.vt_i[0][target_idx][target_pos] = (
                     self.params.lpiI
                     - self.ltarget_seq_size
                     + self.params.lsi[CONVERT[self.query.sequence[0]]]
                 )
 
-                if pos_seq > 0:
+                if target_pos > 0:
                     vt_d_1, tb_d_1 = max(
                         [
-                            (self.vt_m[0][seq][pos_seq - 1] + self.params.ldel, 1),
-                            (self.vt_d[0][seq][pos_seq - 1] + self.params.leps, 3),
+                            (
+                                self.vt_m[0][target_idx][target_pos - 1]
+                                + self.params.ldel,
+                                1,
+                            ),
+                            (
+                                self.vt_d[0][target_idx][target_pos - 1]
+                                + self.params.leps,
+                                3,
+                            ),
                         ],
                         key=lambda x: x[0],
                     )
-                    self.vt_d[0][seq][pos_seq] = vt_d_1
-                    self.tb_d[0][seq][pos_seq] = (
-                        seq * 10 + tb_d_1 + (pos_seq - 1) / self.tb_divisor
+                    self.vt_d[0][target_idx][target_pos] = vt_d_1
+                    self.tb_d[0][target_idx][target_pos] = (
+                        target_idx * 10 + tb_d_1 + (target_pos - 1) / self.tb_divisor
                     )
 
-                if self.vt_m[0][seq][pos_seq] > max_r:
-                    max_r = self.vt_m[0][seq][pos_seq]
-                    who_max = seq
+                if self.vt_m[0][target_idx][target_pos] > max_r:
+                    max_r = self.vt_m[0][target_idx][target_pos]
+                    who_max = target_idx
                     state_max = 1
-                    pos_max = pos_seq
+                    pos_max = target_pos
 
-                if self.vt_i[0][seq][pos_seq] > max_r:
-                    max_r = self.vt_i[0][seq][pos_seq]
-                    who_max = seq
+                if self.vt_i[0][target_idx][target_pos] > max_r:
+                    max_r = self.vt_i[0][target_idx][target_pos]
+                    who_max = target_idx
                     state_max = 2
-                    pos_max = pos_seq
-
-            seq += 1
+                    pos_max = target_pos
 
         if self.mem_limit:
             self.saved_states.append(
