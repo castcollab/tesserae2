@@ -5,7 +5,7 @@ from numpy import sqrt
 
 import pytest
 from tesserae import Tesserae
-from tesserae.sequence import Sequence
+from tesserae.nucleotide_sequence import NucleotideSequence
 
 
 def random_dna_string(length):
@@ -23,13 +23,13 @@ def samples():
     samples = {}
     for total_len in [100, 200, 500]:
         partial_len = total_len // 2
-        query = Sequence("query", random_dna_string(total_len))
+        query = NucleotideSequence("query", random_dna_string(total_len))
         targets = [
-            Sequence(
+            NucleotideSequence(
                 "target0",
                 "".join(query.sequence[0:partial_len]) + random_dna_string(partial_len),
             ),
-            Sequence(
+            NucleotideSequence(
                 "target1",
                 random_dna_string(partial_len)
                 + "".join(query.sequence[partial_len:total_len]),
@@ -76,4 +76,4 @@ class TestTesseraeAcceptance:
             if reduce_mem:
                 max_mem_limit = sqrt(total_len) + 2
                 assert t.traceback_limit <= max_mem_limit
-                assert t.states_to_save <= max_mem_limit
+                assert t.num_states_to_save <= max_mem_limit

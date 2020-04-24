@@ -2,13 +2,13 @@ import itertools
 import logging
 import math
 import sys
-from collections import namedtuple
 from dataclasses import dataclass
+from typing import Dict, List, Sequence
 
 import numpy as np
 import pysam
 
-from .sequence import Sequence
+from .nucleotide_sequence import NucleotideSequence
 
 ################################################################################
 
@@ -39,10 +39,17 @@ CONVERT = {
 }
 # fmt: on
 
-TesseraeAlignmentResult = namedtuple(
-    "TesseraeAlignmentResult",
-    ["seq_name", "alignment_string", "target_start_index", "target_end_index"],
-)
+
+@dataclass
+class TesseraeAlignmentResult:
+    """
+    Representation of the results of a Tesserae alignment
+    """
+
+    seq_name: str
+    alignment_string: str
+    target_start_index: int
+    target_end_index: int
 
 
 def repeat(string_to_expand, length):
@@ -72,16 +79,16 @@ def dump_sequence_to_log(seq, spacing="    "):
         LOGGER.debug("%s%s -> %s", spacing, seq.name, seq.sequence)
 
 
-def ingest_fastx_file(fastx_file_name):
+def ingest_fastx_file(fastx_file_name: str) -> List[NucleotideSequence]:
     """Ingest the given fastx (fasta or fastq) file and returns a
     list of Sequence objects."""
 
     LOGGER.info("Ingesting reads from %s ...", fastx_file_name)
 
-    sequence_list = list()
+    sequence_list = []
     with pysam.FastxFile(fastx_file_name) as fh:
         for entry in fh:
-            sequence_list.append(Sequence(entry.name, entry.sequence))
+            sequence_list.append(NucleotideSequence(entry.name, entry.sequence))
 
     LOGGER.info("Ingested %d reads.", len(sequence_list))
 
@@ -181,41 +188,41 @@ class Tesserae:
         self.params = params or TesseraeParameters.from_default_parms()
 
         # Initialize the host of variables used elsewhere in Tesserae:
-        self.states_to_save = None
-        self.traceback_limit = None
-        self.vt_m = None
-        self.vt_i = None
-        self.vt_d = None
-        self.tb_m = None
-        self.tb_i = None
-        self.tb_d = None
-        self.saved_vt_m = None
-        self.saved_vt_i = None
-        self.saved_vt_d = None
-        self.saved_states = None
-        self.maxpath_copy = None
-        self.maxpath_state = None
-        self.maxpath_pos = None
-        self.tb_divisor = None
+        self.num_states_to_save: int
+        self.traceback_limit: int
+        self.vt_m: np.ndarray[float]
+        self.vt_i: np.ndarray[float]
+        self.vt_d: np.ndarray[float]
+        self.tb_m: np.ndarray[float]
+        self.tb_i: np.ndarray[float]
+        self.tb_d: np.ndarray[float]
+        self.saved_vt_m: np.ndarray[float]
+        self.saved_vt_i: np.ndarray[float]
+        self.saved_vt_d: np.ndarray[float]
+        self.saved_states: np.ndarray[float]
+        self.maxpath_copy: np.ndarray[int]
+        self.maxpath_state: np.ndarray[int]
+        self.maxpath_pos: np.ndarray[int]
+        self.tb_divisor: float
         self.llk = 0.0
         self.combined_llk = 0.0
 
-        self.path = []
-        self.editTrack = []
-        self.mem_limit = mem_limit
+        self.path: List[TesseraeAlignmentResult] = []
+        self.editTrack: str = ""
+        self.mem_limit: bool = mem_limit
 
         if sys.version_info < (3, 8) and threads > 1:
             raise NotImplementedError(
                 "Threading is only supported with python3.8 and above!"
             )
-        self.threads = threads
+        self.threads: int = threads
 
-        self.query = {}
-        self.targets = {}
-        self.qlen = None
-        self.maxl = None
-        self.nseq = None
-        self._target_name_index_dict = dict()
+        self.query: NucleotideSequence
+        self.targets: Sequence[NucleotideSequence]
+        self.qlen: int
+        self.maxl: int
+        self.nseq: int
+        self._target_name_index_dict: Dict[str, int] = {}
 
     def _query_and_target_dependent_setup(self, query, targets):
         """Perform all initialization that depends on the query or targets."""
@@ -233,13 +240,13 @@ class Tesserae:
 
             # The traceback limit must be even!
             if qsq_up % 2 == 0:
-                self.states_to_save = qsq_down
+                self.num_states_to_save = qsq_down
                 self.traceback_limit = qsq_up
             else:
-                self.states_to_save = qsq_up
+                self.num_states_to_save = qsq_up
                 self.traceback_limit = qsq_down
-            while self.states_to_save * self.traceback_limit < self.qlen:
-                self.states_to_save += 1
+            while self.num_states_to_save * self.traceback_limit < self.qlen:
+                self.num_states_to_save += 1
         else:
             self.traceback_limit = self.qlen
 
@@ -259,17 +266,17 @@ class Tesserae:
 
         if self.mem_limit:
             self.saved_vt_m = np.full(
-                [self.states_to_save + 1, self.nseq, self.maxl + 1],
+                [self.num_states_to_save + 1, self.nseq, self.maxl + 1],
                 SMALL,
                 dtype=np.float64,
             )
             self.saved_vt_i = np.full(
-                [self.states_to_save + 1, self.nseq, self.maxl + 1],
+                [self.num_states_to_save + 1, self.nseq, self.maxl + 1],
                 SMALL,
                 dtype=np.float64,
             )
             self.saved_vt_d = np.full(
-                [self.states_to_save + 1, self.nseq, self.maxl + 1],
+                [self.num_states_to_save + 1, self.nseq, self.maxl + 1],
                 SMALL,
                 dtype=np.float64,
             )
@@ -281,25 +288,22 @@ class Tesserae:
 
         self.tb_divisor = np.power(10.0, int(math.log(self.maxl) + 1))
 
-    def get_target(self, name):
+    def get_target(self, name) -> NucleotideSequence:
         """Get the target object with the given name if it exists in our data.
-        Otherwise returns None."""
 
-        try:
-            return self.targets[self._target_name_index_dict[name]]
-        except KeyError:
-            return None
+        Raises key error otherwise."""
 
-    def align_from_fastx(self, query_fastx, target_fastx):
+        return self.targets[self._target_name_index_dict[name]]
+
+    def align_from_fastx(
+        self, query_fastx, target_fastx
+    ) -> List[TesseraeAlignmentResult]:
         """Align all target sequences to the query sequence in the given FASTX
         (FASTA / FASTQ) files.
 
         NOTE: Assumes `query_fastx` contains only one sequence.
               If `query_fastx` contains more than one sequence, only the first
               will be considered.
-
-        Returns a list of TesseraeAlignmentResult objects representing all alignments
-        resulting from the given input panel and targets.
         """
 
         queries = ingest_fastx_file(query_fastx)
@@ -310,12 +314,8 @@ class Tesserae:
 
         return self.align(query, targets)
 
-    def align(self, query, targets):
-        """Align all sequences in `targets` to the given query sequence.
-
-        Returns a list of TesseraeAlignmentResult objects representing all alignments
-        resulting from the given input panel and targets.
-        """
+    def align(self, query, targets) -> List[TesseraeAlignmentResult]:
+        """Align all sequences in `targets` to the given query sequence."""
 
         # Set our query and target properties:
         self._query_and_target_dependent_setup(query, targets)
@@ -385,8 +385,8 @@ class Tesserae:
     def __render(self, cp, panel) -> None:
         """Trace back paths in the graph to create results.
 
-        Returns a list of TesseraeAlignmentResult objects representing all alignments
-        in the graph.
+        # todo: refactor this to return results with return statement
+        Results are stored in self.path
         """
 
         # Prepare target sequence
@@ -550,13 +550,9 @@ class Tesserae:
         max_rn,
         seq,
         pos_target,
-        pos_target_trace,
         offset,
-        l1,
         tb_divisor,
-        mem_limit,
         params: TesseraeParameters,
-        store_states=False,
     ):
         seq_10 = seq * 10
 
@@ -700,13 +696,9 @@ class Tesserae:
                         max_rn,
                         seq,
                         pos_target,
-                        pos_target_trace,
                         offset,
-                        l1,
                         self.tb_divisor,
-                        self.mem_limit,
                         self.params,
-                        store_states,
                     )
                 )
                 seq += 1

@@ -10,3 +10,4 @@ disable=
     C0330,
     C0114,
     C0116,
+    E1136, # known bug in pylint 2.4.4

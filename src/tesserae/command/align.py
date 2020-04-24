@@ -6,9 +6,13 @@ import os
 import pathlib
 import sys
 import time
-from collections import OrderedDict, namedtuple
+from collections import OrderedDict
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Tuple
 
 import pysam
+
+from tesserae.nucleotide_sequence import NucleotideSequence
 
 from .. import model
 
@@ -26,15 +30,55 @@ DEFAULT_BASE_QUALITY_CHAR = "!"
 # Default max PL:
 MAX_ALIGNMENT_PL = 60
 
-# Named tuple to store alignment information:
-DetailedAlignmentInfo = namedtuple(
-    "DetailedAlignmentInfo", ["start_pos", "template_length", "cigar", "qual_pl"]
-)
+
+@dataclass
+class DetailedAlignmentInfo:
+    """Stores alignment information."""
+
+    start_pos: int
+    template_length: int
+    cigar: List[Tuple[Optional[Any], int]]
+    qual_pl: float
+
+
+@dataclass
+class CleanResult:
+    """Clean alignment Result."""
+
+    target: NucleotideSequence
+    ref_start_pos: int
+    template_length: int
+    cigar: Tuple
+    alignment_qual_pl: float
+    target_start_index: int
+    target_end_index: int
+
+    @classmethod
+    def from_target__detailed_alignment_info_and_target_alignment_result(
+        cls, target, detailed_alignment_info, target_alignment_result
+    ):
+        return cls(
+            target,
+            detailed_alignment_info.start_pos,
+            detailed_alignment_info.template_length,
+            detailed_alignment_info.cigar,
+            detailed_alignment_info.qual_pl,
+            target_alignment_result.target_start_index,
+            target_alignment_result.target_end_index,
+        )
+
+    def get_query_name(self) -> str:
+        """Build the name of the query sequence"""
+        return "_".join(
+            str(v)
+            for v in [self.target.name, self.target_start_index, self.target_end_index]
+        )
+
 
 ################################################################################
 
 
-def print_logo():
+def print_logo() -> None:
     """Print the logo to the log."""
 
     LOGGER.info("=============================================================")
@@ -69,7 +113,7 @@ def print_logo():
 
 def compute_detailed_alignment_info(
     query_alignment_string, target_alignment_string, target_length
-):
+) -> DetailedAlignmentInfo:
     """Compute detailed alignment information from the given information.
 
     Alignment details are based off the differences between the alignment
@@ -154,6 +198,7 @@ def compute_detailed_alignment_info(
     template_length = len(target_alignment_string) - start_index
 
     # Compute PL score:
+    qual_pl: float
     if num_errors == 0:
         qual_pl = MAX_ALIGNMENT_PL
     else:
@@ -166,7 +211,7 @@ def compute_detailed_alignment_info(
     return DetailedAlignmentInfo(start_index, template_length, cigar, qual_pl)
 
 
-def get_start_index_from_alignment_start_string(target_alignment_string):
+def get_start_index_from_alignment_start_string(target_alignment_string) -> int:
     """Get the alignment start index from the given alignment string.
 
     We know that the alignment strings will always start with spaces until
@@ -183,7 +228,7 @@ def get_start_index_from_alignment_start_string(target_alignment_string):
     return start_index
 
 
-def ingest_fastx_file(file_path):
+def ingest_fastx_file(file_path: str) -> Tuple[Dict, Dict]:
     """Ingest the contents of a FASTA/FASTQ file and return two dictionaries:
         1: Mapping from read name to read sequence
         2: Mapping from template name to read name
@@ -214,7 +259,9 @@ def dump_results_to_log(results_tuple_list):
             LOGGER.debug("    %s", str(result))
 
 
-def write_results(query, list_of_result_tuples, bamfile=None):
+def write_results(
+    query: NucleotideSequence, list_of_results: List[CleanResult], bamfile: str = None
+) -> None:
     """Write the alignment results in the given `list_of_result_tuples` to the
     stdout and to the given `bamfile` (if present).
 
@@ -261,26 +308,9 @@ def write_results(query, list_of_result_tuples, bamfile=None):
             bam_output_file = pysam.AlignmentFile(bamfile, "wb", header=header)
             stack.enter_context(contextlib.closing(bam_output_file))
 
-        for result in list_of_result_tuples:
-
-            # Unpack our tuple for ease-of-use:
-            (
-                target,
-                ref_start_pos,
-                template_length,
-                cigar,
-                alignment_qual_pl,
-                target_start_index,
-                target_end_index,
-            ) = result
-
-            # Create our segment:
+        for result in list_of_results:
             aligned_segment = pysam.AlignedSegment()
-
-            # Populate the name:
-            aligned_segment.query_name = (
-                f"{target.name}_{target_start_index}_{target_end_index}"
-            )
+            aligned_segment.query_name = result.get_query_name()
 
             # We have only one reference, so use it:
             aligned_segment.reference_id = 0
@@ -289,14 +319,14 @@ def write_results(query, list_of_result_tuples, bamfile=None):
             # NOTE: The nomenclature here is overloaded. Query in this case
             # means the sequence being aligned
             #       to the reference.
-            aligned_segment.query_sequence = target.sequence[
-                target_start_index : target_end_index + 1
+            aligned_segment.query_sequence = result.target.sequence[
+                result.target_start_index : result.target_end_index + 1
             ]
 
-            aligned_segment.reference_start = ref_start_pos
-            aligned_segment.template_length = template_length
-            aligned_segment.cigar = cigar
-            aligned_segment.mapping_quality = alignment_qual_pl
+            aligned_segment.reference_start = result.ref_start_pos
+            aligned_segment.template_length = result.template_length
+            aligned_segment.cigar = result.cigar
+            aligned_segment.mapping_quality = result.alignment_qual_pl
 
             aligned_segment.query_qualities = pysam.qualitystring_to_array(
                 DEFAULT_BASE_QUALITY_CHAR * len(aligned_segment.query_sequence)
@@ -308,7 +338,7 @@ def write_results(query, list_of_result_tuples, bamfile=None):
             sam_stdout.write(aligned_segment)
 
 
-def prepare_output_file(bamfile):
+def prepare_output_file(bamfile) -> str:
     """Prepare the given bamfile path to be ready to accept data.
 
     The input `bamfile` can be a file or a directory.
@@ -319,7 +349,7 @@ def prepare_output_file(bamfile):
     If the given `bamfile` is a path, the DEFAULT_OUTPUT_FILE_NAME is appended to
     this path and then used as the bamfile location.
 
-    The final bamfile path is returned as a string object.
+    Returns the final bamfile path.
     """
     # Do some work to ensure that the given file will be honored.
     # Since we do this at the end of execution, we should be liberal with our
@@ -361,7 +391,7 @@ def prepare_output_file(bamfile):
 ################################################################################
 
 
-def align(args):
+def align(args) -> None:
     """Main CLI call for the 'align' sub-command."""
 
     aligner = model.Tesserae()
@@ -386,14 +416,8 @@ def align(args):
 
         # Create our clean results for this alignment:
         clean_results.append(
-            (
-                target,
-                detailed_alignment_info.start_pos,
-                detailed_alignment_info.template_length,
-                detailed_alignment_info.cigar,
-                detailed_alignment_info.qual_pl,
-                result.target_start_index,
-                result.target_end_index,
+            CleanResult.from_target__detailed_alignment_info_and_target_alignment_result(
+                target, detailed_alignment_info, result
             )
         )
 
