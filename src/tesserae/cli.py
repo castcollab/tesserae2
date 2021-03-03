@@ -7,6 +7,7 @@ def main(argv):
 
     subcommands = {
         "align": "tesserae.command.align.main",
+        "profalign": "tesserae.command.profalign.main",
     }
 
     parser = argparse.ArgumentParser(
