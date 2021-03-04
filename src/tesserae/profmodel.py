@@ -222,28 +222,28 @@ class Tesserae2:
             for s2 in [s for s in self.sources if s != s1]:
                 for state1 in states[s1.name]:
                     for state2 in states[s2.name]:
-                        full_model.add_transition(state1, state2, DEFAULT_REC)
+                        full_model.add_transition(states[s1.name][state1], states[s2.name][state2], DEFAULT_REC)
 
         # link flanking models to match states
         for model in states:
             if not model.startswith("flank"):
                 for s in [x for x in states[model] if x.startswith("M")]:
-                    full_model.add_transition(states['flankleft']['FD'], s, 0.001)
-                    full_model.add_transition(s, states['flankright']['FD'], 0.001)
+                    full_model.add_transition(states['flankleft']['FD'], states[model][s], 0.001)
+                    full_model.add_transition(states[model][s], states['flankright']['FD'], 0.001)
 
         # link model start and end to all match and insert states
         for model in states:
             if not model.startswith("flank"):
                 for s in [x for x in states[model] if x.startswith("M") or x.startswith("I")]:
-                    full_model.add_transition(full_model.start, s, 0.001)
-                    full_model.add_transition(s, full_model.end, 0.001)
+                    full_model.add_transition(full_model.start, states[model][s], 0.001)
+                    full_model.add_transition(states[model][s], full_model.end, 0.001)
 
         for f in ['FI', 'FD']:
             full_model.add_transition(full_model.start, states['flankleft'][f], 0.5)
             full_model.add_transition(states['flankright'][f], full_model.end, 0.5)
 
         print("Baking")
-        full_model.bake()
+        full_model.bake(merge="None")
         print("Baked")
 
         return full_model
