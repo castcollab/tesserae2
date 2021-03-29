@@ -308,6 +308,7 @@ def write_results(
             bam_output_file = pysam.AlignmentFile(bamfile, "wb", header=header)
             stack.enter_context(contextlib.closing(bam_output_file))
 
+        print(list_of_results)
         for result in list_of_results:
             aligned_segment = pysam.AlignedSegment()
             aligned_segment.query_name = result.get_query_name()
@@ -328,6 +329,7 @@ def write_results(
             aligned_segment.cigar = result.cigar
             aligned_segment.mapping_quality = result.alignment_qual_pl
 
+            print(aligned_segment)
             aligned_segment.query_qualities = pysam.qualitystring_to_array(
                 DEFAULT_BASE_QUALITY_CHAR * len(aligned_segment.query_sequence)
             )

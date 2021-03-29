@@ -6,8 +6,8 @@ import pysam
 import pytest
 from tesserae import cli
 
-from ..util import EXPECTED_TEST_RESULTS, TEST_RESOURCES_FOLDER
-
+TEST_RESOURCES_FOLDER = pathlib.Path(__file__).resolve().parent / "resources"
+EXPECTED_TEST_RESULTS = TEST_RESOURCES_FOLDER / "integration_test_expected_output.sam"
 
 def assert_sam_files_are_equal(samfile1, samfile2):
     """Asserts that the two given sam files are equal by comparing the file contents.

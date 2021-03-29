@@ -272,9 +272,8 @@ class Tesserae2:
         # For now we enforce using only one query (the first one in the file):
         query = queries[0]
 
-        self.align(query, sources)
+        return self.align(query, sources)
 
-    # def align(self, query, sources) -> List[TesseraeAlignmentResult]:
     def align(self, query, sources) -> None:
         """Align all sequences in `targets` to the given query sequence."""
 
@@ -288,6 +287,28 @@ class Tesserae2:
         for source in self.sources:
             panel[source.name] = source.sequence
 
+        logp, path = self.model.viterbi(query.sequence)
+
+        print(path)
+
+        ppath = []
+        for p, (idx, state) in enumerate(path[1:-1]):
+            # if (
+            #         "start" not in state.name
+            #         and ":RD" not in state.name
+            #         and ":D" not in state.name
+            # ):
+            print(state.name)
+            ppath.append(f'{re.split(":", state.name)[0]}')
+
+        print(ppath)
+
+        self.editTrack: str = ""
+        self.path: List[TesseraeAlignmentResult] = []
+
+        self.__render(path, query, sources)
+
+        return self.path
     # def __render(self, cp, panel) -> None:
         # self.path.append(
         #     TesseraeAlignmentResult(current_track, "".join(sb), pos_start, pos_end)
@@ -323,3 +344,123 @@ class Tesserae2:
     #     sb.append("\n")
     #
     #     return "".join(sb)
+
+
+    def __render(self, ppath, query, sources) -> None:
+        """Trace back paths in the graph to create results.
+
+        # todo: refactor this to return results with return statement
+        Results are stored in self.path
+        """
+
+        # Prepare target sequence
+        seqs = {}
+        for s in range(len(sources)):
+            seqs[sources[s].name] = sources[s].sequence
+        sb = []
+        pos_start = -1
+        pos_end = -1
+        pos_target = 1
+        for p, (idx, state) in enumerate(ppath[1:-1]):
+            if "start" not in state.name and "end" not in state.name and "FD" not in state.name:
+                source_name, state = re.split(":", state.name)
+
+                if state.startswith("D"):
+                    sb.append("-")
+                else:
+                    if pos_start == -1:
+                        pos_start = pos_target - 1
+
+                    pos_end = pos_target - 1
+
+                    sb.append(query.sequence[pos_target - 1])
+                    pos_target += 1
+
+        self.path.append(
+            TesseraeAlignmentResult(query.name, "".join(sb), pos_start, pos_end)
+        )
+
+        # Prepare matching track
+        sb = []
+        pos_target = 1
+        for p, (idx, state) in enumerate(ppath[1:-1]):
+            if "start" not in state.name and "end" not in state.name and "FD" not in state.name:
+                source_name, state = re.split(":", state.name)
+
+                if source_name == "flankleft" or source_name == "flankright":
+                    sb.append("*")
+                elif state.startswith("M"):
+                    ## TODO make this check for mismatches
+                    sb.append("|")
+                elif state.startswith("I"):
+                    sb.append("^")
+                else:
+                    sb.append("~")
+        self.editTrack = "".join(sb)
+
+        # Prepare copying tracks
+        current_track = "flankleft"
+        sb = []
+        pos_start = -1
+        pos_end = -1
+        total_bases = 0
+        uppercase = True
+        for p, (idx, state) in enumerate(ppath[1:-1]):
+            if "start" not in state.name and "end" not in state.name and "FD" not in state.name:
+                source_name, state = re.split(":", state.name)
+
+                # if (
+                #
+                #         self.maxpath_copy[i] == self.maxpath_copy[i - 1]
+                #         and np.abs(self.maxpath_pos[i] - self.maxpath_pos[i - 1]) > 1
+                #         or self.maxpath_pos[i] == last_known_pos + 1
+                # ):
+                #     self.path.append(
+                #         TesseraeAlignmentResult(
+                #             current_track, "".join(sb), pos_start, pos_end
+                #         )
+                #     )
+                #     uppercase = not uppercase
+                #     last_known_pos = self.maxpath_pos[i - 1]
+                #
+                #     if pos_start != pos_end:
+                #         pos_start = self.maxpath_pos[i] - 1
+                #         pos_end = self.maxpath_pos[i] - 1
+                #
+                #     current_track = seqs[self.maxpath_copy[i] + 1][0]
+                #     sb = [repeat(" ", i - cp)]
+
+                ## we have jumped to another sequence
+                if current_track != source_name:
+                    self.path.append(
+                        TesseraeAlignmentResult(
+                            current_track, "".join(sb), pos_start, total_bases
+                        )
+                    )
+                    uppercase = True
+                    pos_start = total_bases
+
+                    current_track = source_name
+                    sb = [repeat(" ", total_bases)]
+
+                if source_name == "flankleft" or source_name == "flankright":
+                    sb.append(".")
+                    total_bases += 1
+
+                elif state.startswith("I"):
+                    total_bases += 1
+                    sb.append("-")
+                else:
+                    if not state.startswith("F"):
+                        num = int(state[1:]) - 1
+                        c = seqs[source_name][num]
+                        c = c.upper() if uppercase else c.lower()
+                    else:
+                        c = " "
+
+                    total_bases += 1
+                    sb.append(c)
+        self.path.append(
+            TesseraeAlignmentResult(current_track, "".join(sb), pos_start, total_bases)
+        )
+
