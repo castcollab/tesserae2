@@ -148,6 +148,11 @@ class Tesserae2:
         model.add_transition(s[f"{name}:I0"], s[f"{name}:M1"], 0.15)
 
         for c in range(1, len(source)):
+            extra = ""
+            if c < 5 or c + 5 > source:
+                extra = "*"
+            num = extra + str(c)
+            numPlus = extra + str(c)
             model.add_transition(s[f"{name}:D{c}"], s[f"{name}:D{c + 1}"], 0.15)
             model.add_transition(s[f"{name}:D{c}"], s[f"{name}:I{c}"], 0.70)
             model.add_transition(s[f"{name}:D{c}"], s[f"{name}:M{c + 1}"], 0.15)
@@ -215,6 +220,7 @@ class Tesserae2:
                 states[model] = {}
 
             if name != "start" and name != "end" and not name.startswith("D"):
+                if
                 states[model][name] = state
 
         # link M and I states between different models to each other (i.e. allow for recombination)
@@ -242,9 +248,10 @@ class Tesserae2:
             full_model.add_transition(full_model.start, states['flankleft'][f], 0.5)
             full_model.add_transition(states['flankright'][f], full_model.end, 0.5)
 
-        print("Baking")
-        full_model.bake(merge="None")
-        print("Baked")
+        LOGGER.info("Baking")
+        full_model.bake(True, merge="None")
+        LOGGER.info("Baked")
+        # LOGGER.info("There are %d total states and %d total edges", len(full_model.s), len(full_model.edges))
 
         return full_model
 
@@ -287,9 +294,11 @@ class Tesserae2:
         for source in self.sources:
             panel[source.name] = source.sequence
 
+        LOGGER.info("starting viterbi")
         logp, path = self.model.viterbi(query.sequence)
+        LOGGER.info("finished viterbi")
 
-        print(path)
+        # print(path)
 
         ppath = []
         for p, (idx, state) in enumerate(path[1:-1]):
@@ -298,10 +307,10 @@ class Tesserae2:
             #         and ":RD" not in state.name
             #         and ":D" not in state.name
             # ):
-            print(state.name)
+            # print(state.name)
             ppath.append(f'{re.split(":", state.name)[0]}')
 
-        print(ppath)
+        # print(ppath)
 
         self.editTrack: str = ""
         self.path: List[TesseraeAlignmentResult] = []
@@ -434,16 +443,19 @@ class Tesserae2:
                 if current_track != source_name:
                     self.path.append(
                         TesseraeAlignmentResult(
-                            current_track, "".join(sb), pos_start, total_bases
+                            current_track, "".join(sb), pos_start, pos_end
                         )
                     )
                     uppercase = True
-                    pos_start = total_bases
+                    pos_start = -1
+                    pos_end = -1
 
                     current_track = source_name
                     sb = [repeat(" ", total_bases)]
 
                 if source_name == "flankleft" or source_name == "flankright":
+                    pos_start = 0
+                    pos_end = pos_end + 1
                     sb.append(".")
                     total_bases += 1
 
@@ -453,14 +465,20 @@ class Tesserae2:
                 else:
                     if not state.startswith("F"):
                         num = int(state[1:]) - 1
+
+                        if pos_start == -1:
+                            pos_start = num
+                        pos_end = num
+
                         c = seqs[source_name][num]
                         c = c.upper() if uppercase else c.lower()
+                    # the state started with F, thus its an insetion so its pos_start/end are not valid numbers
                     else:
                         c = " "
 
                     total_bases += 1
                     sb.append(c)
         self.path.append(
-            TesseraeAlignmentResult(current_track, "".join(sb), pos_start, total_bases)
+            TesseraeAlignmentResult(current_track, "".join(sb), pos_start, pos_end)
         )
 
