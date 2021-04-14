@@ -23,6 +23,8 @@ DEFAULT_EPS = 0.75
 DEFAULT_REC = 0.0001
 DEFAULT_TERM = 0.001
 
+DEFAULT_SUBSAMPLING = 10
+
 
 # Nucleotide to index conversion
 # fmt: off
@@ -103,7 +105,7 @@ class Tesserae2:
         # add states
         i0 = State(
             DiscreteDistribution({"A": 0.25, "C": 0.25, "G": 0.25, "T": 0.25}),
-            name=f"{name}:I0",
+            name=f"{name}:I*0",
         )
 
         model.add_state(i0)
@@ -111,7 +113,10 @@ class Tesserae2:
         s[i0.name] = i0
 
         for c in range(len(source)):
-            dc = State(None, name=f"{name}:D{c + 1}")
+            extra = ""
+            if c + 1 < 5 or c + 1 + 5 > len(source) or ((c + 1) % DEFAULT_SUBSAMPLING) == 0:
+                extra = "*"
+            dc = State(None, name=f"{name}:D{extra}{c + 1}")
 
             # TODO: replace this with the nucleotide components of emission matrix from
             #  model.py (line 148)
@@ -124,12 +129,12 @@ class Tesserae2:
                         "T": 0.94 if source.sequence[c] == "T" else 0.02,
                     }
                 ),
-                name=f"{name}:M{c + 1}",
+                name=f"{name}:M{extra}{c + 1}",
             )
 
             ic = State(
                 DiscreteDistribution({"A": 0.25, "C": 0.25, "G": 0.25, "T": 0.25}),
-                name=f"{name}:I{c + 1}",
+                name=f"{name}:I{extra}{c + 1}",
             )
 
             model.add_states([mc, ic, dc])
@@ -139,40 +144,43 @@ class Tesserae2:
             s[ic.name] = ic
 
         # add transitions
-        model.add_transition(model.start, s[f"{name}:I0"], 0.05)
-        model.add_transition(model.start, s[f"{name}:D1"], 0.05)
-        model.add_transition(model.start, s[f"{name}:M1"], 0.90)
+        model.add_transition(model.start, s[f"{name}:I*0"], 0.05)
+        model.add_transition(model.start, s[f"{name}:D*1"], 0.05)
+        model.add_transition(model.start, s[f"{name}:M*1"], 0.90)
 
-        model.add_transition(s[f"{name}:I0"], s[f"{name}:I0"], 0.70)
-        model.add_transition(s[f"{name}:I0"], s[f"{name}:D1"], 0.15)
-        model.add_transition(s[f"{name}:I0"], s[f"{name}:M1"], 0.15)
+        model.add_transition(s[f"{name}:I*0"], s[f"{name}:I*0"], 0.70)
+        model.add_transition(s[f"{name}:I*0"], s[f"{name}:D*1"], 0.15)
+        model.add_transition(s[f"{name}:I*0"], s[f"{name}:M*1"], 0.15)
 
         for c in range(1, len(source)):
             extra = ""
-            if c < 5 or c + 5 > source:
+            extraPlus = ""
+            if c < 5 or c + 5 > len(source) or (c % DEFAULT_SUBSAMPLING) == 0:
                 extra = "*"
+            if c + 1 < 5 or c + 1 + 5 > len(source) or ((c + 1) % DEFAULT_SUBSAMPLING) == 0:
+                extraPlus = "*"
             num = extra + str(c)
-            numPlus = extra + str(c)
-            model.add_transition(s[f"{name}:D{c}"], s[f"{name}:D{c + 1}"], 0.15)
-            model.add_transition(s[f"{name}:D{c}"], s[f"{name}:I{c}"], 0.70)
-            model.add_transition(s[f"{name}:D{c}"], s[f"{name}:M{c + 1}"], 0.15)
+            numPlus = extraPlus + str(c+1)
+            model.add_transition(s[f"{name}:D{num}"], s[f"{name}:D{numPlus}"], 0.15)
+            model.add_transition(s[f"{name}:D{num}"], s[f"{name}:I{num}"], 0.70)
+            model.add_transition(s[f"{name}:D{num}"], s[f"{name}:M{numPlus}"], 0.15)
 
-            model.add_transition(s[f"{name}:I{c}"], s[f"{name}:D{c + 1}"], 0.15)
-            model.add_transition(s[f"{name}:I{c}"], s[f"{name}:I{c}"], 0.15)
-            model.add_transition(s[f"{name}:I{c}"], s[f"{name}:M{c + 1}"], 0.70)
+            model.add_transition(s[f"{name}:I{num}"], s[f"{name}:D{numPlus}"], 0.15)
+            model.add_transition(s[f"{name}:I{num}"], s[f"{name}:I{num}"], 0.15)
+            model.add_transition(s[f"{name}:I{num}"], s[f"{name}:M{numPlus}"], 0.70)
 
-            model.add_transition(s[f"{name}:M{c}"], s[f"{name}:D{c + 1}"], 0.05)
-            model.add_transition(s[f"{name}:M{c}"], s[f"{name}:I{c}"], 0.05)
-            model.add_transition(s[f"{name}:M{c}"], s[f"{name}:M{c + 1}"], 0.90)
+            model.add_transition(s[f"{name}:M{num}"], s[f"{name}:D{numPlus}"], 0.05)
+            model.add_transition(s[f"{name}:M{num}"], s[f"{name}:I{num}"], 0.05)
+            model.add_transition(s[f"{name}:M{num}"], s[f"{name}:M{numPlus}"], 0.90)
 
-        model.add_transition(s[f"{name}:D{len(source)}"], s[f"{name}:I{len(source)}"], 0.70)
-        model.add_transition(s[f"{name}:D{len(source)}"], model.end, 0.30)
+        model.add_transition(s[f"{name}:D*{len(source)}"], s[f"{name}:I*{len(source)}"], 0.70)
+        model.add_transition(s[f"{name}:D*{len(source)}"], model.end, 0.30)
 
-        model.add_transition(s[f"{name}:I{len(source)}"], s[f"{name}:I{len(source)}"], 0.15)
-        model.add_transition(s[f"{name}:I{len(source)}"], model.end, 0.85)
+        model.add_transition(s[f"{name}:I*{len(source)}"], s[f"{name}:I*{len(source)}"], 0.15)
+        model.add_transition(s[f"{name}:I*{len(source)}"], model.end, 0.85)
 
-        model.add_transition(s[f"{name}:M{len(source)}"], s[f"{name}:I{len(source)}"], 0.90)
-        model.add_transition(s[f"{name}:M{len(source)}"], model.end, 0.10)
+        model.add_transition(s[f"{name}:M*{len(source)}"], s[f"{name}:I*{len(source)}"], 0.90)
+        model.add_transition(s[f"{name}:M*{len(source)}"], model.end, 0.10)
 
         model.bake(merge="None")
 
@@ -220,15 +228,17 @@ class Tesserae2:
                 states[model] = {}
 
             if name != "start" and name != "end" and not name.startswith("D"):
-                if
-                states[model][name] = state
+                if "*" in name or "FD" in name or "FI" in name:
+                    states[model][name] = state
 
         # link M and I states between different models to each other (i.e. allow for recombination)
+        xlink = 0
         for s1 in self.sources:
             for s2 in [s for s in self.sources if s != s1]:
                 for state1 in states[s1.name]:
                     for state2 in states[s2.name]:
                         full_model.add_transition(states[s1.name][state1], states[s2.name][state2], DEFAULT_REC)
+                        xlink += 1
 
         # link flanking models to match states
         for model in states:
@@ -248,6 +258,7 @@ class Tesserae2:
             full_model.add_transition(full_model.start, states['flankleft'][f], 0.5)
             full_model.add_transition(states['flankright'][f], full_model.end, 0.5)
 
+        LOGGER.info(str(xlink)+" crosslink edges were made")
         LOGGER.info("Baking")
         full_model.bake(True, merge="None")
         LOGGER.info("Baked")
@@ -464,7 +475,10 @@ class Tesserae2:
                     sb.append("-")
                 else:
                     if not state.startswith("F"):
-                        num = int(state[1:]) - 1
+                        if "*" in state:
+                            num = int(state[2:]) - 1
+                        else:
+                            num = int(state[1:]) - 1
 
                         if pos_start == -1:
                             pos_start = num

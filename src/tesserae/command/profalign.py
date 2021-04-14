@@ -426,6 +426,8 @@ def profalign(args) -> None:
             detailed_alignment_info = compute_flanking_alignment_info(
                 query_alignment_string, result.alignment_string
             )
+            if detailed_alignment_info.template_length is 0:
+                continue
 
         # Create our clean results for this alignment:
         clean_results.append(
