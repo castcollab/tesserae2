@@ -415,7 +415,7 @@ def profalign(args) -> None:
     for result in target_alignment_results[1:]:
         # Unpack our results for ease of use:
 
-        if not result.seq_name.startswith("flank"):
+        if not result.seq_name.startswith("flank") and not result.seq_name.startswith("recombination"):
             # Get our detailed alignment info:
             target = aligner.get_target(result.seq_name)
             detailed_alignment_info = compute_detailed_alignment_info(

@@ -182,6 +182,9 @@ class Tesserae2:
         model.add_transition(s[f"{name}:M*{len(source)}"], s[f"{name}:I*{len(source)}"], 0.90)
         model.add_transition(s[f"{name}:M*{len(source)}"], model.end, 0.10)
 
+        ## add the recombination silent state
+        model.add_state(State(None, name="recombination:RC"))
+
         model.bake(merge="None")
 
         return model
@@ -227,18 +230,22 @@ class Tesserae2:
             if model not in states:
                 states[model] = {}
 
-            if name != "start" and name != "end" and not name.startswith("D"):
+            if name == "RC":
+                recomb = state
+
+            elif name != "start" and name != "end" and not name.startswith("D"):
                 if "*" in name or "FD" in name or "FI" in name:
                     states[model][name] = state
 
         # link M and I states between different models to each other (i.e. allow for recombination)
         xlink = 0
         for s1 in self.sources:
-            for s2 in [s for s in self.sources if s != s1]:
-                for state1 in states[s1.name]:
-                    for state2 in states[s2.name]:
-                        full_model.add_transition(states[s1.name][state1], states[s2.name][state2], DEFAULT_REC)
-                        xlink += 1
+            for state1 in states[s1.name]:
+                full_model.add_transition(states[s1.name][state1], recomb, DEFAULT_REC)
+                if "F" not in state1:
+                    full_model.add_transition(recomb, states[s1.name][state1], 1) # only penalize recombinations once
+                    xlink += 1
+                xlink += 1
 
         # link flanking models to match states
         for model in states:
@@ -382,7 +389,7 @@ class Tesserae2:
         pos_end = -1
         pos_target = 1
         for p, (idx, state) in enumerate(ppath[1:-1]):
-            if "start" not in state.name and "end" not in state.name and "FD" not in state.name:
+            if "start" not in state.name and "end" not in state.name and "RC" not in state.name and "FD" not in state.name:
                 source_name, state = re.split(":", state.name)
 
                 if state.startswith("D"):
@@ -464,34 +471,36 @@ class Tesserae2:
                     current_track = source_name
                     sb = [repeat(" ", total_bases)]
 
-                if source_name == "flankleft" or source_name == "flankright":
-                    pos_start = 0
-                    pos_end = pos_end + 1
-                    sb.append(".")
-                    total_bases += 1
 
-                elif state.startswith("I"):
-                    total_bases += 1
-                    sb.append("-")
-                else:
-                    if not state.startswith("F"):
-                        if "*" in state:
-                            num = int(state[2:]) - 1
-                        else:
-                            num = int(state[1:]) - 1
+                if "RC" not in state:
+                    if source_name == "flankleft" or source_name == "flankright":
+                        pos_start = 0
+                        pos_end = pos_end + 1
+                        sb.append(".")
+                        total_bases += 1
 
-                        if pos_start == -1:
-                            pos_start = num
-                        pos_end = num
-
-                        c = seqs[source_name][num]
-                        c = c.upper() if uppercase else c.lower()
-                    # the state started with F, thus its an insetion so its pos_start/end are not valid numbers
+                    elif state.startswith("I"):
+                        total_bases += 1
+                        sb.append("-")
                     else:
-                        c = " "
+                        if not state.startswith("F"):
+                            if "*" in state:
+                                num = int(state[2:]) - 1
+                            else:
+                                num = int(state[1:]) - 1
 
-                    total_bases += 1
-                    sb.append(c)
+                            if pos_start == -1:
+                                pos_start = num
+                            pos_end = num
+
+                            c = seqs[source_name][num]
+                            c = c.upper() if uppercase else c.lower()
+                        # the state started with F, thus its an insetion so its pos_start/end are not valid numbers
+                        else:
+                            c = " "
+
+                        total_bases += 1
+                        sb.append(c)
         self.path.append(
             TesseraeAlignmentResult(current_track, "".join(sb), pos_start, pos_end)
         )
