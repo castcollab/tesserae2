@@ -65,6 +65,7 @@ def ingest_fastx_file(fastx_file_name: str) -> List[NucleotideSequence]:
         for entry in fh:
             sequence_list.append(NucleotideSequence(entry.name, entry.sequence))
 
+
     LOGGER.info("Ingested %d reads.", len(sequence_list))
 
     return sequence_list
@@ -91,13 +92,14 @@ class Tesserae2:
         self.sources: Sequence[NucleotideSequence]
         self._source_name_index_dict: Dict[str, int] = {}
 
-    def _query_and_source_dependent_setup(self, query, sources):
+    def _query_and_source_dependent_setup(self, query, sources, sourceKeys):
         """Perform all initialization that depends on the query or sources."""
         self.query = query
         self.sources = sources
+        self.sourceKeys = sourceKeys
         self.model = self._make_full_model()
 
-    def _make_global_alignment_model(self, source):
+    def _make_global_alignment_model(self, source, keyArray):
         name = source.name
         model = HiddenMarkovModel(name=name)
         s = {}
@@ -155,9 +157,9 @@ class Tesserae2:
         for c in range(1, len(source)):
             extra = ""
             extraPlus = ""
-            if c < 5 or c + 5 > len(source) or (c % DEFAULT_SUBSAMPLING) == 0:
+            if self._subsample_model_recombination(c, source, keyArray):
                 extra = "*"
-            if c + 1 < 5 or c + 1 + 5 > len(source) or ((c + 1) % DEFAULT_SUBSAMPLING) == 0:
+            if self._subsample_model_recombination(c + 1, source, keyArray):
                 extraPlus = "*"
             num = extra + str(c)
             numPlus = extraPlus + str(c+1)
@@ -189,6 +191,12 @@ class Tesserae2:
 
         return model
 
+    def _subsample_model_recombination(self, idx, source, array):
+        if array is not None:
+            return array[idx]
+        else:
+            return idx < 5 or idx + 5 > len(source) or (idx % DEFAULT_SUBSAMPLING) == 0
+
     def _make_flanking_model(self, name):
         model = HiddenMarkovModel(name=name)
 
@@ -218,7 +226,7 @@ class Tesserae2:
         full_model = self._make_flanking_model("flankleft")
         full_model.add_model(self._make_flanking_model("flankright"))
         for s in self.sources:
-            full_model.add_model(self._make_global_alignment_model(s))
+            full_model.add_model(self._make_global_alignment_model(s, self.sourceKeys))
 
         full_model.bake(merge="None")
 
@@ -293,17 +301,18 @@ class Tesserae2:
 
         queries = ingest_fastx_file(query_fastx)
         sources = ingest_fastx_file(source_fastx)
+        sourceKeys = None
 
         # For now we enforce using only one query (the first one in the file):
         query = queries[0]
 
-        return self.align(query, sources)
+        return self.align(query, sources, sourceKeys)
 
-    def align(self, query, sources) -> None:
+    def align(self, query, sources, sourceKeys) -> None:
         """Align all sequences in `targets` to the given query sequence."""
 
         # Set our query and source properties:
-        self._query_and_source_dependent_setup(query, sources)
+        self._query_and_source_dependent_setup(query, sources, sourceKeys)
         for i, source in enumerate(self.sources):
             self._source_name_index_dict[source.name] = i
 

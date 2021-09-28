@@ -159,6 +159,8 @@ def write_results(
 
             sam_stdout.write(aligned_segment)
 
+    sam_stdout.close()
+
 
 def prepare_output_file(bamfile) -> str:
     """Prepare the given bamfile path to be ready to accept data.

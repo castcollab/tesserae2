@@ -393,13 +393,32 @@ def prepare_output_file(bamfile) -> str:
 ################################################################################
 
 
-def align(args) -> None:
+def alignFromArgs(args) -> None:
+    """Main CLI call for the 'align' sub-command."""
+
+    LOGGER.info("Ingesting Queries and Targets with Tesserae...")
+    queries = ingest_fastx_file(args.reads)
+    targets = ingest_fastx_file(args.segments)
+
+    clean_results = model.Tesserae(queries, targets, None)
+
+    # Get our query information:
+    query = aligner.query
+
+    LOGGER.info("Writing results...")
+    write_results(query, clean_results, args.bamout)
+
+    LOGGER.debug("Dumping raw tesserae object:")
+    LOGGER.debug(aligner)
+
+
+def align(queries, targets, targetLists) -> None:
     """Main CLI call for the 'align' sub-command."""
 
     aligner = model.Tesserae()
     LOGGER.info("Aligning with Tesserae...")
     start_time = time.time()
-    target_alignment_results = aligner.align_from_fastx(args.reads, args.segments)
+    target_alignment_results = aligner.align(queries, targets, targetLists)
     end_time = time.time()
     LOGGER.info("Alignment took %fs", end_time - start_time)
     dump_results_to_log(target_alignment_results)
@@ -424,6 +443,10 @@ def align(args) -> None:
         )
 
     dump_results_to_log(clean_results)
+
+    return clean_results
+
+
 
     # Get our query information:
     query = aligner.query
@@ -480,7 +503,7 @@ def main(raw_args):
     LOGGER.info("Log level set to: %s", logging.getLevelName(logging.getLogger().level))
 
     # Call our sub-command:
-    align(args)
+    alignFromArgs(args)
 
     overall_end = time.time()
     LOGGER.info("Elapsed time: %f", overall_end - overall_start)
