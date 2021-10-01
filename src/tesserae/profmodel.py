@@ -16,15 +16,14 @@ from .nucleotide_sequence import NucleotideSequence
 
 LOGGER = logging.getLogger(__name__)
 
-
 # default transition probabilities
 DEFAULT_DEL = 0.025
 DEFAULT_EPS = 0.75
 DEFAULT_REC = 0.0001
 DEFAULT_TERM = 0.001
 
+# by default do no subsampling (every site is considered for recombination)
 DEFAULT_SUBSAMPLING = 1
-
 
 # Nucleotide to index conversion
 # fmt: off
@@ -65,7 +64,6 @@ def ingest_fastx_file(fastx_file_name: str) -> List[NucleotideSequence]:
         for entry in fh:
             sequence_list.append(NucleotideSequence(entry.name, entry.sequence))
 
-
     LOGGER.info("Ingested %d reads.", len(sequence_list))
 
     return sequence_list
@@ -81,15 +79,18 @@ class Tesserae2:
     """
 
     def __init__(
-        self, threads=1,
+            self, threads=1, subsample_model_recombination=DEFAULT_SUBSAMPLING
     ):
+        self.logp = 0.0
         if sys.version_info < (3, 8) and threads > 1:
             raise NotImplementedError(
                 "Threading is only supported with python3.8 and above!"
             )
         self.threads: int = threads
         self.query: NucleotideSequence
+        self.subsample_model_recombination: int = subsample_model_recombination
         self.sources: Sequence[NucleotideSequence]
+
         self._source_name_index_dict: Dict[str, int] = {}
 
     def _query_and_source_dependent_setup(self, query, sources, sourceKeys):
@@ -115,9 +116,7 @@ class Tesserae2:
         s[i0.name] = i0
 
         for c in range(len(source)):
-            extra = ""
-            if c + 1 < 5 or c + 1 + 5 > len(source) or ((c + 1) % DEFAULT_SUBSAMPLING) == 0:
-                extra = "*"
+            extra = "*" if c+1 >= len(keyArray) or keyArray[c+1] else ""
             dc = State(None, name=f"{name}:D{extra}{c + 1}")
 
             # TODO: replace this with the nucleotide components of emission matrix from
@@ -155,14 +154,10 @@ class Tesserae2:
         model.add_transition(s[f"{name}:I*0"], s[f"{name}:M*1"], 0.15)
 
         for c in range(1, len(source)):
-            extra = ""
-            extraPlus = ""
-            if self._subsample_model_recombination(c, source, keyArray):
-                extra = "*"
-            if self._subsample_model_recombination(c + 1, source, keyArray):
-                extraPlus = "*"
+            extra = "*" if keyArray[c] else ""
+            extraPlus = "*" if c+1 >= len(keyArray) or keyArray[c+1] else ""
             num = extra + str(c)
-            numPlus = extraPlus + str(c+1)
+            numPlus = extraPlus + str(c + 1)
             model.add_transition(s[f"{name}:D{num}"], s[f"{name}:D{numPlus}"], 0.15)
             model.add_transition(s[f"{name}:D{num}"], s[f"{name}:I{num}"], 0.70)
             model.add_transition(s[f"{name}:D{num}"], s[f"{name}:M{numPlus}"], 0.15)
@@ -176,13 +171,13 @@ class Tesserae2:
             model.add_transition(s[f"{name}:M{num}"], s[f"{name}:M{numPlus}"], 0.90)
 
         model.add_transition(s[f"{name}:D*{len(source)}"], s[f"{name}:I*{len(source)}"], 0.70)
-        model.add_transition(s[f"{name}:D*{len(source)}"], model.end, 0.30)
+        # model.add_transition(s[f"{name}:D*{len(source)}"], model.end, 0.30)
 
         model.add_transition(s[f"{name}:I*{len(source)}"], s[f"{name}:I*{len(source)}"], 0.15)
-        model.add_transition(s[f"{name}:I*{len(source)}"], model.end, 0.85)
+        # model.add_transition(s[f"{name}:I*{len(source)}"], model.end, 0.85)
 
         model.add_transition(s[f"{name}:M*{len(source)}"], s[f"{name}:I*{len(source)}"], 0.90)
-        model.add_transition(s[f"{name}:M*{len(source)}"], model.end, 0.10)
+        # model.add_transition(s[f"{name}:M*{len(source)}"], model.end, 0.10)
 
         ## add the recombination silent state
         model.add_state(State(None, name="recombination:RC"))
@@ -191,11 +186,9 @@ class Tesserae2:
 
         return model
 
-    def _subsample_model_recombination(self, idx, source, array):
-        if array is not None:
-            return array[idx]
-        else:
-            return idx < 5 or idx + 5 > len(source) or (idx % DEFAULT_SUBSAMPLING) == 0
+    def subsample_model_recombination_sites(self, source, subsample_interval):
+        array = [idx < 5 or idx + 5 > len(source) or (idx % subsample_interval) == 0 for idx in range(len(source))]
+        return array
 
     def _make_flanking_model(self, name):
         model = HiddenMarkovModel(name=name)
@@ -225,8 +218,19 @@ class Tesserae2:
     def _make_full_model(self):
         full_model = self._make_flanking_model("flankleft")
         full_model.add_model(self._make_flanking_model("flankright"))
-        for s in self.sources:
-            full_model.add_model(self._make_global_alignment_model(s, self.sourceKeys))
+
+        for i in range(len(self.sources)):
+            s = self.sources[i]
+            if self.sourceKeys is None:
+                source_key_to_use = self.subsample_model_recombination_sites(s, self.subsample_model_recombination)
+            else:
+                source_key_to_use = self.sourceKeys[i]
+
+            assert len(source_key_to_use) == len(s), "Size mismatch for provided source recomination site array " \
+                                                     "expected " +len(s) +" but found "+len(source_key_to_use)+" for " \
+                                                                                                               "source:"+s.name
+
+            full_model.add_model(self._make_global_alignment_model(s, source_key_to_use))
 
         full_model.bake(merge="None")
 
@@ -251,7 +255,7 @@ class Tesserae2:
             for state1 in states[s1.name]:
                 full_model.add_transition(states[s1.name][state1], recomb, DEFAULT_REC)
                 if "F" not in state1:
-                    full_model.add_transition(recomb, states[s1.name][state1], 1) # only penalize recombinations once
+                    full_model.add_transition(recomb, states[s1.name][state1], 1)  # only penalize recombinations once
                     xlink += 1
                 xlink += 1
 
@@ -260,7 +264,7 @@ class Tesserae2:
             if not model.startswith("flank"):
                 for s in [x for x in states[model] if x.startswith("M")]:
                     full_model.add_transition(states['flankleft']['FD'], states[model][s], 0.001)
-                    full_model.add_transition(states[model][s], states['flankright']['FD'], 0.001)
+                    full_model.add_transition(states[model][s], states['flankright']['FI'], 0.001)
 
         # link model start and end to all match and insert states
         for model in states:
@@ -270,10 +274,10 @@ class Tesserae2:
                     full_model.add_transition(states[model][s], full_model.end, 0.001)
 
         for f in ['FI', 'FD']:
-            full_model.add_transition(full_model.start, states['flankleft'][f], 0.5)
-            full_model.add_transition(states['flankright'][f], full_model.end, 0.5)
+            full_model.add_transition(full_model.start, states['flankleft'][f], 1.0)
+            full_model.add_transition(states['flankright'][f], full_model.end, 1.0)
 
-        LOGGER.info(str(xlink)+" crosslink edges were made")
+        LOGGER.info(str(xlink) + " crosslink edges were made")
         LOGGER.info("Baking")
         full_model.bake(True, merge="None")
         LOGGER.info("Baked")
@@ -289,8 +293,8 @@ class Tesserae2:
         return self.sources[self._source_name_index_dict[name]]
 
     def align_from_fastx(
-        self, query_fastx, source_fastx
-    ) -> None:  # List[TesseraeAlignmentResult]:
+            self, query_fastx, source_fastx
+    ) -> List[TesseraeAlignmentResult]:
         """Align all source sequences to the query sequence in the given FASTX
         (FASTA / FASTQ) files.
 
@@ -308,7 +312,7 @@ class Tesserae2:
 
         return self.align(query, sources, sourceKeys)
 
-    def align(self, query, sources, sourceKeys) -> None:
+    def align(self, query, sources, sourceKeys) -> List[TesseraeAlignmentResult]:
         """Align all sequences in `targets` to the given query sequence."""
 
         # Set our query and source properties:
@@ -325,6 +329,7 @@ class Tesserae2:
         logp, path = self.model.viterbi(query.sequence)
         LOGGER.info("finished viterbi")
 
+        self.logp = logp
         # print(path)
 
         ppath = []
@@ -337,18 +342,17 @@ class Tesserae2:
             # print(state.name)
             ppath.append(f'{re.split(":", state.name)[0]}')
 
-        # print(ppath)
-
         self.editTrack: str = ""
         self.path: List[TesseraeAlignmentResult] = []
 
         self.__render(path, query, sources)
 
         return self.path
+
     # def __render(self, cp, panel) -> None:
-        # self.path.append(
-        #     TesseraeAlignmentResult(current_track, "".join(sb), pos_start, pos_end)
-        # )
+    # self.path.append(
+    #     TesseraeAlignmentResult(current_track, "".join(sb), pos_start, pos_end)
+    # )
 
     # def __str__(self):
     #     max_name_length = 0
@@ -380,7 +384,6 @@ class Tesserae2:
     #     sb.append("\n")
     #
     #     return "".join(sb)
-
 
     def __render(self, ppath, query, sources) -> None:
         """Trace back paths in the graph to create results.
@@ -480,7 +483,6 @@ class Tesserae2:
                     current_track = source_name
                     sb = [repeat(" ", total_bases)]
 
-
                 if "RC" not in state:
                     if source_name == "flankleft" or source_name == "flankright":
                         pos_start = 0
@@ -513,4 +515,3 @@ class Tesserae2:
         self.path.append(
             TesseraeAlignmentResult(current_track, "".join(sb), pos_start, pos_end)
         )
-
