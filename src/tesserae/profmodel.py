@@ -1,16 +1,11 @@
-import itertools
 import logging
-import math
-import sys
 import re
 
 from dataclasses import dataclass
 from typing import Dict, List, Sequence
 
-import numpy as np
 import pysam
 from pomegranate import *
-from pomegranate.callbacks import History, ModelCheckpoint
 
 from .nucleotide_sequence import NucleotideSequence
 
@@ -171,13 +166,10 @@ class Tesserae2:
             model.add_transition(s[f"{name}:M{num}"], s[f"{name}:M{numPlus}"], 0.90)
 
         model.add_transition(s[f"{name}:D*{len(source)}"], s[f"{name}:I*{len(source)}"], 0.70)
-        # model.add_transition(s[f"{name}:D*{len(source)}"], model.end, 0.30)
 
         model.add_transition(s[f"{name}:I*{len(source)}"], s[f"{name}:I*{len(source)}"], 0.15)
-        # model.add_transition(s[f"{name}:I*{len(source)}"], model.end, 0.85)
 
         model.add_transition(s[f"{name}:M*{len(source)}"], s[f"{name}:I*{len(source)}"], 0.90)
-        # model.add_transition(s[f"{name}:M*{len(source)}"], model.end, 0.10)
 
         ## add the recombination silent state
         model.add_state(State(None, name="recombination:RC"))
@@ -349,42 +341,6 @@ class Tesserae2:
 
         return self.path
 
-    # def __render(self, cp, panel) -> None:
-    # self.path.append(
-    #     TesseraeAlignmentResult(current_track, "".join(sb), pos_start, pos_end)
-    # )
-
-    # def __str__(self):
-    #     max_name_length = 0
-    #
-    #     for i in range(0, len(self.path)):
-    #         name = "%s (%d-%d)" % (self.path[i][0], self.path[i][2], self.path[i][3])
-    #         max_name_length = max(max_name_length, len(name))
-    #
-    #     fmt = f"%{max_name_length}s"
-    #
-    #     sb = ["\n"]
-    #
-    #     for i in range(0, len(self.path)):
-    #         name = "%s (%d-%d)" % (self.path[i][0], self.path[i][2], self.path[i][3])
-    #
-    #         sb.append(fmt % name)
-    #         sb.append(" ")
-    #         sb.append(f"{self.path[i][1]}")
-    #         sb.append("\n")
-    #
-    #         if i == 0:
-    #             sb.append(fmt % " ")
-    #             sb.append(" ")
-    #             sb.append(self.editTrack)
-    #             sb.append("\n")
-    #
-    #     sb.append("\n")
-    #     sb.append(f"Mllk: {self.llk}")
-    #     sb.append("\n")
-    #
-    #     return "".join(sb)
-
     def __render(self, ppath, query, sources) -> None:
         """Trace back paths in the graph to create results.
 
@@ -447,27 +403,6 @@ class Tesserae2:
         for p, (idx, state) in enumerate(ppath[1:-1]):
             if "start" not in state.name and "end" not in state.name and "FD" not in state.name:
                 source_name, state = re.split(":", state.name)
-
-                # if (
-                #
-                #         self.maxpath_copy[i] == self.maxpath_copy[i - 1]
-                #         and np.abs(self.maxpath_pos[i] - self.maxpath_pos[i - 1]) > 1
-                #         or self.maxpath_pos[i] == last_known_pos + 1
-                # ):
-                #     self.path.append(
-                #         TesseraeAlignmentResult(
-                #             current_track, "".join(sb), pos_start, pos_end
-                #         )
-                #     )
-                #     uppercase = not uppercase
-                #     last_known_pos = self.maxpath_pos[i - 1]
-                #
-                #     if pos_start != pos_end:
-                #         pos_start = self.maxpath_pos[i] - 1
-                #         pos_end = self.maxpath_pos[i] - 1
-                #
-                #     current_track = seqs[self.maxpath_copy[i] + 1][0]
-                #     sb = [repeat(" ", i - cp)]
 
                 ## we have jumped to another sequence
                 if current_track != source_name:

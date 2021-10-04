@@ -409,7 +409,7 @@ def profalign(args) -> None:
     end_time = time.time()
     LOGGER.info("Alignment took %fs", end_time - start_time)
 
-    dump_results_to_log(target_alignment_results)
+    dump_results_to_log(target_alignment_results.get_blat_results())
 
     LOGGER.info("Cleaning results and computing alignment details...")
     query_alignment_string = target_alignment_results[0].alignment_string
