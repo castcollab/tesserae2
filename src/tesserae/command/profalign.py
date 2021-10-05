@@ -1,7 +1,6 @@
 import argparse
 import contextlib
 import logging
-import math
 import os
 import pathlib
 import sys
@@ -15,6 +14,7 @@ import pysam
 from tesserae.nucleotide_sequence import NucleotideSequence
 
 from .. import profmodel
+from ..profmodel import CleanResult
 
 LOGGER = logging.getLogger(__name__)
 
@@ -34,41 +34,6 @@ class DetailedAlignmentInfo:
     template_length: int
     cigar: List[Tuple[Optional[Any], int]]
     qual_pl: float
-
-
-@dataclass
-class CleanResult:
-    """Clean alignment Result."""
-
-    target: NucleotideSequence
-    ref_start_pos: int
-    template_length: int
-    cigar: Tuple
-    alignment_qual_pl: float
-    target_start_index: int
-    target_end_index: int
-
-    @classmethod
-    def from_target__detailed_alignment_info_and_target_alignment_result(
-        cls, target, detailed_alignment_info, target_alignment_result
-    ):
-        return cls(
-            target,
-            detailed_alignment_info.start_pos,
-            detailed_alignment_info.template_length,
-            detailed_alignment_info.cigar,
-            detailed_alignment_info.qual_pl,
-            target_alignment_result.target_start_index,
-            target_alignment_result.target_end_index,
-        )
-
-    def get_query_name(self) -> str:
-        """Build the name of the query sequence"""
-        return "_".join(
-            str(v)
-            for v in [self.target.name, self.target_start_index, self.target_end_index]
-        )
-
 
 
 def dump_results_to_log(results_tuple_list):
@@ -211,192 +176,6 @@ def prepare_output_file(bamfile) -> str:
 
     return bamfile
 
-def get_start_index_from_alignment_start_string(target_alignment_string) -> int:
-    """Get the alignment start index from the given alignment string.
-
-    We know that the alignment strings will always start with spaces until
-    the region that actually aligns to the reference, so we count the number
-    of spaces in the target_alignment_string to get our starting alignment
-    position.
-    """
-
-    start_index = 0
-    while start_index < len(target_alignment_string):
-        if target_alignment_string[start_index] != " ":
-            break
-        start_index += 1
-    return start_index
-
-
-def compute_flanking_alignment_info(
-    query_alignment_string, target_alignment_string
-) -> DetailedAlignmentInfo:
-    """Compute detailed alignment information from the given information.
-
-     Alignment details are based off the differences between the alignment
-     strings.
-     This method returns a tuple containing:
-     - The Start Position in the reference of the alignment.
-     - The Template Length of this alignment.
-     - The Cigar representing this alignment.
-     - The Phred-Scaled quality score of this alignment.
-     Where:
-     - The Start Position is the 1-based, inclusive position in the reference
-     at which this alignment begins.
-     - The Template Length is the number of bases accounted by this alignment
-     with respect to the reference.
-     - The Cigar is a list of tuples: (CIGAR_ELEMENT, COUNT) where each
-     CIGAR_ELEMENT is defined in pysam.
-     - The Phred-Scaled quality score is defined by the following formula:
-     -10 log_10((# mismatches + # insertions + # deletions)/target_length)
-     """
-
-    start_index = get_start_index_from_alignment_start_string(target_alignment_string)
-
-    # Now that we know where in the reference this target begins, we can start
-    # to loop through both alignment strings at the same time.
-    # In this loop we will:
-    #     construct a cigar string
-    #     determine counts for alignment quality score
-    #     determine template length
-
-    num_errors = 0
-
-    cigar = []
-    current_cigar_element = None
-    current_cigar_element_count = 0
-
-    for query_base, target_base in zip(
-            query_alignment_string[start_index:], target_alignment_string[start_index:]
-    ):
-        cigar_element = pysam.CSOFT_CLIP
-
-        # Accumulate our cigar elements:
-        if cigar_element != current_cigar_element:
-            if current_cigar_element is not None:
-                cigar.append((current_cigar_element, current_cigar_element_count))
-
-            current_cigar_element = cigar_element
-            current_cigar_element_count = 1
-
-        else:
-            current_cigar_element_count += 1
-
-    # Add the last remaining cigar element to our list:
-    cigar.append((current_cigar_element, current_cigar_element_count))
-
-    # Our template length is the number of bases accounted by this alignment
-    # with respect to the reference:
-    template_length = len(target_alignment_string) - start_index
-
-    # Compute PL score:
-    qual_pl = 0.0
-
-    # Return our detailed info.
-    return DetailedAlignmentInfo(start_index, template_length, cigar, qual_pl)
-
-
-def compute_detailed_alignment_info(
-    query_alignment_string, target_alignment_string, target_length
-) -> DetailedAlignmentInfo:
-    """Compute detailed alignment information from the given information.
-
-    Alignment details are based off the differences between the alignment
-    strings.
-    This method returns a tuple containing:
-    - The Start Position in the reference of the alignment.
-    - The Template Length of this alignment.
-    - The Cigar representing this alignment.
-    - The Phred-Scaled quality score of this alignment.
-    Where:
-    - The Start Position is the 1-based, inclusive position in the reference
-    at which this alignment begins.
-    - The Template Length is the number of bases accounted by this alignment
-    with respect to the reference.
-    - The Cigar is a list of tuples: (CIGAR_ELEMENT, COUNT) where each
-    CIGAR_ELEMENT is defined in pysam.
-    - The Phred-Scaled quality score is defined by the following formula:
-    -10 log_10((# mismatches + # insertions + # deletions)/target_length)
-    """
-
-    start_index = get_start_index_from_alignment_start_string(target_alignment_string)
-
-    # Now that we know where in the reference this target begins, we can start
-    # to loop through both alignment strings at the same time.
-    # In this loop we will:
-    #     construct a cigar string
-    #     determine counts for alignment quality score
-    #     determine template length
-
-    num_errors = 0
-
-    cigar = []
-    current_cigar_element = None
-    current_cigar_element_count = 0
-
-    for query_base, target_base in zip(
-        query_alignment_string[start_index:], target_alignment_string[start_index:]
-    ):
-
-        # The Tesserae2 / Mosaic Alignment algorithm can only produce "-" or
-        # <BASE> for any position (other than blanks / spaces).  Therefore we
-        # only have to check the following 4 cases:
-        if query_base == "-":
-            # We have an insertion relative to the reference:
-            num_errors += 1
-            cigar_element = pysam.CINS
-
-        elif query_base == target_base:
-            # Bases match:
-            # We use CMATCH here because that cigar operator accounts for
-            # BOTH matches and mismatches.
-            cigar_element = pysam.CMATCH
-
-        elif target_base == "-":
-            # We have a deletion relative to the reference:
-            num_errors += 1
-            cigar_element = pysam.CDEL
-
-        else:
-            # We have a mismatch relative to the reference:
-            num_errors += 1
-            # We use CMATCH here because that cigar operator accounts for
-            # BOTH matches and mismatches.
-            cigar_element = pysam.CMATCH
-
-        # Accumulate our cigar elements:
-        if cigar_element != current_cigar_element:
-            if current_cigar_element is not None:
-                cigar.append((current_cigar_element, current_cigar_element_count))
-
-            current_cigar_element = cigar_element
-            current_cigar_element_count = 1
-
-        else:
-            current_cigar_element_count += 1
-
-    # Add the last remaining cigar element to our list:
-    cigar.append((current_cigar_element, current_cigar_element_count))
-
-    # Our template length is the number of bases accounted by this alignment
-    # with respect to the reference:
-    template_length = len(target_alignment_string) - start_index
-
-    # Compute PL score:
-    qual_pl: float
-    if num_errors == 0:
-        qual_pl = MAX_ALIGNMENT_PL
-    else:
-        qual_pl = -10 * math.log10(num_errors / target_length)
-    if qual_pl < 0:
-        # quality cannot take a negative value
-        qual_pl = 0
-
-    # Return our detailed info.
-    return DetailedAlignmentInfo(start_index, template_length, cigar, qual_pl)
-
-
-
 
 
 def profalign(args) -> None:
@@ -412,31 +191,7 @@ def profalign(args) -> None:
     dump_results_to_log(target_alignment_results.get_blat_results())
 
     LOGGER.info("Cleaning results and computing alignment details...")
-    query_alignment_string = target_alignment_results[0].alignment_string
-    clean_results = []
-    for result in target_alignment_results[1:]:
-        # Unpack our results for ease of use:
-
-        if not result.seq_name.startswith("flank") and not result.seq_name.startswith("recombination"):
-            # Get our detailed alignment info:
-            target = aligner.get_target(result.seq_name)
-            detailed_alignment_info = compute_detailed_alignment_info(
-                query_alignment_string, result.alignment_string, len(target)
-            )
-        else:
-            target = NucleotideSequence(result.seq_name, result.alignment_string)
-            detailed_alignment_info = compute_flanking_alignment_info(
-                query_alignment_string, result.alignment_string
-            )
-            if detailed_alignment_info.template_length is 0:
-                continue
-
-        # Create our clean results for this alignment:
-        clean_results.append(
-            CleanResult.from_target__detailed_alignment_info_and_target_alignment_result(
-                target, detailed_alignment_info, result
-            )
-        )
+    clean_results = target_alignment_results.get_clean_alignment_results()
 
     dump_results_to_log(clean_results)
 

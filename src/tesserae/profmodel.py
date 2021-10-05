@@ -1,8 +1,9 @@
 import logging
 import re
+import math
 
 from dataclasses import dataclass
-from typing import Dict, List, Sequence
+from typing import Dict, List, Sequence, Tuple, Optional, Any
 
 import pysam
 from pomegranate import *
@@ -16,6 +17,8 @@ DEFAULT_DEL = 0.025
 DEFAULT_EPS = 0.75
 DEFAULT_REC = 0.0001
 DEFAULT_TERM = 0.001
+
+MAX_ALIGNMENT_PL = 60
 
 # by default do no subsampling (every site is considered for recombination)
 DEFAULT_SUBSAMPLING = 1
@@ -31,6 +34,15 @@ CONVERT = {
 }
 # fmt: on
 
+@dataclass
+class DetailedAlignmentInfo:
+    """Stores alignment information."""
+
+    start_pos: int
+    template_length: int
+    cigar: List[Tuple[Optional[Any], int]]
+    qual_pl: float
+
 
 @dataclass
 class TesseraeAlignmentResult:
@@ -42,6 +54,269 @@ class TesseraeAlignmentResult:
     alignment_string: str
     target_start_index: int
     target_end_index: int
+
+@dataclass
+class CleanResult:
+    """Clean alignment Result summarizing the alignment of the target to a particular sequence with summarizing information."""
+
+    target: NucleotideSequence
+    ref_start_pos: int
+    template_length: int
+    cigar: Tuple
+    alignment_qual_pl: float
+    target_start_index: int
+    target_end_index: int
+
+    @classmethod
+    def from_target__detailed_alignment_info_and_target_alignment_result(
+            cls, target, detailed_alignment_info, target_alignment_result
+    ):
+        return cls(
+            target,
+            detailed_alignment_info.start_pos,
+            detailed_alignment_info.template_length,
+            detailed_alignment_info.cigar,
+            detailed_alignment_info.qual_pl,
+            target_alignment_result.target_start_index,
+            target_alignment_result.target_end_index,
+        )
+
+    def get_query_name(self) -> str:
+        """Build the name of the query sequence"""
+        return "_".join(
+            str(v)
+            for v in [self.target.name, self.target_start_index, self.target_end_index]
+        )
+
+@dataclass
+class ProfalignAlignmentResultContainer:
+    """
+    Class for storing the necessary Tesserae results
+    """
+
+    aligner: Any
+    pomegranate_path: List[Any]
+    alignment_result_list: List[TesseraeAlignmentResult]
+    clean_result_summary: List[CleanResult]
+
+    logp: float
+
+    def get_pomegranate_path(self) -> List[Any]:
+        return self.pomegranate_path.copy()
+
+    def get_blat_results(self) -> List[TesseraeAlignmentResult]:
+        return self.alignment_result_list.copy()
+
+    def get_clean_alignment_results(self) -> List[CleanResult]:
+        query_alignment_string = self.alignment_result_list[0].alignment_string
+        self.clean_result_summary = clean_results = []
+
+        for result in self.alignment_result_list[1:]:
+            # Unpack our results for ease of use:
+
+            if not result.seq_name.startswith("flank") and not result.seq_name.startswith("recombination"):
+                # Get our detailed alignment info:
+                target = self.aligner.get_target(result.seq_name)
+                detailed_alignment_info = self.compute_detailed_alignment_info(
+                    query_alignment_string, result.alignment_string, len(target)
+                )
+            else:
+                target = NucleotideSequence(result.seq_name, result.alignment_string)
+                detailed_alignment_info = self.compute_flanking_alignment_info(
+                    query_alignment_string, result.alignment_string
+                )
+                if detailed_alignment_info.template_length is 0:
+                    continue
+
+            # Create our clean results for this alignment:
+            clean_results.append(
+                CleanResult.from_target__detailed_alignment_info_and_target_alignment_result(
+                    target, detailed_alignment_info, result
+                )
+            )
+        return self.clean_result_summary
+
+    def compute_detailed_alignment_info(
+            cls, query_alignment_string, target_alignment_string, target_length
+    ) -> DetailedAlignmentInfo:
+        """Compute detailed alignment information from the given information.
+
+        Alignment details are based off the differences between the alignment
+        strings.
+        This method returns a tuple containing:
+        - The Start Position in the reference of the alignment.
+        - The Template Length of this alignment.
+        - The Cigar representing this alignment.
+        - The Phred-Scaled quality score of this alignment.
+        Where:
+        - The Start Position is the 1-based, inclusive position in the reference
+        at which this alignment begins.
+        - The Template Length is the number of bases accounted by this alignment
+        with respect to the reference.
+        - The Cigar is a list of tuples: (CIGAR_ELEMENT, COUNT) where each
+        CIGAR_ELEMENT is defined in pysam.
+        - The Phred-Scaled quality score is defined by the following formula:
+        -10 log_10((# mismatches + # insertions + # deletions)/target_length)
+        """
+
+        start_index = cls.get_start_index_from_alignment_start_string(target_alignment_string)
+
+        # Now that we know where in the reference this target begins, we can start
+        # to loop through both alignment strings at the same time.
+        # In this loop we will:
+        #     construct a cigar string
+        #     determine counts for alignment quality score
+        #     determine template length
+
+        num_errors = 0
+
+        cigar = []
+        current_cigar_element = None
+        current_cigar_element_count = 0
+
+        for query_base, target_base in zip(
+                query_alignment_string[start_index:], target_alignment_string[start_index:]
+        ):
+
+            # The Tesserae2 / Mosaic Alignment algorithm can only produce "-" or
+            # <BASE> for any position (other than blanks / spaces).  Therefore we
+            # only have to check the following 4 cases:
+            if query_base == "-":
+                # We have an insertion relative to the reference:
+                num_errors += 1
+                cigar_element = pysam.CINS
+
+            elif query_base == target_base:
+                # Bases match:
+                # We use CMATCH here because that cigar operator accounts for
+                # BOTH matches and mismatches.
+                cigar_element = pysam.CMATCH
+
+            elif target_base == "-":
+                # We have a deletion relative to the reference:
+                num_errors += 1
+                cigar_element = pysam.CDEL
+
+            else:
+                # We have a mismatch relative to the reference:
+                num_errors += 1
+                # We use CMATCH here because that cigar operator accounts for
+                # BOTH matches and mismatches.
+                cigar_element = pysam.CMATCH
+
+            # Accumulate our cigar elements:
+            if cigar_element != current_cigar_element:
+                if current_cigar_element is not None:
+                    cigar.append((current_cigar_element, current_cigar_element_count))
+
+                current_cigar_element = cigar_element
+                current_cigar_element_count = 1
+
+            else:
+                current_cigar_element_count += 1
+
+        # Add the last remaining cigar element to our list:
+        cigar.append((current_cigar_element, current_cigar_element_count))
+
+        # Our template length is the number of bases accounted by this alignment
+        # with respect to the reference:
+        template_length = len(target_alignment_string) - start_index
+
+        # Compute PL score:
+        qual_pl: float
+        if num_errors == 0:
+            qual_pl = MAX_ALIGNMENT_PL
+        else:
+            qual_pl = -10 * math.log10(num_errors / target_length)
+        if qual_pl < 0:
+            # quality cannot take a negative value
+            qual_pl = 0
+
+        # Return our detailed info.
+        return DetailedAlignmentInfo(start_index, template_length, cigar, qual_pl)
+
+    def compute_flanking_alignment_info(cls,
+                                        query_alignment_string, target_alignment_string
+                                        ) -> DetailedAlignmentInfo:
+        """Compute detailed alignment information from the given information.
+
+         Alignment details are based off the differences between the alignment
+         strings.
+         This method returns a tuple containing:
+         - The Start Position in the reference of the alignment.
+         - The Template Length of this alignment.
+         - The Cigar representing this alignment.
+         - The Phred-Scaled quality score of this alignment.
+         Where:
+         - The Start Position is the 1-based, inclusive position in the reference
+         at which this alignment begins.
+         - The Template Length is the number of bases accounted by this alignment
+         with respect to the reference.
+         - The Cigar is a list of tuples: (CIGAR_ELEMENT, COUNT) where each
+         CIGAR_ELEMENT is defined in pysam.
+         - The Phred-Scaled quality score is defined by the following formula:
+         -10 log_10((# mismatches + # insertions + # deletions)/target_length)
+         """
+
+        start_index = cls.get_start_index_from_alignment_start_string(target_alignment_string)
+
+        # Now that we know where in the reference this target begins, we can start
+        # to loop through both alignment strings at the same time.
+        # In this loop we will:
+        #     construct a cigar string
+        #     determine counts for alignment quality score
+        #     determine template length
+
+        num_errors = 0
+
+        cigar = []
+        current_cigar_element = None
+        current_cigar_element_count = 0
+
+        for query_xbase, target_base in zip(
+                query_alignment_string[start_index:], target_alignment_string[start_index:]
+        ):
+            cigar_element = pysam.CSOFT_CLIP
+
+            # Accumulate our cigar elements:
+            if cigar_element != current_cigar_element:
+                if current_cigar_element is not None:
+                    cigar.append((current_cigar_element, current_cigar_element_count))
+
+                current_cigar_element = cigar_element
+                current_cigar_element_count = 1
+
+            else:
+                current_cigar_element_count += 1
+
+        # Add the last remaining cigar element to our list:
+        cigar.append((current_cigar_element, current_cigar_element_count))
+
+        # Our template length is the number of bases accounted by this alignment
+        # with respect to the reference:
+        template_length = len(target_alignment_string) - start_index
+
+        # Compute PL score:
+        qual_pl = 0.0
+
+        # Return our detailed info.
+        return DetailedAlignmentInfo(start_index, template_length, cigar, qual_pl)
+
+    def get_start_index_from_alignment_start_string(self, target_alignment_string) -> int:
+        """Get the alignment start index from the given alignment string.
+
+        We know that the alignment strings will always start with spaces until
+        the region that actually aligns to the reference, so we count the number
+        of spaces in the target_alignment_string to get our starting alignment
+        position.
+        """
+
+        start_index = 0
+        while start_index < len(target_alignment_string):
+            if target_alignment_string[start_index] != " ":
+                break
+            start_index += 1
+        return start_index
 
 
 def repeat(string_to_expand, length):
@@ -74,7 +349,7 @@ class Tesserae2:
     """
 
     def __init__(
-            self, threads=1, subsample_model_recombination=DEFAULT_SUBSAMPLING
+            self, threads=1, subsample_model_recombination=DEFAULT_SUBSAMPLING, use_flanking_model=True
     ):
         self.logp = 0.0
         if sys.version_info < (3, 8) and threads > 1:
@@ -85,6 +360,7 @@ class Tesserae2:
         self.query: NucleotideSequence
         self.subsample_model_recombination: int = subsample_model_recombination
         self.sources: Sequence[NucleotideSequence]
+        self.use_flanking_model: bool = use_flanking_model
 
         self._source_name_index_dict: Dict[str, int] = {}
 
@@ -97,6 +373,11 @@ class Tesserae2:
 
     def _make_global_alignment_model(self, source, keyArray):
         name = source.name
+        pos1extra = "*" if keyArray[1] else ""
+
+        # enforce that the begining and the end of the arrays are always reachable
+        keyArray[0] = keyArray[len(keyArray)-1] = True
+
         model = HiddenMarkovModel(name=name)
         s = {}
 
@@ -111,7 +392,7 @@ class Tesserae2:
         s[i0.name] = i0
 
         for c in range(len(source)):
-            extra = "*" if c+1 >= len(keyArray) or keyArray[c+1] else ""
+            extra = "*" if c + 1 >= len(keyArray) or keyArray[c + 1] else ""
             dc = State(None, name=f"{name}:D{extra}{c + 1}")
 
             # TODO: replace this with the nucleotide components of emission matrix from
@@ -141,16 +422,16 @@ class Tesserae2:
 
         # add transitions
         model.add_transition(model.start, s[f"{name}:I*0"], 0.05)
-        model.add_transition(model.start, s[f"{name}:D*1"], 0.05)
-        model.add_transition(model.start, s[f"{name}:M*1"], 0.90)
+        model.add_transition(model.start, s[f"{name}:D{pos1extra}1"], 0.05)
+        model.add_transition(model.start, s[f"{name}:M{pos1extra}1"], 0.90)
 
         model.add_transition(s[f"{name}:I*0"], s[f"{name}:I*0"], 0.70)
-        model.add_transition(s[f"{name}:I*0"], s[f"{name}:D*1"], 0.15)
-        model.add_transition(s[f"{name}:I*0"], s[f"{name}:M*1"], 0.15)
+        model.add_transition(s[f"{name}:I*0"], s[f"{name}:D{pos1extra}1"], 0.15)
+        model.add_transition(s[f"{name}:I*0"], s[f"{name}:M{pos1extra}1"], 0.15)
 
         for c in range(1, len(source)):
             extra = "*" if keyArray[c] else ""
-            extraPlus = "*" if c+1 >= len(keyArray) or keyArray[c+1] else ""
+            extraPlus = "*" if c + 1 >= len(keyArray) or keyArray[c + 1] else ""
             num = extra + str(c)
             numPlus = extraPlus + str(c + 1)
             model.add_transition(s[f"{name}:D{num}"], s[f"{name}:D{numPlus}"], 0.15)
@@ -208,8 +489,12 @@ class Tesserae2:
         return model
 
     def _make_full_model(self):
-        full_model = self._make_flanking_model("flankleft")
-        full_model.add_model(self._make_flanking_model("flankright"))
+
+        if self.use_flanking_model:
+            full_model = self._make_flanking_model("flankleft")
+            full_model.add_model(self._make_flanking_model("flankright"))
+        else:
+            full_model = HiddenMarkovModel("basemodel")
 
         for i in range(len(self.sources)):
             s = self.sources[i]
@@ -218,9 +503,8 @@ class Tesserae2:
             else:
                 source_key_to_use = self.sourceKeys[i]
 
-            assert len(source_key_to_use) == len(s), "Size mismatch for provided source recomination site array " \
-                                                     "expected " +len(s) +" but found "+len(source_key_to_use)+" for " \
-                                                                                                               "source:"+s.name
+            assert len(source_key_to_use) == len(s.sequence), "Size mismatch for provided source recomination site array " \
+                                                     "expected " + len(s.sequence) + " but found " + len(source_key_to_use) + " for source:" + s.name
 
             full_model.add_model(self._make_global_alignment_model(s, source_key_to_use))
 
@@ -252,11 +536,12 @@ class Tesserae2:
                 xlink += 1
 
         # link flanking models to match states
-        for model in states:
-            if not model.startswith("flank"):
-                for s in [x for x in states[model] if x.startswith("M")]:
-                    full_model.add_transition(states['flankleft']['FD'], states[model][s], 0.001)
-                    full_model.add_transition(states[model][s], states['flankright']['FI'], 0.001)
+        if self.use_flanking_model:
+            for model in states:
+                if not model.startswith("flank"):
+                    for s in [x for x in states[model] if x.startswith("M")]:
+                        full_model.add_transition(states['flankleft']['FD'], states[model][s], 0.001)
+                        full_model.add_transition(states[model][s], states['flankright']['FI'], 0.001)
 
         # link model start and end to all match and insert states
         for model in states:
@@ -265,9 +550,10 @@ class Tesserae2:
                     full_model.add_transition(full_model.start, states[model][s], 0.001)
                     full_model.add_transition(states[model][s], full_model.end, 0.001)
 
-        for f in ['FI', 'FD']:
-            full_model.add_transition(full_model.start, states['flankleft'][f], 1.0)
-            full_model.add_transition(states['flankright'][f], full_model.end, 1.0)
+        if self.use_flanking_model:
+            for f in ['FI', 'FD']:
+                full_model.add_transition(full_model.start, states['flankleft'][f], 1.0)
+                full_model.add_transition(states['flankright'][f], full_model.end, 1.0)
 
         LOGGER.info(str(xlink) + " crosslink edges were made")
         LOGGER.info("Baking")
@@ -286,7 +572,7 @@ class Tesserae2:
 
     def align_from_fastx(
             self, query_fastx, source_fastx
-    ) -> List[TesseraeAlignmentResult]:
+    ) -> ProfalignAlignmentResultContainer:
         """Align all source sequences to the query sequence in the given FASTX
         (FASTA / FASTQ) files.
 
@@ -304,7 +590,7 @@ class Tesserae2:
 
         return self.align(query, sources, sourceKeys)
 
-    def align(self, query, sources, sourceKeys) -> List[TesseraeAlignmentResult]:
+    def align(self, query, sources, sourceKeys) -> ProfalignAlignmentResultContainer:
         """Align all sequences in `targets` to the given query sequence."""
 
         # Set our query and source properties:
@@ -322,7 +608,6 @@ class Tesserae2:
         LOGGER.info("finished viterbi")
 
         self.logp = logp
-        # print(path)
 
         ppath = []
         for p, (idx, state) in enumerate(path[1:-1]):
@@ -339,7 +624,9 @@ class Tesserae2:
 
         self.__render(path, query, sources)
 
-        return self.path
+        self.alignment_result = ProfalignAlignmentResultContainer(self, path, self.path, None, logp)
+
+        return self.alignment_result
 
     def __render(self, ppath, query, sources) -> None:
         """Trace back paths in the graph to create results.
@@ -406,11 +693,12 @@ class Tesserae2:
 
                 ## we have jumped to another sequence
                 if current_track != source_name:
-                    self.path.append(
-                        TesseraeAlignmentResult(
-                            current_track, "".join(sb), pos_start, pos_end
+                    if (current_track != "flankleft" or self.use_flanking_model):
+                        self.path.append(
+                            TesseraeAlignmentResult(
+                                current_track, "".join(sb), pos_start, pos_end
+                            )
                         )
-                    )
                     uppercase = True
                     pos_start = -1
                     pos_end = -1

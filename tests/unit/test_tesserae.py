@@ -192,7 +192,7 @@ class TestProfalign:
         from Tesserae.align."""
         # Create our alignment:
         t = Tesserae2()
-        alignment_results = t.align(query, targets, None)
+        alignment_results = t.align(query, targets, None).get_blat_results()
 
         # Assert that the names are correct:
         assert alignment_results[0].seq_name == expected_query_name
@@ -201,6 +201,61 @@ class TestProfalign:
             assert alignment_results[2*i].seq_name == expected_target_names[i - 1]
 
         assert_Tesserae2_alignment_contents_are_correct(alignment_results, t)
+
+
+    def test_mosaic_alignment_on_short_query_trivial_subsampling_input(self):
+        """Test a mosaic alignment on a short query with the different inputs expected
+        from Tesserae.align."""
+        # Create our alignment:
+        t = Tesserae2()
+        bool_arrays = []
+        for target in TEST_TARGETS:
+            bool_arrays.append([True] * len(target._sequence))
+        alignment_results = t.align(TEST_QUERY, TEST_TARGETS, bool_arrays).get_blat_results()
+
+        # Assert that the names are correct:
+        assert alignment_results[0].seq_name == TEST_QUERY.name
+        assert alignment_results[1].seq_name == "flankleft"
+        for i in range(1, len(TEST_TARGETS)):
+            assert alignment_results[2*i].seq_name == TEST_TARGETS[i - 1]
+
+        assert_Tesserae2_alignment_contents_are_correct(alignment_results, t)
+
+
+##TODO this test really needs to work with toggling flanking models off
+    def test_mosaic_alignment_on_short_query_failed_subsampling_input(self):
+        """Test a mosaic alignment on a short query with the different inputs expected
+        from Tesserae.align."""
+        # Create our alignment:
+        t = Tesserae2(use_flanking_model = False)
+        bool_arrays = []
+        for target in TEST_TARGETS:
+            bool_arrays.append([True, False, False, False, False, False, False, False, False, False, False, False, False,
+                                False, False, False, False, False, False, True])
+        alignment_results = t.align(TEST_QUERY, TEST_TARGETS, bool_arrays).get_blat_results()
+
+        # Assert that the names are correct:
+        assert alignment_results[0].seq_name == TEST_QUERY.name
+        assert alignment_results[1].seq_name == "THE_SECOND_TARGET" # was forced to select the second target since a reasonable jump was impossible
+
+        ##TODO this test really needs to work with toggling flanking models off
+        def test_mosaic_alignment_on_short_query_working_subsampling_input(self):
+            """Test a mosaic alignment on a short query with the different inputs expected
+            from Tesserae.align."""
+            # Create our alignment:
+            t = Tesserae2(use_flanking_model=False)
+            bool_arrays = []
+            for target in TEST_TARGETS:
+                bool_arrays.append(
+                    [True, False, False, False, False, False, False, False, False, False, True, True, False,
+                     False, False, False, False, False, False, True])
+            alignment_results = t.align(TEST_QUERY, TEST_TARGETS, bool_arrays).get_blat_results()
+
+            # Assert that the names are correct:
+            assert alignment_results[0].seq_name == TEST_QUERY.name
+            assert alignment_results[1].seq_name == "THE_FIRST_TARGET"
+            assert alignment_results[2].seq_name == "THE_SECOND_TARGET"
+
 
     def test_tesserae_properties(self):
         """Test that our properties function correctly."""
@@ -220,7 +275,7 @@ class TestProfalign:
         a = t.align_from_fastx(
             TEST_RESOURCES_FOLDER / "queryNoFlank.fasta",
             TEST_RESOURCES_FOLDER / "sources.fasta",
-        )
+        ).get_blat_results()
 
         # Assert that the names are correct:
         assert a[0].seq_name == "query"
@@ -248,7 +303,7 @@ class TestProfalign:
         a = t.align_from_fastx(
             TEST_RESOURCES_FOLDER / "queryNoFlank.fasta",
             TEST_RESOURCES_FOLDER / "sources.fasta",
-        )
+        ).get_blat_results()
 
         # Assert that the names are correct:
         assert a[0].seq_name == "query"
@@ -276,7 +331,7 @@ class TestProfalign:
         a = t.align_from_fastx(
             TEST_RESOURCES_FOLDER / "query.fasta",
             TEST_RESOURCES_FOLDER / "sources.fasta",
-        )
+        ).get_blat_results()
 
         # Assert that the names are correct:
         assert a[0].seq_name == "query"
@@ -310,7 +365,7 @@ class TestProfalign:
         a = t.align_from_fastx(
             TEST_RESOURCES_FOLDER / "query_sequence.fasta",
             TEST_RESOURCES_FOLDER / "target_sequences.fasta",
-        )
+        ).get_blat_results()
 
         # Assert that the names are correct:
         assert a[0].seq_name == TEST_QUERY.name
