@@ -21,7 +21,7 @@ class NucleotideSequence:
         self._name = name
         self._sequence = sequence
 
-        validate_nucleic_acid_sequence(self._sequence, self._name)
+        # validate_nucleic_acid_sequence(self._sequence, self._name)
 
     def __eq__(self, other) -> bool:
         if isinstance(other, NucleotideSequence):
