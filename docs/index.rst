@@ -3,7 +3,7 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to Tesserae2's documentation!
+Welcome to Tesserae3's documentation!
 =====================================
 
 .. toctree::

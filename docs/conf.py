@@ -22,12 +22,12 @@ sys.path.insert(0, os.path.abspath('../src/tesserae'))
 
 # -- Project information -----------------------------------------------------
 
-project = 'Tesserae2'
-copyright = '2020, Kiran V Garimella, Warren W. Kretzschmar, Karl Johan Westrin, Jonn T. Smith'
-author = 'Kiran V Garimella, Warren W. Kretzschmar, Karl Johan Westrin, Jonathan T. Smith'
+project = 'Tesserae3'
+copyright = '2022, Lucas van Dijk, Kiran V Garimella, Warren W. Kretzschmar, Karl Johan Westrin, Jonn T. Smith'
+author = 'Lucas van Dijk, Kiran V Garimella, Warren W. Kretzschmar, Karl Johan Westrin, Jonathan T. Smith'
 
 # The full version, including alpha/beta/rc tags
-release = '1.2.1'
+release = '3.0alpha'
 
 
 # -- General configuration ---------------------------------------------------
