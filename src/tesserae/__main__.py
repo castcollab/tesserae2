@@ -32,8 +32,8 @@ class TesseraeCLI(SubcommandRegistry):
             help="Increase verbosity level."
         )
 
-    def __call__(self, *args, **kwargs):
-        args = self.parser.parse_args()
+    def __call__(self, argv=None, *args, **kwargs):
+        args = self.parser.parse_args(argv)
 
         # Setup logging
         logger.setLevel(logging.WARNING)

@@ -19,7 +19,7 @@ class Subcommand(metaclass=ABCMeta):
         subcommand."""
 
     @abstractmethod
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args, **kwargs):  # type: ignore
         """When the subcommand is used on the command line, this function
         will be called."""
 
@@ -83,7 +83,10 @@ class NestedSubcommandRegistry(Subcommand):
         self.registry = SubcommandRegistry(parent_parser=self.subparser)
 
     def register_subcommand(self, name: str, subcommand: Subcommand, **kwargs):
+        if self.registry is None:
+            raise ValueError("No registry built yet, use register_arguments first.")
+
         return self.registry.register_subcommand(name, subcommand, **kwargs)
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args, **kwargs):  # type: ignore
         pass

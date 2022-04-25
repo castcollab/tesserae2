@@ -4,7 +4,7 @@ import subprocess
 import pysam
 
 import pytest
-from tesserae import cli
+from tesserae.__main__ import tesserae_cli
 
 from ..util import EXPECTED_TEST_RESULTS, TEST_RESOURCES_FOLDER
 
@@ -36,27 +36,19 @@ def assert_sam_files_are_equal(samfile1, samfile2):
 
 
 class TestCli:
-    @pytest.mark.parametrize("use_shell", (True, False))
-    def test_tesserae_alignment_with_cli(self, tmpdir, capfd, use_shell):
+    def test_tesserae_alignment_with_cli(self, tmpdir, capfd):
         out_file_path = pathlib.Path(tmpdir) / "test_tesserae_alignment_with_cli.bam"
 
         args = [
             "tesserae",
-            "-v",
             "align",
-            "-r",
-            str(TEST_RESOURCES_FOLDER / "query_sequence.fasta"),
-            "-s",
             str(TEST_RESOURCES_FOLDER / "target_sequences.fasta"),
+            str(TEST_RESOURCES_FOLDER / "query_sequence.fasta"),
             "-o",
             str(out_file_path),
         ]
 
-        # when
-        if use_shell:
-            subprocess.run(args)
-        else:
-            cli.main(args)
+        tesserae_cli(args[1:])
 
         # Now that we've run our data, let's do some basic checks:
         assert out_file_path.exists()
