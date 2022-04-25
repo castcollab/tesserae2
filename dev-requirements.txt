@@ -10,3 +10,4 @@ isort
 sphinx
 sphinx-rtd-theme
 mypy
+scikit-bio

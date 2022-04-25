@@ -51,7 +51,7 @@ class SamWriter:
 
         segment.query_name = query_id
         segment.reference_id = self.ref_name_to_id[interval.ref_id]
-        segment.reference_start = interval.ref_start
+        segment.reference_start = interval.ref_start if interval.ref_start else 0
         segment.cigarstring = interval.cigar_str()
 
         if ival_num > 0:

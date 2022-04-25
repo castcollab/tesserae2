@@ -4,29 +4,29 @@ import gzip
 import lzma
 from pathlib import Path
 from dataclasses import dataclass, field
-from typing import Union, TextIO, BinaryIO, Iterable
+from typing import Union, TextIO, BinaryIO, Iterable, Optional
 
 
 def open_compressed(filename, *args, **kwargs) -> Union[TextIO, BinaryIO]:
     if not isinstance(filename, Path):
         filename = Path(filename)
 
-    fopen = {
+    fopen = {  # type: ignore
         '.gz': gzip.open,
         '.bz2': bz2.open,
         '.lz': lzma.open
     }.get(filename.suffix, open)
 
-    return fopen(filename, *args, **kwargs)
+    return fopen(filename, *args, **kwargs)  # type: ignore
 
 
 @dataclass
 class RefInterval:
-    ref_id: str = None
-    ref_start: int = None
-    ref_end: int = None
-    qry_start: int = None
-    qry_end: int = None
+    ref_id: Optional[str] = None
+    ref_start: Optional[int] = None
+    ref_end: Optional[int] = None
+    qry_start: Optional[int] = None
+    qry_end: Optional[int] = None
     cigar_ops: list[tuple[int, str]] = field(default_factory=list[tuple[int, str]])
 
     def cigar_str(self) -> str:
@@ -64,7 +64,7 @@ def calc_num_mismatches(query_seq: str, ref_seq: str, cigar_ops: list[tuple[int,
             query_pos += count
             ref_contig_pos += count
         elif op == "I":
-            if 0 < i < len(cigar_ops)-1 and not ignore_indels:
+            if 0 < i < len(cigar_ops) - 1 and not ignore_indels:
                 nm += count
 
             query_pos += count

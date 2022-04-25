@@ -5,7 +5,7 @@ import argparse
 import sys
 from pathlib import Path
 
-import skbio
+import skbio  # type: ignore
 
 from tesserae import TesseraeFactory, open_compressed, SamWriter, __version__
 from tesserae.cli.registry import Subcommand
@@ -45,7 +45,8 @@ class AlignSubcommand(Subcommand):
             help="Output filename. Defaults to stdout."
         )
 
-    def __call__(self, ref_panel: Path, query_seqs: Path, output_type: str, output: str, *args, **kwargs):
+    def __call__(self, ref_panel: Path, query_seqs: Path, output_type: str, output: str,  # type: ignore
+                 *args, **kwargs):  # type: ignore
         with open_compressed(ref_panel) as f:
             ref_contigs = list(skbio.io.read(f, "fasta"))
 

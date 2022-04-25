@@ -30,6 +30,6 @@ references.
 # Set our version:
 __version__ = "3.0alpha"
 
-from tesserae.hmm import Tesserae, TesseraeFactory  # noqa: F401
+from tesserae.hmm import Tesserae, TesseraeFactory  # type: ignore # noqa: F401
 from tesserae.output import SamWriter  # noqa: F401
 from tesserae.utils import RefInterval, calc_num_mismatches, open_compressed  # noqa: F401
