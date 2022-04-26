@@ -29,7 +29,7 @@ class RefInterval:
     ref_end: Optional[int] = None
     qry_start: Optional[int] = None
     qry_end: Optional[int] = None
-    cigar_ops: list[tuple[int, str]] = field(default_factory=list[tuple[int, str]])
+    cigar_ops: list[tuple[int, str]] = field(default_factory=list)
 
     def cigar_str(self) -> str:
         return "".join(f"{c}{op}" for c, op in self.cigar_ops)

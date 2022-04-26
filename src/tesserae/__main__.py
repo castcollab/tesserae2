@@ -14,6 +14,7 @@ import argparse
 import tesserae
 from tesserae.cli.registry import SubcommandRegistry
 from tesserae.cli.align import AlignSubcommand
+from tesserae.cli.view import ViewSubcommand
 
 logger = logging.getLogger()
 
@@ -56,6 +57,7 @@ class TesseraeCLI(SubcommandRegistry):
 
 tesserae_cli = TesseraeCLI()
 tesserae_cli.register_subcommand('align', AlignSubcommand())
+tesserae_cli.register_subcommand('view', ViewSubcommand())
 
 
 if __name__ == "__main__":
