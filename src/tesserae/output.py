@@ -50,7 +50,7 @@ def pprint_alignment(bam: pysam.AlignmentFile, refs: list[Sequence], file=None):
                 aln_symbols.append("~")
 
         # Extend the reference sequence a bit, but mask it with lowercase to indicate those are unaligned
-        ref_seq_extra = ref_seq_by_id[curr_ref_id][curr_ref_pos:curr_ref_pos+25].lower()
+        ref_seq_extra = ref_seq_by_id[curr_ref_id][curr_ref_pos:curr_ref_pos + 25].lower()
         ref_alignment_str = "".join(ref_alignment)
         ref_alignments.append((curr_aln_pos, ref_alignment_str + ref_seq_extra))
         curr_aln_pos += len(ref_alignment_str)
