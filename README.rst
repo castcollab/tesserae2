@@ -2,12 +2,12 @@
     :target: Tests
     :alt: Tests
 
-Overview of Tesserae2
+Overview of Tesserae3
 =====================
 
-Tesserae2: Fast recombination-aware global and local alignment.
+Tesserae3: a pairwise sequence aligner that can jump between different references.
 
-Current version: 1.2.1
+Current version: 3.0alpha
 
 Audience
 --------
@@ -24,9 +24,14 @@ terms of the Apache License version 2.0.  Contributions are welcome. Please join
 Installation
 ------------
 
+Clone the repository and run:
+
 ::
 
     pip install .
+
+Currently the Cython code is compiled with :code:`-march=native`, to enable maximal speedup, but
+prevents us from distributing easily installable binaries.
 
 
 Documentation
@@ -42,7 +47,13 @@ After installing Tesserae, the command-line interface can be called by the follo
 
 ::
 
-   tesserae
+   tesserae -h
+
+There are two main subcommands: :code:`align` and :code:`view`::
+
+   tesserae align ref_panel.fa query_contig.fa -O bam -o aligned.bam
+   tesserae view ref_panel.fa aligned.bam | less -S
+
 
 Bugs
 ----
@@ -119,6 +130,13 @@ increments (``bumpversion minor``) for feature additions **and** incompatible AP
 
 Changes
 -------
+
+v3.0alpha
+`````````
+
+- Rewrote HMM code in Cython
+- Use :code:`scikit-bio` for FASTX I/O
+- Add :code:`view` CLI subcommand
 
 v1.2.0
 ``````
