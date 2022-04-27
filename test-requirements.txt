@@ -1,3 +1,4 @@
+tomli
 scikit-bio
 cython
 pytest

@@ -70,7 +70,7 @@ cdef class TesseraeFactory:
     cdef float _e_ts
     cdef float _e_tv
 
-    cdef object emissions_indel
+    cdef public object emissions_indel
 
     def __init__(self):
         # Transition matrix parameters

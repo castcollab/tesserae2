@@ -30,7 +30,7 @@ Clone the repository and run:
 
     pip install .
 
-Currently the Cython code is compiled with :code:`-march=native`, to enable maximal speedup, but
+Currently the Cython code is compiled with ``-march=native``, to enable maximal speedup, but
 prevents us from distributing easily installable binaries.
 
 
@@ -43,16 +43,39 @@ to be built from source. See `Building the docs`_.
 CLI
 ---
 
-After installing Tesserae, the command-line interface can be called by the following command:
+After installing Tesserae, the command-line interface can be called by the following command::
 
-::
-
-   tesserae -h
+    tesserae -h
 
 There are two main subcommands: :code:`align` and :code:`view`::
 
-   tesserae align ref_panel.fa query_contig.fa -O bam -o aligned.bam
-   tesserae view ref_panel.fa aligned.bam | less -S
+    tesserae align ref_panel.fa query_contig.fa -O bam -o aligned.bam
+    tesserae view ref_panel.fa aligned.bam | less -S
+
+
+Configuring the HMM
+-------------------
+
+The HMM transition and emission probabilities can be configured both using command line arguments
+(see :code:`tesserae align -h`), or through a config file, though command line arguments overwrite
+any values specified in the config file.
+
+The config file should be in TOML format and contain a ``hmm`` section::
+
+    [hmm]
+    PM = 0.75
+
+    gap_open = 0.025
+    gap_extension = 0.75
+    reference_jump = 0.0001
+    termination = 0.001
+
+    emission_match = 0.9
+    emission_ts = 0.05
+    emission_indel = [0.25, 0.25, 0.25, 0.25]
+
+The above example contains all the default probabilities. If an option is not given in the config file you
+specified, it will use the default value.
 
 
 Bugs
@@ -74,26 +97,6 @@ following commands:
     . venv/bin/activate
     pip install -r dev-requirements.txt
     pip install -e .
-
-Linting files
-`````````````
-
-::
-
-    # run all linting commands
-    tox -e lint
-
-    # reformat all project files
-    black src tests setup.py
-
-    # sort imports in project files
-    isort -rc src tests setup.py
-
-    # check pep8 against all project files
-    flake8 src tests setup.py
-
-    # lint python code for common errors and codestyle issues
-    pylint src
 
 
 Tests

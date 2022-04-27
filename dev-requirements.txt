@@ -10,3 +10,4 @@ isort
 sphinx
 sphinx-rtd-theme
 scikit-bio
+tomli
