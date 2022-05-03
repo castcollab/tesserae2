@@ -27,7 +27,7 @@ copyright = '2022, Lucas van Dijk, Kiran V Garimella, Warren W. Kretzschmar, Kar
 author = 'Lucas van Dijk, Kiran V Garimella, Warren W. Kretzschmar, Karl Johan Westrin, Jonathan T. Smith'
 
 # The full version, including alpha/beta/rc tags
-release = '3.0alpha'
+release = '2.0alpha'
 
 
 # -- General configuration ---------------------------------------------------

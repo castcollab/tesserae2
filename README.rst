@@ -2,12 +2,12 @@
     :target: Tests
     :alt: Tests
 
-Overview of Tesserae3
+Overview of Tesserae2
 =====================
 
 Tesserae3: a pairwise sequence aligner that can jump between different references.
 
-Current version: 3.0alpha
+Current version: 2.0alpha
 
 Audience
 --------
@@ -134,7 +134,7 @@ increments (``bumpversion minor``) for feature additions **and** incompatible AP
 Changes
 -------
 
-v3.0alpha
+v2.0alpha
 `````````
 
 - Rewrote HMM code in Cython

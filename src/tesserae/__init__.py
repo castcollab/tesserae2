@@ -24,11 +24,11 @@ r"""
 
 
 A pairwise sequence aligner with the ability to jump between
-references.
+references, based on a pair hidden markov model.
 """
 
 # Set our version:
-__version__ = "3.0alpha"
+__version__ = "2.0alpha"
 
 from tesserae.hmm import Tesserae, TesseraeFactory  # type: ignore # noqa: F401
 from tesserae.output import SamWriter, pprint_alignment  # noqa: F401
