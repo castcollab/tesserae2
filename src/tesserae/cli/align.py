@@ -46,7 +46,7 @@ class AlignSubcommand(Subcommand):
             help="Configure HMM transmission and emission probabilities using the specified TOML config file."
         )
 
-        hmm_group = subparser.add_argument_group("Hidden Markov Model configuration",
+        hmm_group = subparser.add_argument_group("Hidden Markov Model configuration",  # noqa: F841
                                                  "Any configuration specified on the command line overwrites "
                                                  "configuration specified in a config file.")
         pi_group = subparser.add_argument_group("π_m and π_i, the probabilities of starting in a match or insert "
@@ -124,8 +124,6 @@ class AlignSubcommand(Subcommand):
             hmm_params.update(config.get('hmm', {}))
 
         hmm_params.update({k: v for k, v in kwargs.items() if v is not None})
-
-        print(hmm_params)
 
         if hmm_params.get('PM') is not None:
             factory.pi_m = hmm_params['PM']
