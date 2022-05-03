@@ -5,7 +5,7 @@
 Overview of Tesserae2
 =====================
 
-Tesserae3: a pairwise sequence aligner that can jump between different references.
+Tesserae2: a pairwise sequence aligner that can jump between different references.
 
 Current version: 2.0alpha
 

@@ -22,7 +22,7 @@ sys.path.insert(0, os.path.abspath('../src/tesserae'))
 
 # -- Project information -----------------------------------------------------
 
-project = 'Tesserae3'
+project = 'Tesserae2'
 copyright = '2022, Lucas van Dijk, Kiran V Garimella, Warren W. Kretzschmar, Karl Johan Westrin, Jonn T. Smith'
 author = 'Lucas van Dijk, Kiran V Garimella, Warren W. Kretzschmar, Karl Johan Westrin, Jonathan T. Smith'
 
