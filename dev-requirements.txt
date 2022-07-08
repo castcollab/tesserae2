@@ -9,4 +9,5 @@ cython
 isort
 sphinx
 sphinx-rtd-theme
-mypy==0.770
+scikit-bio
+tomli
