@@ -1,0 +1,6 @@
+.github
+*.egg-info
+tests
+docs
+coverage_html_report
+.tox
