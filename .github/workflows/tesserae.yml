@@ -8,7 +8,7 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        python-version: ["3.7", "3.8", "3.9", "3.10"]
+        python-version: ["3.8", "3.9", "3.10"]
 
     steps:
     - uses: actions/checkout@v2
@@ -24,14 +24,14 @@ jobs:
       run: tox
 
     - name: Authenticate to Google Cloud
-      if: github.ref == 'refs/heads/master'
+      if: github.ref == 'refs/heads/master' && matrix.python-version == '3.10'
       id: 'auth'
       uses: 'google-github-actions/auth@v0'
       with:
         credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
 
     - name: Create docker
-      if: github.ref == 'refs/heads/master'
+      if: github.ref == 'refs/heads/master' && matrix.python-version == '3.10'
       run: |-
         gcloud auth configure-docker -q us-east1-docker.pkg.dev
         docker build -t us-east1-docker.pkg.dev/broad-dsp-lrma/fusilli/tesserae2:devel .
