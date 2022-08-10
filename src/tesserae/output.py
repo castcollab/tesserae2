@@ -136,7 +136,9 @@ class SamWriter:
 
         ref_seq = str(self.ref_contigs[segment.reference_id])[interval.ref_start:interval.ref_end]
         nm = calc_num_mismatches(query_sub_seq, ref_seq, interval.cigar_ops)
+        snps = calc_num_mismatches(query_sub_seq, ref_seq, interval.cigar_ops, ignore_indels=True)
         segment.set_tag('NM', nm)
+        segment.set_tag('NS', snps)
         segment.set_tag('LL', float(log_likelihood), 'f')
         segment.set_tag('IV', ival_num)
 
