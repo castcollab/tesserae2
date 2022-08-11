@@ -79,7 +79,7 @@ cdef class TesseraeFactory:
         self.tau = 0.001
         self.delta = 0.025
         self.eps = 0.75
-        self.rho = 0.0001
+        self.rho = 1e-6
 
         # Emission distribution parameters
         self._e_match = 0.9
