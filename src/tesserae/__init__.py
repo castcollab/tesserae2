@@ -32,4 +32,4 @@ __version__ = "2.0alpha"
 
 from tesserae.hmm import Tesserae, TesseraeFactory  # type: ignore # noqa: F401
 from tesserae.output import SamWriter, pprint_alignment  # noqa: F401
-from tesserae.utils import RefInterval, calc_num_mismatches, open_compressed  # noqa: F401
+from tesserae.utils import RefInterval, calc_num_mismatches, open_compressed, parse_num_suffix  # noqa: F401

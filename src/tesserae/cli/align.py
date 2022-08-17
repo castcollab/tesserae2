@@ -13,7 +13,7 @@ else:
 import numpy
 import skbio  # type: ignore
 
-from tesserae import TesseraeFactory, open_compressed, SamWriter, __version__
+from tesserae import TesseraeFactory, open_compressed, parse_num_suffix, SamWriter, __version__
 from tesserae.cli.registry import Subcommand
 
 logger = logging.getLogger(__name__)
@@ -217,6 +217,18 @@ class MultiAlignSubcommand(Subcommand):
             help="Path to a FASTA file with the query sequences to align. Can be compressed with gzip or bzip2."
         )
 
+        subparser.add_argument(
+            '-r', '--range', default=None, required=False, dest='qry_range',
+            help="Only align the query contigs within the given range. Format: START:STOP, to align the contigs within "
+                 "the zero-based, half open interval [START, STOP). Similar to Python indexing."
+        )
+
+        subparser.add_argument(
+            '-m', '--max-memory', default=None, required=False,
+            help="Maximum amount of memory to allocate. Query sequences that are too long to align within the given "
+                 "amount of memory will be skipped and written to a file 'unaligned.fasta.gz'"
+        )
+
         add_hmm_config_options(subparser)
 
         output_group = subparser.add_argument_group("Output format")
@@ -230,7 +242,8 @@ class MultiAlignSubcommand(Subcommand):
             help="Output directory."
         )
 
-    def __call__(self, ref_panel_template, query_seqs, output_type, output_dir, hmm_config=None, *args, **kwargs):
+    def __call__(self, ref_panel_template, query_seqs, output_type, output_dir, qry_range=None, hmm_config=None,
+                 max_memory=None, *args, **kwargs):
         output_mode = OUTPUT_TYPES[output_type]
 
         program = {
@@ -250,8 +263,34 @@ class MultiAlignSubcommand(Subcommand):
 
         output_dir.mkdir(exist_ok=True, parents=True)
 
-        with open_compressed(query_seqs, "rt") as f:
-            for r in skbio.io.read(f, "fasta"):
+        start = None
+        stop = None
+        if qry_range:
+            parts = qry_range.split(':', maxsplit=1)
+            if len(parts) == 1:
+                if qry_range.startswith(':'):
+                    stop = int(parts[0])
+                else:
+                    start = int(parts[0])
+            else:
+                start = int(parts[0])
+                stop = int(parts[1])
+
+        if max_memory:
+            max_memory = parse_num_suffix(max_memory, bytes=True)
+
+            # Set max_memory to 80% of actual given value to have some buffer
+            max_memory = int(round(max_memory * 0.8))
+
+        unaligned_fasta = output_dir / "unaligned.fasta.gz"
+        with open_compressed(query_seqs, "rt") as f, open_compressed(unaligned_fasta, "wt") as unaligned_o:
+            for i, r in enumerate(skbio.io.read(f, "fasta")):
+                if start is not None and i < start:
+                    continue
+
+                if stop is not None and i >= stop:
+                    continue
+
                 query_id = r.metadata['id']
                 query_str = str(r)
                 logger.info("Aligning query '%s'...", query_id)
@@ -266,17 +305,37 @@ class MultiAlignSubcommand(Subcommand):
                 with open_compressed(ref_panel, "rt") as rf:
                     ref_contigs = list(skbio.io.read(rf, "fasta"))
 
+                if not ref_contigs:
+                    r.metadata['description'] += " reason=no_refs"
+                    skbio.io.write(r, "fasta", into=unaligned_o)
+                    logger.info("Skipping query %s, reference panel is empty.", r.metadata['id'])
+                    continue
+
+                max_ref_length = max(len(ref) for ref in ref_contigs)
+
                 hmm = factory.build(ref_contigs)
+
+                # Viterbi matrix is float32 (4 bytes) and pointer matrix is two times uint16, so total 8 bytes
+                est_mem_usage = len(r) * max_ref_length * hmm.num_states * 8
+                if max_memory and est_mem_usage > max_memory:
+                    r.metadata['description'] += " reason=too_much_mem"
+                    skbio.io.write(r, "fasta", into=unaligned_o)
+                    logger.info("Skipping query %s, would require too much memory to align.", r.metadata['id'])
+                    continue
+
                 try:
                     result = hmm.align(query_str.encode('ascii'))
                 except Exception as e:
+                    r.metadata['description'] += " reason=error"
+                    skbio.io.write(r, "fasta", into=unaligned_o)
+
                     logger.error("Error aligning query '%s': %s", query_id, str(e))
                     continue
 
                 output_fname = output_dir / f"{query_id}.{output_type}"
 
                 with SamWriter(ref_contigs, output_fname, output_mode, program) as w:
-                    for i, interval in enumerate(result.get_aligned_ref_intervals()):
-                        w.write_alignment(r.metadata['id'], query_str, interval, i, result.get_log_likelihood())
+                    for j, interval in enumerate(result.get_aligned_ref_intervals()):
+                        w.write_alignment(r.metadata['id'], query_str, interval, j, result.get_log_likelihood())
 
         logger.info("Done.")

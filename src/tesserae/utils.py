@@ -22,6 +22,54 @@ def open_compressed(filename, *args, **kwargs) -> Union[TextIO, BinaryIO]:
     return fopen(filename, *args, **kwargs)  # type: ignore
 
 
+def parse_num_suffix(num, bytes=False):
+    """
+    Parse a string containing a number with a possible suffix like 'M' or 'G',
+    and multiply accordingly.
+
+    >>> parse_num_suffix('10M')
+    10000000
+    >>> parse_num_suffix('5G')
+    5000000000
+    >>> parse_num_suffix('3k')
+    3000
+    >>> parse_num_suffix('500')
+    500
+
+    Parameters
+    ----------
+    num : str
+        The number with possible suffix to parse
+
+    Returns
+    -------
+    int
+        An integer multiplied accordingly to the suffix
+    """
+
+    if not num:
+        return None
+
+    base = 1024 if bytes else 1000
+
+    suffixes = ['K', 'M', 'G', 'T', 'P']
+    expo = list(range(1, len(suffixes)+1))
+
+    suffix_expo = dict(zip(suffixes, expo))
+
+    if not num[-1].isalpha():
+        return int(num)
+
+    suffix = num[-1].upper()
+    if suffix not in suffixes:
+        raise ValueError(
+            "'{}' is not a valid number. Supported suffixes: {}".format(
+                num, ", ".join(iter(suffixes.keys()))
+            ))
+
+    return int(num[:-1]) * (base ** suffix_expo[suffix])
+
+
 @dataclass
 class RefInterval:
     ref_id: Optional[str] = None
