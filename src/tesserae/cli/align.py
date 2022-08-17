@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import gc
 import logging
 import argparse
 import sys
@@ -337,5 +338,10 @@ class MultiAlignSubcommand(Subcommand):
                 with SamWriter(ref_contigs, output_fname, output_mode, program) as w:
                     for j, interval in enumerate(result.get_aligned_ref_intervals()):
                         w.write_alignment(r.metadata['id'], query_str, interval, j, result.get_log_likelihood())
+
+                # Ensure large viterbi/pointer matrices are freed
+                del hmm
+                del result
+                gc.collect()
 
         logger.info("Done.")
