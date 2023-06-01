@@ -8,7 +8,7 @@ cimport cython
 from cython.operator cimport dereference as deref
 from libcpp.vector cimport vector
 from libcpp.string cimport string
-from libc.stdint cimport uint16_t
+from libc.stdint cimport uint16_t, uint32_t
 from libc.math cimport abs as cabs
 
 from tesserae.utils import RefInterval
@@ -29,11 +29,11 @@ cdef float NINF = float('-inf')
 # Type for elements of the pointer matrix
 pointer_dtype = numpy.dtype([
     ('state', numpy.uint16),
-    ('j', numpy.uint16)
+    ('j', numpy.uint32)
 ])
 
 ctypedef uint16_t state_t
-ctypedef uint16_t pos_t
+ctypedef uint32_t pos_t
 
 cdef packed struct Pointer:
     state_t state
