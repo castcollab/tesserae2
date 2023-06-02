@@ -270,7 +270,7 @@ cdef class Tesserae:
         for i, r in enumerate(refs):
             if len(r) > max_possible_length:
                 raise ValueError(f"Reference {r.metadata['id']} is too long! Length of references can be at "
-                                 f"most 65535.")
+                                 f"most {max_possible_length}.")
 
             self.states.append(f"{r.metadata['id']}:M")
             self.states.append(f"{r.metadata['id']}:I")
@@ -376,8 +376,9 @@ cdef class Tesserae:
         # Transform query nucleotides to integers 0-3 for easy emission matrix access
         transform(query.begin(), query.end(), query.begin(), nucl_to_ix)
 
-        if query.size() > 65535:
-            raise ValueError("Query sequence is too long! Can be at most 65535 long.")
+        cdef pos_t max_query_length = numeric_limits[pos_t].max();
+        if query.size() > max_query_length:
+            raise ValueError(f"Query sequence is too long! Can be at most {max_query_length} long.")
 
         cdef pos_t i, j
         for i in range(query.size()):
