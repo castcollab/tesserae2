@@ -8,6 +8,7 @@ cimport cython
 from cython.operator cimport dereference as deref
 from libcpp.vector cimport vector
 from libcpp.string cimport string
+from libcpp.limits cimport numeric_limits
 from libc.stdint cimport uint16_t, uint32_t
 from libc.math cimport abs as cabs
 
@@ -265,8 +266,9 @@ cdef class Tesserae:
         if len(refs) > max_supported_refs:
             raise ValueError(f"Too many references given. Maximum number of supported references: {max_supported_refs}")
 
+        cdef pos_t max_possible_length = numeric_limits[pos_t].max()
         for i, r in enumerate(refs):
-            if len(r) > 65535:
+            if len(r) > max_possible_length:
                 raise ValueError(f"Reference {r.metadata['id']} is too long! Length of references can be at "
                                  f"most 65535.")
 
